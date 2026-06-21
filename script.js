@@ -90,9 +90,14 @@ function playSlideAudio(index) {
     currentAudio = null;
   }
   const src = SLIDE_AUDIO[index];
+  console.log('Audio slide', index, '→', src);
   if (src) {
     currentAudio = new Audio(src);
-    currentAudio.play().catch(() => {});
+    currentAudio.play().then(() => {
+      console.log('✅ Reproduciendo:', src);
+    }).catch((e) => {
+      console.error('❌ Error al reproducir:', src, e);
+    });
   }
 }
 
