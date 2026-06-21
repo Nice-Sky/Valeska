@@ -117,11 +117,11 @@ audioInner.innerHTML = `
 audioBar.appendChild(audioInner);
 document.getElementById('controls').insertAdjacentElement('beforebegin', audioBar);
 
-const audioFill    = document.getElementById('audio-fill');
-const audioCur     = document.getElementById('audio-cur');
-const audioTotalEl = document.getElementById('audio-total');
-const audioBtn     = document.getElementById('audio-playpause');
-const audioTrack   = document.getElementById('audio-track');
+const audioFill    = audioInner.querySelector('#audio-fill');
+const audioCur     = audioInner.querySelector('#audio-cur');
+const audioTotalEl = audioInner.querySelector('#audio-total');
+const audioBtn     = audioInner.querySelector('#audio-playpause');
+const audioTrack   = audioInner.querySelector('#audio-track');
 
 function fmtTime(s) {
   if (!s || isNaN(s)) return '0:00';
