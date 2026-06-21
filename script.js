@@ -205,7 +205,7 @@ const TITLES = [
   'Portada', 'Introducción', 'Contexto', 'Percepción', 'Atención',
   'Memoria', 'Pensamiento', 'Lenguaje', 'Inteligencia',
   'Metacognición', 'Creatividad',
-  'El entorno', 'Conclusión', 'Comparación',
+  'El entorno', 'Comparación', 'Conclusión', 'Gracias',
 ];
 
 const TOTAL = slides.length;
