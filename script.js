@@ -63,6 +63,39 @@ if (window.visualViewport) {
 })();
 
 
+/* ══ Audio por slide ══ */
+const SLIDE_AUDIO = [
+  null,                    // 0  Portada
+  'introduccion.mp3',      // 1  Introducción
+  'Contexto.mp3',          // 2  Contexto
+  'percepcion.mp3',        // 3  Percepción
+  'atencion.mp3',          // 4  Atención
+  'memoria.mp3',           // 5  Memoria
+  'pensamiento.mp3',       // 6  Pensamiento
+  'lenguaje.mp3',          // 7  Lenguaje
+  'inteligencia.mp3',      // 8  Inteligencia
+  'metacognicion.mp3',     // 9  Metacognición
+  'creatividad.mp3',       // 10 Creatividad
+  'entorno.mp3',           // 11 El entorno
+  'conclusion.mp3',        // 12 Conclusión
+  'comparacion.mp3',       // 13 Comparación
+];
+
+let currentAudio = null;
+
+function playSlideAudio(index) {
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.currentTime = 0;
+    currentAudio = null;
+  }
+  const src = SLIDE_AUDIO[index];
+  if (src) {
+    currentAudio = new Audio(src);
+    currentAudio.play().catch(() => {});
+  }
+}
+
 /* ══ Presentación ══ */
 const slides     = document.querySelectorAll('.slide');
 const fill       = document.getElementById('progress-fill');
@@ -109,6 +142,8 @@ function goTo(index) {
   fill.style.width = ((current + 1) / TOTAL * 100) + '%';
   counter.textContent = (current + 1) + ' / ' + TOTAL;
   titleBar.textContent = TITLES[current] || '';
+
+  playSlideAudio(current);
 
   getDots().forEach((d, i) => d.classList.toggle('active', i === current));
 
