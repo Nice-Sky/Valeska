@@ -874,6 +874,99 @@ html, body {
 #key-hint.hidden { opacity: 0; }
 
 /* ══════════════════════════════════
+   BARRA DE AUDIO
+══════════════════════════════════ */
+.audio-bar {
+  background: var(--bg-void);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  padding: 0.45rem 5rem;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.audio-bar.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(4px);
+}
+
+.audio-bar-inner {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  max-width: 1140px;
+  margin: 0 auto;
+}
+
+.audio-icon {
+  font-size: 0.6rem;
+  color: var(--red-bright);
+  animation: pulse-icon 1.5s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+@keyframes pulse-icon {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+.audio-time-cur,
+.audio-time-total {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--t3);
+  letter-spacing: 0.08em;
+  flex-shrink: 0;
+  min-width: 2.6rem;
+}
+
+.audio-time-cur { text-align: right; color: var(--t2); }
+
+.audio-track {
+  flex: 1;
+  height: 3px;
+  background: var(--bg-surface);
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+}
+
+.audio-track:hover { height: 5px; transition: height 0.15s; }
+
+.audio-track-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--red), var(--gold));
+  border-radius: 2px;
+  transition: width 0.25s linear;
+  position: relative;
+}
+
+.audio-track-fill::after {
+  content: '';
+  position: absolute;
+  right: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--gold);
+  box-shadow: 0 0 6px var(--gold);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.audio-track:hover .audio-track-fill::after { opacity: 1; }
+
+@media (max-width: 1024px) {
+  .audio-bar { padding: 0.4rem 0.8rem; }
+}
+
+/* ══════════════════════════════════
    ZONAS TÁCTILES MOBILE
 ══════════════════════════════════ */
 #tap-prev, #tap-next {
