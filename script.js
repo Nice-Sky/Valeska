@@ -85,24 +85,36 @@ let currentAudio = null;
 
 /* ── Crear barra de audio en JS ── */
 const audioBar = document.createElement('div');
-audioBar.innerHTML = `
-  <div style="display:flex;align-items:center;gap:0.8rem;max-width:1140px;margin:0 auto;">
-    <button id="audio-playpause" style="background:rgba(155,89,182,0.15);border:1px solid rgba(155,89,182,0.4);color:#9b59b6;border-radius:50%;width:26px;height:26px;font-size:0.6rem;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;">▶</button>
-    <span id="audio-cur" style="font-family:monospace;font-size:0.68rem;color:#f0f0f0;min-width:2.6rem;text-align:right;">0:00</span>
-    <div id="audio-track" style="flex:1;height:4px;background:#141422;border-radius:2px;cursor:pointer;position:relative;">
-      <div id="audio-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#5b2d8e,#d4a017);border-radius:2px;transition:width 0.25s linear;"></div>
-    </div>
-    <span id="audio-total" style="font-family:monospace;font-size:0.68rem;color:#6a6a88;min-width:2.6rem;">0:00</span>
-  </div>`;
 Object.assign(audioBar.style, {
   background: '#06060c',
   borderTop: '1px solid rgba(255,255,255,0.04)',
-  padding: '0.45rem 5rem',
+  padding: '8px 40px',
   flexShrink: '0',
-  position: 'relative',
   zIndex: '10',
   display: 'none',
+  boxSizing: 'border-box',
+  width: '100%',
 });
+
+const audioInner = document.createElement('div');
+Object.assign(audioInner.style, {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  maxWidth: '1140px',
+  margin: '0 auto',
+  width: '100%',
+});
+
+audioInner.innerHTML = `
+  <button id="audio-playpause" style="background:rgba(155,89,182,0.15);border:1px solid rgba(155,89,182,0.4);color:#9b59b6;border-radius:50%;width:24px;height:24px;min-width:24px;font-size:9px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;box-sizing:border-box;">▶</button>
+  <span id="audio-cur" style="font-family:monospace;font-size:11px;color:#f0f0f0;min-width:32px;text-align:right;white-space:nowrap;">0:00</span>
+  <div id="audio-track" style="flex:1;height:4px;background:#1a1a2e;border-radius:2px;cursor:pointer;position:relative;min-width:0;">
+    <div id="audio-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#5b2d8e,#d4a017);border-radius:2px;transition:width 0.25s linear;"></div>
+  </div>
+  <span id="audio-total" style="font-family:monospace;font-size:11px;color:#6a6a88;min-width:32px;white-space:nowrap;">0:00</span>`;
+
+audioBar.appendChild(audioInner);
 document.getElementById('controls').insertAdjacentElement('beforebegin', audioBar);
 
 const audioFill    = document.getElementById('audio-fill');
