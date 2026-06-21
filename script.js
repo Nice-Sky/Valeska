@@ -83,20 +83,61 @@ const SLIDE_AUDIO = [
 
 let currentAudio = null;
 
-const audioBar   = document.getElementById('audio-bar');
-const audioFill  = document.getElementById('audio-fill');
-const audioCur   = audioBar.querySelector('.audio-time-cur');
-const audioTotal = audioBar.querySelector('.audio-time-total');
+/* ── Crear barra de audio en JS ── */
+const audioBar = document.createElement('div');
+audioBar.innerHTML = `
+  <div style="display:flex;align-items:center;gap:0.8rem;max-width:1140px;margin:0 auto;">
+    <button id="audio-playpause" style="background:rgba(155,89,182,0.15);border:1px solid rgba(155,89,182,0.4);color:#9b59b6;border-radius:50%;width:26px;height:26px;font-size:0.6rem;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;padding:0;">▶</button>
+    <span id="audio-cur" style="font-family:monospace;font-size:0.68rem;color:#f0f0f0;min-width:2.6rem;text-align:right;">0:00</span>
+    <div id="audio-track" style="flex:1;height:4px;background:#141422;border-radius:2px;cursor:pointer;position:relative;">
+      <div id="audio-fill" style="height:100%;width:0%;background:linear-gradient(90deg,#5b2d8e,#d4a017);border-radius:2px;transition:width 0.25s linear;"></div>
+    </div>
+    <span id="audio-total" style="font-family:monospace;font-size:0.68rem;color:#6a6a88;min-width:2.6rem;">0:00</span>
+  </div>`;
+Object.assign(audioBar.style, {
+  background: '#06060c',
+  borderTop: '1px solid rgba(255,255,255,0.04)',
+  padding: '0.45rem 5rem',
+  flexShrink: '0',
+  position: 'relative',
+  zIndex: '10',
+  display: 'none',
+});
+document.getElementById('controls').insertAdjacentElement('beforebegin', audioBar);
+
+const audioFill    = document.getElementById('audio-fill');
+const audioCur     = document.getElementById('audio-cur');
+const audioTotalEl = document.getElementById('audio-total');
+const audioBtn     = document.getElementById('audio-playpause');
+const audioTrack   = document.getElementById('audio-track');
 
 function fmtTime(s) {
+  if (!s || isNaN(s)) return '0:00';
   const m = Math.floor(s / 60);
   const sec = Math.floor(s % 60);
   return m + ':' + String(sec).padStart(2, '0');
 }
 
-function showAudioBar(visible) {
-  audioBar.classList.toggle('hidden', !visible);
+function updateBtn() {
+  if (!currentAudio) { audioBtn.textContent = '▶'; return; }
+  audioBtn.textContent = currentAudio.paused ? '▶' : '⏸';
 }
+
+audioBtn.addEventListener('click', () => {
+  if (!currentAudio) return;
+  if (currentAudio.paused) {
+    currentAudio.play();
+  } else {
+    currentAudio.pause();
+  }
+  updateBtn();
+});
+
+audioTrack.addEventListener('click', (e) => {
+  if (!currentAudio || !currentAudio.duration) return;
+  const rect = audioTrack.getBoundingClientRect();
+  currentAudio.currentTime = ((e.clientX - rect.left) / rect.width) * currentAudio.duration;
+});
 
 function playSlideAudio(index) {
   if (currentAudio) {
@@ -104,36 +145,38 @@ function playSlideAudio(index) {
     currentAudio.currentTime = 0;
     currentAudio = null;
   }
-  showAudioBar(false);
-  audioFill.style.width = '0%';
-  audioCur.textContent   = '0:00';
-  audioTotal.textContent = '0:00';
+
+  audioFill.style.width   = '0%';
+  audioCur.textContent    = '0:00';
+  audioTotalEl.textContent = '0:00';
+  updateBtn();
 
   const src = SLIDE_AUDIO[index];
   if (src) {
+    audioBar.style.display = 'block';
     currentAudio = new Audio(src);
 
     currentAudio.addEventListener('loadedmetadata', () => {
-      audioTotal.textContent = fmtTime(currentAudio.duration);
+      audioTotalEl.textContent = fmtTime(currentAudio.duration);
     });
 
     currentAudio.addEventListener('timeupdate', () => {
       const pct = (currentAudio.currentTime / currentAudio.duration) * 100 || 0;
-      audioFill.style.width  = pct + '%';
-      audioCur.textContent   = fmtTime(currentAudio.currentTime);
+      audioFill.style.width = pct + '%';
+      audioCur.textContent  = fmtTime(currentAudio.currentTime);
+      updateBtn();
     });
 
-    currentAudio.addEventListener('ended', () => showAudioBar(false));
+    currentAudio.addEventListener('ended', () => {
+      audioFill.style.width = '100%';
+      audioBtn.textContent  = '▶';
+    });
 
-    currentAudio.play().then(() => showAudioBar(true)).catch(() => {});
+    currentAudio.play().catch(() => {});
+    updateBtn();
+  } else {
+    audioBar.style.display = 'none';
   }
-
-  /* click en la barra para buscar posición */
-  audioBar.querySelector('.audio-track').onclick = (e) => {
-    if (!currentAudio || !currentAudio.duration) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    currentAudio.currentTime = ((e.clientX - rect.left) / rect.width) * currentAudio.duration;
-  };
 }
 
 /* ══ Presentación ══ */
