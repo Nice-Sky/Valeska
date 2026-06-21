@@ -1,0 +1,891 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jerome &amp; Jeremiah Valeska — Procesos Mentales</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Intro con imagen ── */
+    .intro-layout {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 2rem;
+      align-items: center;
+      height: 100%;
+    }
+    .intro-img-wrap {
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(91,45,142,0.3);
+      position: relative;
+      max-height: 400px;
+    }
+    .intro-img-wrap::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(91,45,142,0.15) 0%, rgba(26,122,74,0.1) 100%);
+      z-index: 1;
+      pointer-events: none;
+    }
+    .intro-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      filter: contrast(1.05) brightness(0.92);
+    }
+    /* ── Tercer punto por slide ── */
+    .third-point {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-left: 3px solid var(--gold);
+      border-radius: 4px;
+      padding: 0.6rem 1rem;
+      font-size: 1.7rem;
+      color: var(--t2);
+      margin-bottom: 1rem;
+      font-style: italic;
+    }
+    /* ── Ejemplo dentro de tarjeta ── */
+    .card-example {
+      font-size: 1.3rem;
+      color: var(--t3);
+      font-style: italic;
+      margin-top: 0.6rem;
+      padding-top: 0.55rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      line-height: 1.5;
+    }
+    .card-example::before {
+      content: 'Ej. ';
+      font-style: normal;
+      font-family: var(--font-mono);
+      font-size: 1.3rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .compare-card.jerome  .card-example::before { color: var(--red-bright); }
+    .compare-card.jeremiah .card-example::before { color: var(--green-bright); }
+
+    /* ── Slide comparación directa ── */
+    .vs-table {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 0;
+      margin-bottom: 1.2rem;
+    }
+    .vs-col {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .vs-header {
+      font-family: var(--font-mono);
+      font-size: 1.3rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      padding: 0.6rem 1rem;
+      border-radius: 4px 4px 0 0;
+      text-align: center;
+      font-weight: 600;
+    }
+    .vs-header.j1 { background: rgba(91,45,142,0.2); color: var(--red-bright); border: 1px solid rgba(91,45,142,0.3); }
+    .vs-header.j2 { background: rgba(26,122,74,0.2); color: var(--green-bright); border: 1px solid rgba(26,122,74,0.3); }
+    .vs-row {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: 4px;
+      padding: 0.65rem 1rem;
+      font-size: 1.7rem;
+      color: var(--t2);
+      line-height: 1.4;
+      text-align: center;
+    }
+    .vs-divider {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 0 1rem;
+      gap: 0.5rem;
+    }
+    .vs-divider-line {
+      flex: 1;
+      width: 1px;
+      background: var(--border-dim);
+    }
+    .vs-divider-vs {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--t4);
+      letter-spacing: 0.1em;
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+<div id="scanline"></div>
+
+<div id="presentation">
+
+  <div id="progress-bar"><div id="progress-fill"></div></div>
+
+  <div id="tap-prev" aria-label="Anterior"></div>
+  <div id="tap-next" aria-label="Siguiente"></div>
+
+  <div id="slides-container">
+
+    <!-- ══════════════════════════════════════
+         SLIDE 1 · PORTADA
+         ORAL: "Hoy vamos a analizar a Jerome y
+         Jeremiah Valeska, de la serie Gotham,
+         a través de los procesos mentales:
+         percepción, atención, memoria, pensamiento,
+         lenguaje e inteligencia."
+    ══════════════════════════════════════ -->
+    <section class="slide slide-cover">
+      <div class="slide-inner" style="align-items:center;">
+        <div class="cover-wrap">
+
+          <div class="cover-badge">Serie Gotham · Análisis Psicológico</div>
+
+          <div class="cover-name-block">
+            <div class="cover-vs-line">
+              <span class="cover-name j1">Jerome</span>
+              <span class="cover-vs">&amp;</span>
+              <span class="cover-name j2">Jeremiah</span>
+            </div>
+            <div class="cover-surname">Valeska</div>
+          </div>
+
+          <div class="cover-line">
+            <div class="cover-line-seg left"></div>
+            <div class="cover-line-diamond"></div>
+            <div class="cover-line-seg right"></div>
+          </div>
+
+          <p class="cover-subtitle">Análisis según los procesos mentales</p>
+
+          <blockquote class="cover-quote-block">
+            <p class="cover-quote-text">
+              Dos mentes distintas: caos e impulso frente a control y planificación.
+            </p>
+          </blockquote>
+
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         SLIDE 2 · INTRODUCCIÓN
+         ORAL: "En esta presentación voy a analizar
+         a Jerome y Jeremiah Valeska a partir de
+         los procesos mentales. Aunque son hermanos,
+         muestran formas muy distintas de actuar y
+         entender el mundo. Jerome representa el caos,
+         la impulsividad y el espectáculo. Jeremiah,
+         en cambio, representa el control, la
+         planificación y una inteligencia más fría."
+    ══════════════════════════════════════ -->
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">00</div>
+      <div class="slide-inner" style="justify-content:center; padding-top:1rem;">
+
+        <div class="slide-header" style="margin-bottom:1rem;">
+          <p class="slide-eyebrow">Contexto general</p>
+          <h2 class="slide-title">Introducción<span class="slide-title-accent"></span></h2>
+        </div>
+
+        <div class="intro-layout">
+          <div>
+            <p class="intro-body">
+              Jerome y Jeremiah Valeska son personajes de la serie <em>Gotham</em>.
+              Aunque son hermanos, tienen formas muy diferentes de ver el mundo,
+              relacionarse con los demás y tomar decisiones. Esta presentación
+              los analiza a través de ocho procesos mentales.
+            </p>
+
+            <div class="intro-grid">
+              <div class="intro-pill">Percepción</div>
+              <div class="intro-pill">Atención</div>
+              <div class="intro-pill">Memoria</div>
+              <div class="intro-pill">Pensamiento</div>
+              <div class="intro-pill">Lenguaje</div>
+              <div class="intro-pill">Inteligencia</div>
+              <div class="intro-pill">Metacognición</div>
+              <div class="intro-pill">Creatividad</div>
+            </div>
+
+            <div class="compare-grid">
+              <div class="compare-card jerome">
+                <div class="card-label"><span class="card-label-dot"></span>Jerome</div>
+                <p class="card-body">Impulsivo, provocador y muy expresivo en su violencia. Convierte su dolor en espectáculo.</p>
+              </div>
+              <div class="compare-card jeremiah">
+                <div class="card-label"><span class="card-label-dot"></span>Jeremiah</div>
+                <p class="card-body">Reservado, calculador y obsesionado con tener ventaja. Su peligro es silencioso.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="intro-img-wrap">
+            <img src="Jeromeyjeremiah.jpg" alt="Jerome y Jeremiah Valeska" class="intro-img" />
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         SLIDE 2b · CONTEXTO DE LOS PERSONAJES
+    ══════════════════════════════════════ -->
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">00</div>
+      <div class="slide-inner">
+
+        <div class="slide-header">
+          <p class="slide-eyebrow">Antes del análisis</p>
+          <h2 class="slide-title">Contexto<span class="slide-title-accent"></span></h2>
+        </div>
+
+        <div class="compare-grid" style="margin-bottom:0.9rem;">
+          <div class="compare-card jerome">
+            <div class="card-label"><span class="card-label-dot"></span>Jerome</div>
+            <p class="card-body">
+              Representa la versión más impulsiva, pública y descontrolada
+              de esa figura. Aparece primero y deja una marca fuerte en
+              Gotham por su violencia y su influencia sobre otros.
+            </p>
+            <p class="card-example">Muere antes que Jeremiah, pero su impacto en la ciudad y en su hermano define lo que viene después.</p>
+          </div>
+          <div class="compare-card jeremiah">
+            <div class="card-label"><span class="card-label-dot"></span>Jeremiah</div>
+            <p class="card-body">
+              Representa la versión más fría, calculadora y obsesiva.
+              Después de la muerte de Jerome, cambia radicalmente y toma
+              un camino más silencioso y planificado.
+            </p>
+            <p class="card-example">No llegan a ese estado al mismo tiempo: primero Jerome, luego Jeremiah — dos caminos hacia la misma oscuridad.</p>
+          </div>
+        </div>
+
+        <p class="third-point">
+          La serie usa a estos dos hermanos para mostrar cómo podría construirse una mente parecida a la del Joker desde distintos caminos.
+        </p>
+
+        <blockquote class="key-quote">
+          No son "el Joker" directamente — son dos formas distintas de representar una misma oscuridad.
+        </blockquote>
+
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         SLIDE 3 · PERCEPCIÓN
+         ORAL: "La percepción es cómo una persona
+         interpreta lo que ve y vive. Jerome ve Gotham
+         como algo ya roto y sin valor — lo vemos cuando
+         aparece en televisión y habla como si toda la
+         ciudad fuera parte de un espectáculo, sin ver
+         víctimas, solo público. Jeremiah percibe el
+         mundo como un lugar peligroso: por eso vive en
+         un búnker. Su percepción está marcada por la
+         paranoia y la necesidad de controlar todo."
+    ══════════════════════════════════════ -->
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">01</div>
+      <div class="slide-inner">
+
+        <div class="slide-header">
+          <p class="slide-eyebrow">Proceso mental 1</p>
+          <h2 class="slide-title">Percepción<span class="slide-title-accent"></span></h2>
+          <p class="slide-definition">Forma en que una persona interpreta e integra la realidad.</p>
+        </div>
+
+        <div class="compare-grid">
+          <div class="compare-card jerome">
+            <div class="card-label"><span class="card-label-dot"></span>Jerome</div>
+            <p class="card-body">
+              Percibe Gotham como una ciudad falsa, cruel e hipócrita.
+              Su pasado de abuso y sufrimiento lo lleva a ver la sociedad
+              como algo roto que merece ser expuesto en su peor versión.
+            </p>
+            <p class="card-example">Frente a multitudes actúa como si toda la ciudad fuera un escenario — no parece ver personas sufriendo, sino espectadores reaccionando a lo que él hace.</p>
+          </div>
+          <div class="compare-card jeremiah">
+            <div class="card-label"><span class="card-label-dot"></span>Jeremiah</div>
+            <p class="card-body">
+              Interpreta el mundo como una amenaza constante. El miedo
+              a Jerome y el aislamiento hacen que vea cualquier cosa
+              externa como un peligro difícil de confiar.
+            </p>
+            <p class="card-example">Vive escondido en un búnker: esa decisión muestra que percibe el exterior como algo inestable y peligroso que necesita controlar.</p>
+          </div>
+        </div>
+
+        <p class="third-point">Ambos interpretan la realidad desde experiencias traumáticas, pero responden de forma distinta.</p>
+
+        <blockquote class="key-quote">
+          Jerome ve el mundo como algo absurdo y cruel; Jeremiah lo ve como un peligro que debe mantener bajo control.
+        </blockquote>
+
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         SLIDE 4 · ATENCIÓN
+         ORAL: "La atención muestra qué consideran
+         importante. Jerome siempre actúa como si
+         estuviera en un escenario — toma lugares
+         públicos y necesita que todos lo miren.
+         Jeremiah tiene una atención más fría y
+         detallista: cuando diseña planes contra
+         Gotham o Bruce Wayne, piensa cada paso,
+         no improvisa."
+    ══════════════════════════════════════ -->
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">02</div>
+      <div class="slide-inner">
+
+        <div class="slide-header">
+          <p class="slide-eyebrow">Proceso mental 2</p>
+          <h2 class="slide-title">Atención<span class="slide-title-accent"></span></h2>
+          <p class="slide-definition">Capacidad de concentrarse en ciertos estímulos y filtrar el resto.</p>
+        </div>
+
+        <div class="compare-grid">
+          <div class="compare-card jerome">
+            <div class="card-label"><span class="card-label-dot"></span>Jerome</div>
+            <p class="card-body">
+              Dirige su atención hacia la reacción de los demás. Le importa
+              que Gotham lo mire, que hable de él y que sus actos generen
+              miedo o sorpresa en el mayor número de personas posible.
+            </p>
+            <p class="card-example">Elige lugares públicos y cámaras no solo para cometer un crimen, sino como si estuviera dando una presentación — busca una respuesta emocional fuerte.</p>
+          </div>
+          <div class="compare-card jeremiah">
+            <div class="card-label"><span class="card-label-dot"></span>Jeremiah</div>
+            <p class="card-body">
+              Presta atención a los detalles. Observa el entorno, analiza
+              a las personas y calcula cómo usar cada elemento a su favor.
+              No necesita ser el centro de atención todo el tiempo.
+            </p>
+            <p class="card-example">Cuando prepara ataques contra Gotham o Bruce Wayne, estudia la situación, anticipa reacciones y arma sus movimientos con precisión.</p>
+          </div>
+        </div>
+
+        <p class="third-point">Jerome se enfoca en provocar una reacción inmediata; Jeremiah en preparar el resultado que quiere conseguir.</p>
+
+        <blockquote class="key-quote">
+          Jerome busca miradas; Jeremiah busca control.
+        </blockquote>
+
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         SLIDE 5 · MEMORIA
+         ORAL: "La memoria marca a los dos de formas
+         distintas. Jerome usa el recuerdo del maltrato
+         como justificación — cuando se revela su
+         historia familiar, vemos ese resentimiento
+         acumulado convertido en violencia. Jeremiah
+         recuerda a Jerome como una amenaza que arruinó
+         su vida, por eso vive obsesionado con
+         protegerse."
+    ══════════════════════════════════════ -->
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">03</div>
+      <div class="slide-inner">
+
+        <div class="slide-header">
+          <p class="slide-eyebrow">Proceso mental 3</p>
+          <h2 class="slide-title">Memoria<span class="slide-title-accent"></span></h2>
+          <p class="slide-definition">Capacidad de conservar experiencias del pasado y usarlas en el presente.</p>
+        </div>
+
+        <div class="compare-grid">
+          <div class="compare-card jerome">
+            <div class="card-label"><span class="card-label-dot"></span>Jerome</div>
+            <p class="card-body">
+              Recuerda el maltrato, el rechazo y la violencia que vivió,
+              y transforma ese dolor en burla, odio y agresividad. Su
+              infancia en el circo y la relación con su madre explican
+              gran parte de su forma de actuar.
+            </p>
+            <p class="card-example">Cuando se revela su historia familiar, se nota que tiene mucho resentimiento acumulado que no desaparece, sino que se convierte en una forma de atacar al mundo.</p>
+          </div>
+          <div class="compare-card jeremiah">
+            <div class="card-label"><span class="card-label-dot"></span>Jeremiah</div>
+            <p class="card-body">
+              Para él, Jerome representa una amenaza permanente. El
+              recuerdo de su hermano lo lleva a desconfiar, aislarse
+              y vivir siempre en alerta — es la figura que condicionó
+              toda su vida.
+            </p>
+            <p class="card-example">Jerome no es solo un familiar conflictivo: es el recuerdo que lo hizo sentir vulnerable y que convirtió su pasado en una necesidad constante de protección.</p>
+          </div>
+        </div>
+
+        <p class="third-point">En los dos casos, la memoria influye en sus decisiones de manera directa.</p>
+
+        <blockquote class="key-quote">
+          Jerome convierte su dolor en violencia directa; Jeremiah convierte su miedo en distancia, cálculo y control.
+        </blockquote>
+
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         SLIDE 6 · PENSAMIENTO
+         ORAL: "El pensamiento de Jerome es impulsivo
+         y teatral: cuando lidera criminales en Gotham,
+         su objetivo no es solo ganar sino hacer todo
+         exagerado y llamativo. Jeremiah es estratégico:
+         cuando planea ataques, no actúa por impulso,
+         crea sistemas complejos para demostrar que
+         está por encima de los demás."
+    ══════════════════════════════════════ -->
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">04</div>
+      <div class="slide-inner">
+
+        <div class="slide-header">
+          <p class="slide-eyebrow">Proceso mental 4</p>
+          <h2 class="slide-title">Pensamiento<span class="slide-title-accent"></span></h2>
+          <p class="slide-definition">Capacidad de razonar, relacionar ideas y resolver problemas.</p>
+        </div>
+
+        <div class="compare-grid">
+          <div class="compare-card jerome">
+            <div class="card-label"><span class="card-label-dot"></span>Jerome</div>
+            <p class="card-body">
+              Piensa de forma impulsiva, exagerada y teatral. Sus planes
+              no buscan solo un objetivo práctico: también buscan generar
+              impacto, desorden y una sensación de ruptura en Gotham.
+            </p>
+            <p class="card-example">Cuando lidera criminales, no le alcanza con ganar o escapar — quiere que todo sea llamativo y difícil de olvidar. Cada acto tiene que dejar una marca.</p>
+          </div>
+          <div class="compare-card jeremiah">
+            <div class="card-label"><span class="card-label-dot"></span>Jeremiah</div>
+            <p class="card-body">
+              Piensa de forma fría y estructurada. Analiza Gotham como
+              un sistema que puede ser manipulado. No actúa tanto por
+              impulso, sino a partir de una idea previa que intenta cumplir.
+            </p>
+            <p class="card-example">Sus ataques suelen estar preparados con anticipación: busca tener ventaja antes de mostrarse y usa la información que tiene para manipular la situación.</p>
+          </div>
+        </div>
+
+        <p class="third-point">Los dos resuelven problemas, pero con métodos opuestos.</p>
+
+        <blockquote class="key-quote">
+          Jerome actúa desde la improvisación y la intensidad; Jeremiah desde el cálculo y la estrategia.
+        </blockquote>
+
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         SLIDE 7 · LENGUAJE
+         ORAL: "Jerome habla frente a cámaras y
+         multitudes para provocar miedo y atraer
+         seguidores — no solo amenaza, intenta
+         convencer de que el caos es divertido.
+         Jeremiah usa un lenguaje más calmado:
+         con Bruce Wayne habla como si tuvieran
+         una conexión especial, usa palabras
+         elegantes para hacerlo dudar."
+    ══════════════════════════════════════ -->
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">05</div>
+      <div class="slide-inner">
+
+        <div class="slide-header">
+          <p class="slide-eyebrow">Proceso mental 5</p>
+          <h2 class="slide-title">Lenguaje<span class="slide-title-accent"></span></h2>
+          <p class="slide-definition">Sistema para comunicarse, expresar ideas e influir en los demás.</p>
+        </div>
+
+        <div class="compare-grid">
+          <div class="compare-card jerome">
+            <div class="card-label"><span class="card-label-dot"></span>Jerome</div>
+            <p class="card-body">
+              Usa risas, bromas crueles, gritos y discursos provocadores.
+              Habla de forma exagerada y dramática porque busca alterar
+              emocionalmente a quienes lo escuchan, no solo comunicar algo.
+            </p>
+            <p class="card-example">Frente a multitudes no solo amenaza: intenta convencer a otros de que seguir su caos puede ser liberador o divertido — convierte la violencia en espectáculo social.</p>
+          </div>
+          <div class="compare-card jeremiah">
+            <div class="card-label"><span class="card-label-dot"></span>Jeremiah</div>
+            <p class="card-body">
+              Usa un lenguaje tranquilo, elegante y calculado. No necesita
+              levantar la voz para influir en alguien. Sus palabras son
+              más frías y están pensadas para entrar en la mente del otro.
+            </p>
+            <p class="card-example">Con Bruce habla como si existiera una conexión especial entre ellos — usa esa idea para hacerlo dudar de sus valores y acercarlo a su propia visión.</p>
+          </div>
+        </div>
+
+        <p class="third-point">Ambos usan el lenguaje para influir, pero con estilos distintos.</p>
+
+        <blockquote class="key-quote">
+          Jerome busca contagiar una emoción intensa; Jeremiah busca instalar una idea lentamente.
+        </blockquote>
+
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         SLIDE 8 · INTELIGENCIA
+         ORAL: "Jerome tiene inteligencia social:
+         logra inspirar a otros delincuentes de
+         Gotham y convertirse en un símbolo, aunque
+         sea impulsivo. Jeremiah combina inteligencia
+         técnica con falta de empatía — organiza
+         ataques calculados que demuestran control
+         y estrategia."
+    ══════════════════════════════════════ -->
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">06</div>
+      <div class="slide-inner">
+
+        <div class="slide-header">
+          <p class="slide-eyebrow">Proceso mental 6</p>
+          <h2 class="slide-title">Inteligencia<span class="slide-title-accent"></span></h2>
+          <p class="slide-definition">Capacidad de adaptarse, resolver problemas y alcanzar objetivos.</p>
+        </div>
+
+        <div class="compare-grid">
+          <div class="compare-card jerome">
+            <div class="card-label"><span class="card-label-dot"></span>Jerome — Social</div>
+            <p class="card-body">
+              Sabe provocar, leer la reacción del público y convertirse
+              en una figura que otros criminales quieren seguir. Aunque
+              parezca desordenado, entiende muy bien cómo generar impacto.
+            </p>
+            <p class="card-example">Logra inspirar a delincuentes de Gotham y transformarse en un símbolo — su peligro no está solo en lo que hace, sino en cómo puede empujar a otros hacia la violencia.</p>
+          </div>
+          <div class="compare-card jeremiah">
+            <div class="card-label"><span class="card-label-dot"></span>Jeremiah — Estratégica</div>
+            <p class="card-body">
+              Diseña planes complejos, usa tecnología y piensa a largo
+              plazo. Su inteligencia está relacionada con la organización,
+              el cálculo y la manipulación de situaciones.
+            </p>
+            <p class="card-example">Sus ataques contra Gotham muestran una planificación elaborada — no actúa por emoción, sino usando personas, estructuras y recursos para cumplir sus objetivos.</p>
+          </div>
+        </div>
+
+        <p class="third-point">Los dos son peligrosos por su inteligencia, pero en dimensiones distintas.</p>
+
+        <blockquote class="key-quote">
+          Jerome entiende cómo mover emociones colectivas; Jeremiah entiende cómo mover piezas dentro de un plan.
+        </blockquote>
+
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         SLIDE 7b · METACOGNICIÓN
+         ORAL: "La metacognición es pensar sobre
+         los propios pensamientos. Jerome la usa
+         de forma distorsionada: sabe que genera
+         miedo y lo convierte en espectáculo.
+         Jeremiah la tiene más desarrollada:
+         analiza su miedo y lo transforma en
+         control y paranoia."
+    ══════════════════════════════════════ -->
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">07</div>
+      <div class="slide-inner">
+
+        <div class="slide-header">
+          <p class="slide-eyebrow">Proceso mental 7</p>
+          <h2 class="slide-title">Metacognición<span class="slide-title-accent"></span></h2>
+          <p class="slide-definition">Capacidad de pensar sobre los propios pensamientos, evaluar decisiones y modificar la conducta.</p>
+        </div>
+
+        <div class="compare-grid">
+          <div class="compare-card jerome">
+            <div class="card-label"><span class="card-label-dot"></span>Jerome</div>
+            <p class="card-body">
+              Entiende que sus acciones provocan miedo y llaman la
+              atención, pero no usa esa conciencia para frenarse ni
+              cuestionarse. Al contrario, la usa para reforzar la
+              imagen que quiere mostrar.
+            </p>
+            <p class="card-example">Sabe que todos lo miran cuando actúa frente a cámaras — no actúa de manera inocente: entiende el impacto que genera y lo aprovecha para transformarse en una figura pública del terror.</p>
+          </div>
+          <div class="compare-card jeremiah">
+            <div class="card-label"><span class="card-label-dot"></span>Jeremiah</div>
+            <p class="card-body">
+              Es consciente de sus miedos, de su historia con Jerome
+              y de cómo eso lo marcó. Sin embargo, no usa esa conciencia
+              para sanar, sino para justificar su aislamiento y su
+              necesidad de sentirse protegido.
+            </p>
+            <p class="card-example">Al vivir escondido y preparar planes desde la distancia, reconoce su vulnerabilidad — pero en vez de enfrentarla, la convierte en desconfianza y manipulación.</p>
+          </div>
+        </div>
+
+        <p class="third-point">Los dos tienen cierta conciencia sobre sí mismos, pero la usan de manera negativa.</p>
+
+        <blockquote class="key-quote">
+          Jerome la usa para reforzar su personaje; Jeremiah la usa para defenderse del mundo y dominar lo que lo rodea.
+        </blockquote>
+
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         SLIDE 8b · CREATIVIDAD
+         ORAL: "La creatividad es generar ideas
+         originales. Jerome tiene una creatividad
+         caótica y teatral: convierte el miedo
+         en espectáculo. Jeremiah tiene una
+         creatividad estratégica y estructurada:
+         diseña planes complejos como sistemas."
+    ══════════════════════════════════════ -->
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">08</div>
+      <div class="slide-inner">
+
+        <div class="slide-header">
+          <p class="slide-eyebrow">Proceso mental 8</p>
+          <h2 class="slide-title">Creatividad<span class="slide-title-accent"></span></h2>
+          <p class="slide-definition">Capacidad de generar ideas nuevas y transformar la realidad de una manera original.</p>
+        </div>
+
+        <div class="compare-grid">
+          <div class="compare-card jerome">
+            <div class="card-label"><span class="card-label-dot"></span>Jerome — Impulsiva</div>
+            <p class="card-body">
+              Sus crímenes son escenas llamativas, casi como si quisiera
+              dejar una marca en la ciudad. Su creatividad mezcla miedo,
+              humor cruel y provocación en una sola actuación.
+            </p>
+            <p class="card-example">Cuando usa discursos, cámaras y situaciones públicas, no busca solo hacer daño — quiere que sus actos sean recordados y que otros se sientan atraídos por romper las reglas.</p>
+          </div>
+          <div class="compare-card jeremiah">
+            <div class="card-label"><span class="card-label-dot"></span>Jeremiah — Organizada</div>
+            <p class="card-body">
+              Su creatividad no se expresa en shows públicos, sino en
+              planes complejos. Imagina formas de manipular personas,
+              usar tecnología y transformar Gotham según su propia visión.
+            </p>
+            <p class="card-example">Cuando prepara ataques contra Bruce o la ciudad, cada parte parece tener una función — arma situaciones donde intenta controlar lo que otros sienten, piensan o hacen.</p>
+          </div>
+        </div>
+
+        <p class="third-point">Ambos son creativos, pero en sentidos distintos.</p>
+
+        <blockquote class="key-quote">
+          Jerome crea impacto a través de la provocación; Jeremiah crea sistemas para manejar la realidad a su favor.
+        </blockquote>
+
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         SLIDE 9 · ENTORNO
+         ORAL: "El entorno es fundamental. Jerome
+         aprovecha el miedo de Gotham y se muestra
+         públicamente porque la ciudad le da el
+         escenario perfecto. Jeremiah se forma desde
+         el aislamiento: su búnker refuerza su
+         necesidad de controlar todo. Bruce Wayne
+         es clave: Jerome quiere corromperlo y
+         demostrar que cualquiera puede caer;
+         Jeremiah quiere acercarse a él y convertirlo
+         en alguien parecido a él."
+    ══════════════════════════════════════ -->
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">07</div>
+      <div class="slide-inner">
+
+        <div class="slide-header">
+          <p class="slide-eyebrow">Factor externo</p>
+          <h2 class="slide-title">El entorno y los demás<span class="slide-title-accent"></span></h2>
+        </div>
+
+        <div class="entorno-row">
+          <div class="entorno-card gotham">
+            <p class="ec-label">Gotham</p>
+            <p class="ec-value">Ciudad corrupta que no solo los contiene, sino que también amplifica y potencia lo peor de cada uno.</p>
+          </div>
+          <div class="entorno-card jerome">
+            <p class="ec-label">Jerome la usa</p>
+            <p class="ec-value">Usa la ciudad como escenario para mostrarse, provocar miedo y expandir su mensaje a través de los medios.</p>
+            <p class="ec-value" style="margin-top:0.4rem; font-style:italic; font-size:1.25rem; color:var(--t3);">Ej. En vez de esconderse, se muestra públicamente porque Gotham le da el escenario perfecto para amplificar su caos.</p>
+          </div>
+          <div class="entorno-card jeremiah">
+            <p class="ec-label">Jeremiah la rediseña</p>
+            <p class="ec-value">Se relaciona con Gotham como algo que puede transformar según su propia lógica, no solo destruir.</p>
+            <p class="ec-value" style="margin-top:0.4rem; font-style:italic; font-size:1.25rem; color:var(--t3);">Ej. Su búnker y el miedo a Jerome refuerzan su necesidad de controlar el entorno desde adentro y a distancia.</p>
+          </div>
+        </div>
+
+        <p class="entorno-body">
+          <strong>Bruce Wayne</strong> es clave para ambos: Jerome quiere corromperlo y demostrar que incluso
+          alguien como él puede caer en la violencia. Jeremiah, en cambio, busca que Bruce lo vea como su igual
+          y usa esa idea para manipularlo psicológicamente.
+        </p>
+
+        <blockquote class="key-quote">
+          Gotham no solo los contiene: también refleja sus diferencias y potencia lo peor de cada uno.
+        </blockquote>
+
+      </div>
+    </section>
+
+
+    <!-- ══════════════════════════════════════
+         SLIDE 10 · COMPARACIÓN DIRECTA
+         ORAL: "Si los comparamos directamente,
+         Jerome tiene una violencia más explosiva:
+         actúa de forma teatral, disfruta el desorden
+         y quiere que todos vean lo que hace. Jeremiah
+         es más silencioso y calculador. Por ejemplo,
+         Jerome puede aparecer en público, reírse y
+         causar pánico. Jeremiah puede preparar un
+         plan durante mucho tiempo y atacar cuando
+         ya tiene ventaja."
+    ══════════════════════════════════════ -->
+    <!-- ══════════════════════════════════════
+         SLIDE 10 · CONCLUSIÓN
+         ORAL: "Como conclusión: Jerome está dominado
+         por el impulso, el trauma y la búsqueda de
+         atención. Sus procesos mentales se orientan
+         a provocar miedo y convertirse en un símbolo.
+         Jeremiah está dominado por el miedo, el
+         control y la inteligencia fría. Sus procesos
+         se orientan a manipular y destruir desde la
+         estrategia. La serie muestra cómo el pasado,
+         el entorno y las relaciones pueden influir en
+         todos los procesos mentales."
+    ══════════════════════════════════════ -->
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">09</div>
+      <div class="slide-inner">
+
+        <div class="slide-header">
+          <p class="slide-eyebrow">Cierre</p>
+          <h2 class="slide-title">Conclusión<span class="slide-title-accent"></span></h2>
+        </div>
+
+        <div class="conclusion-cols">
+          <div class="conclusion-panel jerome">
+            <p class="conclusion-label">Jerome</p>
+            <div class="tag-row">
+              <span class="ctag j1">Dolor → violencia</span>
+              <span class="ctag j1">Impulso</span>
+              <span class="ctag j1">Espectáculo</span>
+              <span class="ctag j1">Intel. social</span>
+              <span class="ctag j1">Creatividad caótica</span>
+            </div>
+          </div>
+          <div class="conclusion-panel jeremiah">
+            <p class="conclusion-label">Jeremiah</p>
+            <div class="tag-row">
+              <span class="ctag j2">Miedo → control</span>
+              <span class="ctag j2">Frialdad</span>
+              <span class="ctag j2">Planificación</span>
+              <span class="ctag j2">Intel. estratégica</span>
+              <span class="ctag j2">Creatividad organizada</span>
+            </div>
+          </div>
+        </div>
+
+        <p class="conclusion-text">
+          Jerome y Jeremiah muestran cómo el pasado, el entorno y las relaciones pueden modificar
+          profundamente los procesos mentales. Jerome transforma su sufrimiento en violencia e influencia
+          sobre otros. Jeremiah convierte sus inseguridades en planes, manipulación y control.
+          Además, ambos tienen <em>metacognición</em> y <em>creatividad</em>, pero no de una manera positiva.
+        </p>
+
+        <p class="final-quote">Dos hermanos, dos mentes opuestas, una misma oscuridad.</p>
+
+      </div>
+    </section>
+
+
+    <section class="slide slide-standard">
+      <div class="slide-bg-num">FIN</div>
+      <div class="slide-inner">
+
+        <div class="slide-header">
+          <p class="slide-eyebrow">Análisis comparativo</p>
+          <h2 class="slide-title">Jerome vs Jeremiah<span class="slide-title-accent"></span></h2>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 300px; gap:1.5rem; align-items:center; margin-bottom:1rem;">
+          <div class="vs-table" style="margin-bottom:0;">
+            <div class="vs-col">
+              <div class="vs-header j1">Jerome</div>
+              <div class="vs-row">Impulsivo, teatral y emocional</div>
+              <div class="vs-row">Golpe inmediato y explosivo</div>
+              <div class="vs-row">Destruye para llamar la atención</div>
+              <div class="vs-row">Inteligencia social — mueve masas</div>
+            </div>
+            <div class="vs-divider">
+              <div class="vs-divider-line"></div>
+              <span class="vs-divider-vs">VS</span>
+              <div class="vs-divider-line"></div>
+            </div>
+            <div class="vs-col">
+              <div class="vs-header j2">Jeremiah</div>
+              <div class="vs-row">Frío, paciente y estratégico</div>
+              <div class="vs-row">Amenaza construida en silencio</div>
+              <div class="vs-row">Destruye para imponer su visión</div>
+              <div class="vs-row">Inteligencia estratégica — mueve piezas</div>
+            </div>
+          </div>
+          <div style="border-radius:8px; overflow:hidden; border:1px solid rgba(255,255,255,0.1); box-shadow:0 4px 24px rgba(0,0,0,0.5);">
+            <img src="jerome-jeremiah-gun.jpg" alt="Jerome apuntando a Jeremiah" style="width:100%; height:100%; object-fit:cover; display:block; filter:contrast(1.05) brightness(0.9);" />
+          </div>
+        </div>
+
+        <blockquote class="key-quote">
+          Jerome puede aparecer de repente y causar pánico ahora mismo. Jeremiah puede llevar meses preparando algo sin que nadie lo note.
+        </blockquote>
+
+      </div>
+    </section>
+
+  </div><!-- /slides-container -->
+
+  <div id="controls">
+    <div class="ctrl-left">
+      <span id="slide-counter">1 / 14</span>
+      <div class="ctrl-dot-row" id="ctrl-dots"></div>
+    </div>
+    <span id="slide-title-bar">Portada</span>
+    <div class="nav-buttons">
+      <button class="nav-btn" id="btn-prev" disabled>&#8592; Anterior</button>
+      <button class="nav-btn" id="btn-next">Siguiente &#8594;</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="key-hint">← → ESPACIO para navegar &nbsp;·&nbsp; F para pantalla completa</div>
+
+<script src="script.js"></script>
+</body>
+</html>
