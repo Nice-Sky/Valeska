@@ -83,22 +83,57 @@ const SLIDE_AUDIO = [
 
 let currentAudio = null;
 
+const audioBar   = document.getElementById('audio-bar');
+const audioFill  = document.getElementById('audio-fill');
+const audioCur   = audioBar.querySelector('.audio-time-cur');
+const audioTotal = audioBar.querySelector('.audio-time-total');
+
+function fmtTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return m + ':' + String(sec).padStart(2, '0');
+}
+
+function showAudioBar(visible) {
+  audioBar.classList.toggle('hidden', !visible);
+}
+
 function playSlideAudio(index) {
   if (currentAudio) {
     currentAudio.pause();
     currentAudio.currentTime = 0;
     currentAudio = null;
   }
+  showAudioBar(false);
+  audioFill.style.width = '0%';
+  audioCur.textContent   = '0:00';
+  audioTotal.textContent = '0:00';
+
   const src = SLIDE_AUDIO[index];
-  console.log('Audio slide', index, '→', src);
   if (src) {
     currentAudio = new Audio(src);
-    currentAudio.play().then(() => {
-      console.log('✅ Reproduciendo:', src);
-    }).catch((e) => {
-      console.error('❌ Error al reproducir:', src, e);
+
+    currentAudio.addEventListener('loadedmetadata', () => {
+      audioTotal.textContent = fmtTime(currentAudio.duration);
     });
+
+    currentAudio.addEventListener('timeupdate', () => {
+      const pct = (currentAudio.currentTime / currentAudio.duration) * 100 || 0;
+      audioFill.style.width  = pct + '%';
+      audioCur.textContent   = fmtTime(currentAudio.currentTime);
+    });
+
+    currentAudio.addEventListener('ended', () => showAudioBar(false));
+
+    currentAudio.play().then(() => showAudioBar(true)).catch(() => {});
   }
+
+  /* click en la barra para buscar posición */
+  audioBar.querySelector('.audio-track').onclick = (e) => {
+    if (!currentAudio || !currentAudio.duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    currentAudio.currentTime = ((e.clientX - rect.left) / rect.width) * currentAudio.duration;
+  };
 }
 
 /* ══ Presentación ══ */
