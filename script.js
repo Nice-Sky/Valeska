@@ -77,9 +77,9 @@ const SLIDE_AUDIO = [
   'metacognicion.mp3',     // 9  Metacognición
   'creatividad.mp3',       // 10 Creatividad
   'entorno.mp3',           // 11 El entorno
-  'conclusion.mp3',        // 12 Conclusión
   'comparacion.mp3',       // 12 Comparación
   'conclusion.mp3',        // 13 Conclusión
+  null,                    // 14 Gracias
 ];
 
 let currentAudio = null;
@@ -110,16 +110,15 @@ function injectSlideImages() {
     const wrap = document.createElement('div');
     Object.assign(wrap.style, {
       position: 'absolute',
-      bottom: '3.5rem',
-      right: '1.5rem',
-      width: '160px',
-      height: '110px',
-      borderRadius: '6px',
+      bottom: '2rem',
+      right: '2rem',
+      width: '280px',
+      height: '190px',
+      borderRadius: '8px',
       overflow: 'hidden',
-      border: '1px solid rgba(255,255,255,0.08)',
-      boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      boxShadow: '0 6px 28px rgba(0,0,0,0.65)',
       zIndex: '3',
-      flexShrink: '0',
     });
     const img = document.createElement('img');
     img.src = src;
