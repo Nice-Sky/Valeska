@@ -85,9 +85,10 @@ const SLIDE_AUDIO = [
 let currentAudio = null;
 
 /* ══ Imágenes por slide ══ */
+// null = sin imagen integrada (portada, intro, comparación y gracias ya tienen su propio diseño)
 const SLIDE_IMAGES = [
-  'slide-00.jpg',  // 0  Portada
-  'slide-01.jpg',  // 1  Introducción
+  null,            // 0  Portada
+  null,            // 1  Introducción (ya tiene imagen propia)
   'slide-02.jpg',  // 2  Contexto
   'slide-03.jpg',  // 3  Percepción
   'slide-04.jpg',  // 4  Atención
@@ -98,7 +99,7 @@ const SLIDE_IMAGES = [
   'slide-09.jpg',  // 9  Metacognición
   'slide-10.jpg',  // 10 Creatividad
   'slide-11.jpg',  // 11 El entorno
-  'slide-12.jpg',  // 12 Comparación
+  null,            // 12 Comparación (ya tiene imagen propia)
   null,            // 13 Conclusión
   null,            // 14 Gracias
 ];
@@ -107,19 +108,24 @@ function injectSlideImages() {
   document.querySelectorAll('.slide').forEach((slide, i) => {
     const src = SLIDE_IMAGES[i];
     if (!src) return;
+    const inner = slide.querySelector('.slide-inner');
+    if (!inner) return;
 
+    // Mover el contenido existente a una columna izquierda
+    const main = document.createElement('div');
+    Object.assign(main.style, { flex: '1', minWidth: '0' });
+    while (inner.firstChild) main.appendChild(inner.firstChild);
+
+    // Panel de imagen a la derecha, centrado verticalmente
     const wrap = document.createElement('div');
     Object.assign(wrap.style, {
-      position: 'absolute',
-      bottom: '1.8rem',
-      right: '1.8rem',
-      width: '300px',
-      aspectRatio: '16 / 9',
-      borderRadius: '10px',
+      width: '320px',
+      flexShrink: '0',
+      alignSelf: 'center',
+      borderRadius: '8px',
       overflow: 'hidden',
-      border: '1px solid rgba(255,255,255,0.12)',
-      boxShadow: '0 8px 30px rgba(0,0,0,0.7)',
-      zIndex: '3',
+      border: '1px solid rgba(255,255,255,0.1)',
+      boxShadow: '0 4px 24px rgba(0,0,0,0.5)',
       background: '#0a0a12',
     });
 
@@ -128,30 +134,49 @@ function injectSlideImages() {
     img.alt = '';
     Object.assign(img.style, {
       width: '100%',
-      height: '100%',
-      objectFit: 'cover',
-      objectPosition: 'center',
       display: 'block',
-      filter: 'brightness(0.9) contrast(1.05) saturate(1.05)',
+      objectFit: 'cover',
+      filter: 'contrast(1.05) brightness(0.9)',
     });
+    img.onerror = () => {
+      wrap.remove();
+      inner.style.gridTemplateColumns = '';
+      inner.style.flexDirection = 'column';
+      inner.style.justifyContent = 'center';
+    };
 
-    // viñeta sutil para integrar la imagen al fondo oscuro
-    const vignette = document.createElement('div');
-    Object.assign(vignette.style, {
-      position: 'absolute',
-      inset: '0',
-      pointerEvents: 'none',
-      boxShadow: 'inset 0 0 40px rgba(6,6,12,0.55)',
-      background: 'linear-gradient(to top, rgba(6,6,12,0.35), transparent 45%)',
-    });
-
-    img.onerror = () => { wrap.style.display = 'none'; };
     wrap.appendChild(img);
-    wrap.appendChild(vignette);
-    slide.appendChild(wrap);
+    wrap.className = 'slide-img-panel';
+
+    inner.classList.add('has-side-img');
+    inner.appendChild(main);
+    inner.appendChild(wrap);
+  });
+  applyImageLayout();
+}
+
+// En escritorio: contenido | imagen en fila. En mobile: solo el contenido.
+function applyImageLayout() {
+  const mobile = window.innerWidth <= 1024;
+  document.querySelectorAll('.slide-inner.has-side-img').forEach((inner) => {
+    const panel = inner.querySelector('.slide-img-panel');
+    if (mobile) {
+      inner.style.flexDirection = 'column';
+      inner.style.justifyContent = 'flex-start';
+      inner.style.gap = '0';
+      if (panel) panel.style.display = 'none';
+    } else {
+      inner.style.flexDirection = 'row';
+      inner.style.alignItems = 'center';
+      inner.style.justifyContent = 'center';
+      inner.style.gap = '2.2rem';
+      if (panel) panel.style.display = 'block';
+    }
   });
 }
+
 injectSlideImages();
+window.addEventListener('resize', applyImageLayout);
 
 /* ── Crear barra de audio en JS ── */
 const audioBar = document.createElement('div');
