@@ -78,10 +78,65 @@ const SLIDE_AUDIO = [
   'creatividad.mp3',       // 10 Creatividad
   'entorno.mp3',           // 11 El entorno
   'conclusion.mp3',        // 12 Conclusión
-  'comparacion.mp3',       // 13 Comparación
+  'comparacion.mp3',       // 12 Comparación
+  'conclusion.mp3',        // 13 Conclusión
 ];
 
 let currentAudio = null;
+
+/* ══ Imágenes por slide ══ */
+const SLIDE_IMAGES = [
+  'slide-00.jpg',  // 0  Portada
+  'slide-01.jpg',  // 1  Introducción
+  'slide-02.jpg',  // 2  Contexto
+  'slide-03.jpg',  // 3  Percepción
+  'slide-04.jpg',  // 4  Atención
+  'slide-05.jpg',  // 5  Memoria
+  'slide-06.jpg',  // 6  Pensamiento
+  'slide-07.jpg',  // 7  Lenguaje
+  'slide-08.jpg',  // 8  Inteligencia
+  'slide-09.jpg',  // 9  Metacognición
+  'slide-10.jpg',  // 10 Creatividad
+  'slide-11.jpg',  // 11 El entorno
+  'slide-12.jpg',  // 12 Comparación
+  null,            // 13 Conclusión
+  null,            // 14 Gracias
+];
+
+function injectSlideImages() {
+  document.querySelectorAll('.slide').forEach((slide, i) => {
+    const src = SLIDE_IMAGES[i];
+    if (!src) return;
+    const wrap = document.createElement('div');
+    Object.assign(wrap.style, {
+      position: 'absolute',
+      bottom: '3.5rem',
+      right: '1.5rem',
+      width: '160px',
+      height: '110px',
+      borderRadius: '6px',
+      overflow: 'hidden',
+      border: '1px solid rgba(255,255,255,0.08)',
+      boxShadow: '0 4px 20px rgba(0,0,0,0.6)',
+      zIndex: '3',
+      flexShrink: '0',
+    });
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+    Object.assign(img.style, {
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      display: 'block',
+      filter: 'brightness(0.85) contrast(1.05)',
+    });
+    img.onerror = () => { wrap.style.display = 'none'; };
+    wrap.appendChild(img);
+    slide.appendChild(wrap);
+  });
+}
+injectSlideImages();
 
 /* ── Crear barra de audio en JS ── */
 const audioBar = document.createElement('div');
