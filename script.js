@@ -119,7 +119,8 @@ function injectSlideImages() {
     // Panel de imagen a la derecha, centrado verticalmente
     const wrap = document.createElement('div');
     Object.assign(wrap.style, {
-      width: '320px',
+      width: '250px',
+      height: '300px',
       flexShrink: '0',
       alignSelf: 'center',
       borderRadius: '8px',
@@ -134,8 +135,10 @@ function injectSlideImages() {
     img.alt = '';
     Object.assign(img.style, {
       width: '100%',
+      height: '100%',
       display: 'block',
       objectFit: 'cover',
+      objectPosition: 'center',
       filter: 'contrast(1.05) brightness(0.9)',
     });
     img.onerror = () => {

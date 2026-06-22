@@ -976,6 +976,25 @@ html, body {
 }
 
 /* ══════════════════════════════════
+   SLIDES CON IMAGEN LATERAL (compactar para que entre)
+══════════════════════════════════ */
+@media (min-width: 1025px) {
+  .slide-inner.has-side-img .slide-header { margin-bottom: 1rem; }
+  .slide-inner.has-side-img .slide-title { font-size: clamp(2.8rem, 5vw, 4.2rem); }
+  .slide-inner.has-side-img .slide-definition { font-size: 1.3rem; }
+  .slide-inner.has-side-img .compare-grid { gap: 0.7rem; margin-bottom: 0.8rem; }
+  .slide-inner.has-side-img .compare-card { padding: 0.9rem 1.1rem; }
+  .slide-inner.has-side-img .card-body { font-size: 1.35rem; line-height: 1.5; }
+  .slide-inner.has-side-img .card-example { font-size: 1.1rem; margin-top: 0.45rem; padding-top: 0.4rem; }
+  .slide-inner.has-side-img .third-point { font-size: 1.3rem; padding: 0.5rem 0.9rem; margin-bottom: 0.8rem; }
+  .slide-inner.has-side-img .key-quote { font-size: 1.4rem; padding: 0.8rem 1.2rem 0.8rem 3rem; }
+  .slide-inner.has-side-img .entorno-row { gap: 0.6rem; margin-bottom: 0.8rem; }
+  .slide-inner.has-side-img .entorno-card { padding: 0.85rem 1rem; }
+  .slide-inner.has-side-img .ec-value { font-size: 1.3rem; }
+  .slide-inner.has-side-img .entorno-body { font-size: 1.3rem; margin-bottom: 0.8rem; }
+}
+
+/* ══════════════════════════════════
    ZONAS TÁCTILES MOBILE
 ══════════════════════════════════ */
 #tap-prev, #tap-next {
