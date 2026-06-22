@@ -91,9 +91,16 @@ Object.assign(audioBar.style, {
   padding: '8px 40px',
   flexShrink: '0',
   zIndex: '10',
-  display: 'none',
   boxSizing: 'border-box',
   width: '100%',
+  opacity: '0',
+  transform: 'translateY(6px)',
+  transition: 'opacity 0.4s ease, transform 0.4s ease',
+  pointerEvents: 'none',
+  maxHeight: '0',
+  paddingTop: '0',
+  paddingBottom: '0',
+  overflow: 'hidden',
 });
 
 const audioInner = document.createElement('div');
@@ -165,7 +172,12 @@ function playSlideAudio(index) {
 
   const src = SLIDE_AUDIO[index];
   if (src) {
-    audioBar.style.display = 'block';
+    audioBar.style.maxHeight = '60px';
+    audioBar.style.paddingTop = '8px';
+    audioBar.style.paddingBottom = '8px';
+    audioBar.style.opacity = '1';
+    audioBar.style.transform = 'translateY(0)';
+    audioBar.style.pointerEvents = 'all';
     currentAudio = new Audio(src);
 
     currentAudio.addEventListener('loadedmetadata', () => {
@@ -187,7 +199,12 @@ function playSlideAudio(index) {
     currentAudio.play().catch(() => {});
     updateBtn();
   } else {
-    audioBar.style.display = 'none';
+    audioBar.style.opacity = '0';
+    audioBar.style.transform = 'translateY(6px)';
+    audioBar.style.pointerEvents = 'none';
+    audioBar.style.maxHeight = '0';
+    audioBar.style.paddingTop = '0';
+    audioBar.style.paddingBottom = '0';
   }
 }
 
