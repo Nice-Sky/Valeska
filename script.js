@@ -107,19 +107,22 @@ function injectSlideImages() {
   document.querySelectorAll('.slide').forEach((slide, i) => {
     const src = SLIDE_IMAGES[i];
     if (!src) return;
+
     const wrap = document.createElement('div');
     Object.assign(wrap.style, {
       position: 'absolute',
-      bottom: '2rem',
-      right: '2rem',
-      width: '280px',
-      height: '190px',
-      borderRadius: '8px',
+      bottom: '1.8rem',
+      right: '1.8rem',
+      width: '300px',
+      aspectRatio: '16 / 9',
+      borderRadius: '10px',
       overflow: 'hidden',
-      border: '1px solid rgba(255,255,255,0.1)',
-      boxShadow: '0 6px 28px rgba(0,0,0,0.65)',
+      border: '1px solid rgba(255,255,255,0.12)',
+      boxShadow: '0 8px 30px rgba(0,0,0,0.7)',
       zIndex: '3',
+      background: '#0a0a12',
     });
+
     const img = document.createElement('img');
     img.src = src;
     img.alt = '';
@@ -127,11 +130,24 @@ function injectSlideImages() {
       width: '100%',
       height: '100%',
       objectFit: 'cover',
+      objectPosition: 'center',
       display: 'block',
-      filter: 'brightness(0.85) contrast(1.05)',
+      filter: 'brightness(0.9) contrast(1.05) saturate(1.05)',
     });
+
+    // viñeta sutil para integrar la imagen al fondo oscuro
+    const vignette = document.createElement('div');
+    Object.assign(vignette.style, {
+      position: 'absolute',
+      inset: '0',
+      pointerEvents: 'none',
+      boxShadow: 'inset 0 0 40px rgba(6,6,12,0.55)',
+      background: 'linear-gradient(to top, rgba(6,6,12,0.35), transparent 45%)',
+    });
+
     img.onerror = () => { wrap.style.display = 'none'; };
     wrap.appendChild(img);
+    wrap.appendChild(vignette);
     slide.appendChild(wrap);
   });
 }
