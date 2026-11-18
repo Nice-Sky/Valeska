@@ -1,9 +1,10 @@
 """Colores y hoja de estilos (estilo "ventana del Sistema")."""
 BG = "#02060f"
+CYAN = "#5fe0ff"
 PANEL = "#0a1630"
-LINE = "#2f7dff"
-GLOW = "#4fd8ff"
-CORE = "#dcf8ff"
+LINE = "#2d7cff"
+GLOW = "#3fa4ff"
+CORE = "#eaf6ff"
 TEXT = "#dceaff"
 MUTED = "#7f95bf"
 GOLD = "#ffd166"
@@ -11,7 +12,7 @@ RED = "#ff3b5c"
 GREEN = "#3dffa8"
 PURPLE = "#b06bff"
 
-FONT = "Bahnschrift"          # viene con Windows 10/11, aspecto técnico
+FONT = "Montserrat"           # incluida en assets/fonts (licencia OFL)
 FONT_FALLBACK = "Segoe UI"
 
 QSS = f"""

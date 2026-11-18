@@ -18,7 +18,7 @@ from ..game import ACHIEVEMENTS, PLAN_ORDER, PLANS, STATS, WEEKDAYS, fmt, next_r
 from . import theme as T
 from . import holo, icons
 from .video import VideoView
-from .widgets import Panel, RankBadge, button, icon_label, label, restyle
+from .widgets import GlowLabel, NeonBar, Panel, RankBadge, button, icon_label, label, restyle
 
 
 def scroll_page(*widgets) -> QScrollArea:
@@ -94,16 +94,23 @@ class QuestList(QWidget):
             self.lay.addSpacing(6)
 
 
-class ExCard(QPushButton):
+class ExCard(QPushButton, holo.Surface):
     """Tarjeta de ejercicio holográfica con ícono grande."""
 
     def __init__(self, icon_name, title, sub, done=False):
-        super().__init__()
+        QPushButton.__init__(self)
         self.icon_name, self.title_text, self.sub, self.done = icon_name, title, sub, done
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setMinimumHeight(140)
+        self.setMinimumHeight(160)
         self.setStyleSheet("QPushButton { background: transparent; border: none; }")
         self.hover = False
+        self.sweep = False
+        self.surface_init()
+
+    def surface_spec(self):
+        return holo.SurfaceSpec(QRectF(self.rect()).adjusted(10, 10, -10, -10), "gold" if self.done else "", cut=10,
+                                brackets=self.hover, strong=self.hover, seed=sum(map(ord, self.title_text)),
+                                density=0.7)
 
     def enterEvent(self, e):
         self.hover = True
@@ -116,25 +123,23 @@ class ExCard(QPushButton):
     def paintEvent(self, e):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        tone = "gold" if self.done else ""
-        holo.holo_frame(p, QRectF(self.rect()).adjusted(4, 4, -4, -4), tone, sum(map(ord, self.title_text)), cut=8,
-                        strong=self.hover, brackets=self.hover)
-        color, core = holo.palette(tone)
-        s = 38
-        r = QRectF((self.width() - s) / 2, 22, s, s)
-        p.setOpacity(0.5 if self.hover else 0.3)
-        icons.paint(p, self.icon_name, r, color, 4.5)
+        self.paint_surface(p)
+        color, core = holo.palette("gold" if self.done else "")
+        s = 40
+        r = QRectF((self.width() - s) / 2, 30, s, s)
+        p.setOpacity(0.6 if self.hover else 0.35)
+        icons.paint(p, self.icon_name, r, color, 5.0)
         p.setOpacity(1)
-        icons.paint(p, self.icon_name, r, core, 1.6)
+        icons.paint(p, self.icon_name, r, core, 1.7)
         f = QFont(T.FONT, 13)
-        f.setBold(True)
-        f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 2)
-        p.setFont(f)
-        p.setPen(QColor(core))
-        p.drawText(QRectF(0, 68, self.width(), 26), Qt.AlignmentFlag.AlignCenter, self.title_text.upper())
-        p.setFont(QFont(T.FONT, 10))
+        f.setWeight(QFont.Weight.DemiBold)
+        from . import fx
+        fx.draw_glow_text(p, QRectF(0, 78, self.width(), 26), self.title_text.upper(), f, color, core,
+                          glow=0.7 if self.hover else 0.45, spacing=2.5)
+        sf = QFont(T.FONT, 10)
+        p.setFont(sf)
         p.setPen(QColor(T.GOLD if self.done else T.MUTED))
-        p.drawText(QRectF(0, 96, self.width(), 22), Qt.AlignmentFlag.AlignCenter, self.sub)
+        p.drawText(QRectF(0, 106, self.width(), 22), Qt.AlignmentFlag.AlignCenter, self.sub)
 
 
 # =================================================================== ESTADO
@@ -152,14 +157,13 @@ class EstadoPage(QWidget):
         info.setHorizontalSpacing(30)
         info.setVerticalSpacing(8)
         self.name, self.level, self.rank_next, self.streak, self.adh, self.title = (label() for _ in range(6))
-        self.level.setObjectName("big")
+        self.level = GlowLabel("1", 26, spacing=1)
         for txt, w in (("NOMBRE", self.name), ("NIVEL", self.level), ("PRÓXIMO RANGO", self.rank_next),
                        ("RACHA", self.streak), ("CONSTANCIA (30 DÍAS)", self.adh), ("ÚLTIMO LOGRO", self.title)):
             info.addRow(label(txt, "lbl"), w)
         head.addLayout(info, 1)
         status.lay.addLayout(head)
-        self.xp = QProgressBar()
-        self.xp.setMinimumHeight(24)
+        self.xp = NeonBar(32)
         status.lay.addWidget(self.xp)
         self.stats = QGridLayout()
         self.stats.setSpacing(10)
@@ -213,8 +217,7 @@ class EstadoPage(QWidget):
             col.addWidget(label(name, "lbl"))
             row.addLayout(col)
             row.addStretch()
-            v = label(val)
-            v.setStyleSheet("font-size:26px;font-weight:700;color:white;")
+            v = GlowLabel(val, 24, align=Qt.AlignmentFlag.AlignRight)
             row.addWidget(v)
             card.lay.addLayout(row)
             self.stats.addWidget(card, i // 2, i % 2)
@@ -455,7 +458,7 @@ class EntrenarPage(QWidget):
     def on_ready(self):
         self.btn_cam.setEnabled(True)
         self.btn_cam.setText("Apagar cámara")
-        self.btn_cam.setIcon(icons.icon("camera-off", 18))
+        self.btn_cam.set_icon_name("camera-off")
         self.btn_cam.setProperty("kind", "")
         restyle(self.btn_cam)
         self.video.center_small = ""
@@ -472,7 +475,7 @@ class EntrenarPage(QWidget):
             self.state = "idle"
         self.btn_cam.setEnabled(True)
         self.btn_cam.setText("Encender cámara")
-        self.btn_cam.setIcon(icons.icon("camera", 18))
+        self.btn_cam.set_icon_name("camera")
         self.btn_cam.setProperty("kind", "primary")
         restyle(self.btn_cam)
         self.video.center = self.video.center_small = ""

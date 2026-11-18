@@ -19,12 +19,15 @@ SURRENDER_PHRASE = "ME RINDO"
 CHECK_MS = 10_000
 
 
-class NagWindow(QWidget):
+class NagWindow(QWidget, holo.Surface):
     """Ventana de alerta. En modo hardcore hay una por pantalla, a pantalla completa."""
 
     def __init__(self, guardian: "Guardian", screen, hard: bool, primary: bool):
         flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool
-        super().__init__(None, flags)
+        QWidget.__init__(self, None, flags)
+        self.surface_init()
+        self._bg_key = None
+        self._bg = None
         self.g = guardian
         self.hard = hard
         self.allow_close = False
@@ -35,10 +38,10 @@ class NagWindow(QWidget):
         if hard:
             self.setGeometry(geo)
         else:
-            w, h = 820, 640
+            w, h = 1010, 800
             self.setGeometry(geo.x() + (geo.width() - w) // 2, geo.y() + (geo.height() - h) // 3, w, h)
         lay = QVBoxLayout(self)
-        lay.setContentsMargins(90, 80, 90, 80)
+        lay.setContentsMargins(176, 128, 176, 128)
         lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
         if primary:
             self._build(lay)
@@ -49,18 +52,25 @@ class NagWindow(QWidget):
             row.addStretch()
             lay.addLayout(row)
 
+    def surface_spec(self):
+        r = QRectF(self.rect())
+        if self.hard:
+            w, h = min(900, r.width() - 300), min(640, r.height() - 200)
+            box = QRectF((r.width() - w) / 2, (r.height() - h) / 2, w, h)
+        else:
+            box = r.adjusted(136, 92, -136, -92)
+        return holo.SurfaceSpec(box, "red", cut=4, beams=True, brackets=False, strong=True, seed=31, glass_alpha=225)
+
     def paintEvent(self, e):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        r = QRectF(self.rect())
         if self.hard:
-            holo.backdrop(p, r, 21)
-            p.fillRect(r, QColor(60, 0, 12, 60))
-            w, h = min(980, r.width() - 160), min(700, r.height() - 160)
-            box = QRectF((r.width() - w) / 2, (r.height() - h) / 2, w, h)
-        else:
-            box = r.adjusted(44, 40, -44, -40)
-        holo.holo_frame(p, box, "red", 31, cut=8, beams=True, strong=True, brackets=False)
+            key = (self.width(), self.height(), self.devicePixelRatioF())
+            if key != self._bg_key:
+                self._bg = holo.render_backdrop(self.width(), self.height(), self.devicePixelRatioF(), 21, "red")
+                self._bg_key = key
+            p.drawImage(0, 0, self._bg)
+        self.paint_surface(p)
 
     def _build(self, lay):
         game = self.g.game
@@ -96,7 +106,6 @@ class NagWindow(QWidget):
 
         train = button("ENTRENAR AHORA", "primary", self.g.train_now, icon="swords")
         train.setMinimumHeight(54)
-        train.setStyleSheet("font-size:19px;letter-spacing:4px;")
         bl.addWidget(train)
         left = game.snoozes_left()
         if left > 0:

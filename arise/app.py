@@ -16,7 +16,7 @@ from .ui import theme as T
 from .ui.pages import AjustesPage, EntrenarPage, EstadoPage, MisionPage, RegistroPage
 from .ui import icons
 from .ui.holo import Backdrop
-from .ui.widgets import Dialogs, Toaster, label
+from .ui.widgets import Dialogs, GlowLabel, Toaster, label
 from .voice import Sounds, Voice
 
 PAGES = [("estado", "ESTADO", "user-round"), ("mision", "HOY", "target"), ("entrenar", "ENTRENAR", "dumbbell"),
@@ -38,6 +38,27 @@ def app_icon() -> QIcon:
     p.drawText(pm.rect(), Qt.AlignmentFlag.AlignCenter, "A")
     p.end()
     return QIcon(pm)
+
+
+class NavRail(QWidget):
+    """Barra lateral: vidrio oscuro con un riel de neón a la derecha."""
+
+    def paintEvent(self, e):
+        from PySide6.QtCore import QRectF
+        from PySide6.QtGui import QLinearGradient
+        from .ui import holo
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = QRectF(self.rect())
+        g = QLinearGradient(r.topLeft(), r.topRight())
+        g.setColorAt(0, QColor(2, 7, 18, 235))
+        g.setColorAt(1, QColor(5, 16, 40, 215))
+        p.fillRect(r, g)
+        x = r.right() - 2
+        holo.neon_line(p, x, 18, x, r.bottom() - 18, T.GLOW, T.CORE, 1.0, 5, 2.2, 22)
+        for y in (r.height() * 0.22, r.height() * 0.62):
+            p.fillRect(QRectF(x - 3, y, 6, 34), QColor(T.GLOW))
+            p.fillRect(QRectF(x - 1, y + 3, 2, 28), QColor(T.CORE))
 
 
 class MainWindow(QMainWindow):
@@ -64,15 +85,13 @@ class MainWindow(QMainWindow):
         h.setContentsMargins(0, 0, 0, 0)
         h.setSpacing(0)
 
-        nav = QWidget()
+        nav = NavRail()
         nav.setObjectName("nav")
         nav.setFixedWidth(220)
-        nav.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        nav.setStyleSheet(f"#nav {{ background: rgba(4,12,30,0.78); border-right: 1px solid rgba(79,216,255,0.55); }}")
         nl = QVBoxLayout(nav)
         nl.setContentsMargins(0, 22, 0, 18)
         nl.setSpacing(2)
-        brand = label("ARISE", "brand", align=Qt.AlignmentFlag.AlignCenter)
+        brand = GlowLabel("ARISE", 26, QFont.Weight.Bold, align=Qt.AlignmentFlag.AlignCenter, spacing=9, glow=1.2)
         nl.addWidget(brand)
         nl.addWidget(label("T R A I N E R", "brandSub", align=Qt.AlignmentFlag.AlignCenter))
         nl.addSpacing(26)
@@ -314,6 +333,9 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("Arise Trainer")
     app.setQuitOnLastWindowClosed(False)
+    from PySide6.QtGui import QFontDatabase
+    for f in sorted(storage.resource("fonts").glob("*.ttf")):
+        QFontDatabase.addApplicationFont(str(f))
     app.setStyleSheet(T.QSS)
     app.setFont(QFont(T.FONT, 10))
 

@@ -5,22 +5,105 @@ from collections import deque
 from typing import Callable, Optional
 
 from PySide6.QtCore import QEasingCurve, QPointF, QPropertyAnimation, QRect, QRectF, Qt, QTimer, QSize
-from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPolygonF
+from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen, QPolygonF
 from PySide6.QtWidgets import (QDialog, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QLayout, QLineEdit, QPushButton,
                                QVBoxLayout, QWidget)
 
-from . import holo, icons
+from . import fx, holo, icons
 from . import theme as T
 
 
+class HoloButton(QPushButton, holo.Surface):
+    """Botón holográfico: vidrio + borde de neón con bloom; los principales tienen relleno azul."""
+
+    sweep = False
+    M = 7
+
+    def __init__(self, text: str, kind: str = "", icon: str = ""):
+        QPushButton.__init__(self, text)
+        self.kind = kind
+        self.icon_name = icon
+        self.hover = False
+        self.setProperty("kind", kind)
+        self.setStyleSheet("QPushButton { background: transparent; border: none; padding: 16px 28px; }")
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.surface_init()
+
+    def setIcon(self, ic):  # compatibilidad: se usa set_icon_name
+        pass
+
+    def set_icon_name(self, name: str):
+        self.icon_name = name
+        self.update()
+
+    def setProperty(self, name, value):
+        if name == "kind":
+            self.kind = value or ""
+            self.update()
+        return super().setProperty(name, value)
+
+    def sizeHint(self):
+        f = QFont(T.FONT, 11)
+        f.setWeight(QFont.Weight.DemiBold)
+        f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.6)
+        from PySide6.QtGui import QFontMetricsF
+        w = QFontMetricsF(f).horizontalAdvance(self.text()) + 52 + (26 if self.icon_name else 0)
+        return QSize(int(max(w, 90)), 50)
+
+    def minimumSizeHint(self):
+        return QSize(min(self.sizeHint().width(), 140), 50)
+
+    def enterEvent(self, e):
+        self.hover = True
+        self.update()
+
+    def leaveEvent(self, e):
+        self.hover = False
+        self.update()
+
+    def surface_spec(self):
+        tone = "red" if self.kind == "danger" else ""
+        fill = None
+        if self.kind == "primary":
+            fill = "#2f86ff" if not self.hover else "#4aa0ff"
+        elif self.kind == "danger" and self.hover:
+            fill = T.RED
+        elif self.hover:
+            fill = "#1d4fa8"
+        return holo.SurfaceSpec(QRectF(self.rect()).adjusted(self.M, self.M, -self.M, -self.M), tone, cut=5,
+                                brackets=False, strong=True, seed=3, glass_alpha=225, density=0.25, small=True,
+                                fill=fill)
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        if not self.isEnabled():
+            p.setOpacity(0.35)
+        self.paint_surface(p)
+        color, core = holo.palette("red" if self.kind == "danger" else "")
+        f = QFont(T.FONT, 11)
+        f.setWeight(QFont.Weight.DemiBold)
+        f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.6)
+        from PySide6.QtGui import QFontMetricsF
+        fm = QFontMetricsF(f)
+        tw = fm.horizontalAdvance(self.text())
+        iw = 26 if self.icon_name else 0
+        x = (self.width() - tw - iw) / 2
+        if self.icon_name:
+            icons.paint(p, self.icon_name, QRectF(x, (self.height() - 18) / 2, 18, 18), core, 1.9)
+        p.setFont(f)
+        p.setPen(QColor("white" if self.kind in ("primary",) or self.hover else core))
+        p.drawText(QRectF(x + iw, 0, tw + 4, self.height()), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+                   self.text())
+
+
 def button(text: str, kind: str = "", slot: Optional[Callable] = None, icon: str = "") -> QPushButton:
-    b = QPushButton(("  " + text) if icon and text else text)
-    b.setCursor(Qt.CursorShape.PointingHandCursor)
-    if kind:
+    if kind == "ghost":
+        b = QPushButton(text)
+        b.setCursor(Qt.CursorShape.PointingHandCursor)
         b.setProperty("kind", kind)
-    if icon:
-        b.setIcon(icons.icon(icon, 18))
-        b.setIconSize(QSize(18, 18))
+    else:
+        b = HoloButton(text.strip(), kind, icon)
     if slot:
         b.clicked.connect(slot)
     return b
@@ -55,20 +138,23 @@ def restyle(w: QWidget):
         c.style().polish(c)
 
 
-class Panel(QFrame):
-    """Ventana holográfica con borde de neón y encabezado [ícono][TÍTULO]."""
+class Panel(QFrame, holo.Surface):
+    """Ventana holográfica con borde de neón, bloom y encabezado [ícono][TÍTULO]."""
 
     _seed = 1
+    INSET = 16
 
     def __init__(self, title: str = "", icon: str = "circle-alert", parent=None, compact: bool = False):
-        super().__init__(parent)
+        QFrame.__init__(self, parent)
         Panel._seed += 1
         self.seed = Panel._seed
         self.tone = ""
         self.compact = compact
+        self.sweep = not compact
+        self.surface_init()
         self.lay = QVBoxLayout(self)
-        m = 14 if compact else 26
-        self.lay.setContentsMargins(m + 4, m, m + 4, m)
+        m = self.INSET + (12 if compact else 24)
+        self.lay.setContentsMargins(m + 4, m - (2 if title else 0), m + 4, m)
         self.lay.setSpacing(10)
         self.title = None
         if title:
@@ -78,7 +164,12 @@ class Panel(QFrame):
             row.addWidget(self.title)
             row.addStretch()
             self.lay.addLayout(row)
-            self.lay.addSpacing(6)
+            self.lay.addSpacing(4)
+
+    def surface_spec(self):
+        r = QRectF(self.rect()).adjusted(self.INSET, self.INSET, -self.INSET, -self.INSET)
+        return holo.SurfaceSpec(r, self.tone, cut=8 if self.compact else 14, brackets=not self.compact,
+                                seed=self.seed, density=0.6 if self.compact else 1.0)
 
     def set_title(self, text: str):
         if self.title:
@@ -93,8 +184,7 @@ class Panel(QFrame):
     def paintEvent(self, e):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        holo.holo_frame(p, QRectF(self.rect()).adjusted(6, 6, -6, -6), self.tone, self.seed,
-                        cut=8 if self.compact else 12, brackets=not self.compact)
+        self.paint_surface(p)
 
 
 class RankBadge(QWidget):
@@ -104,44 +194,85 @@ class RankBadge(QWidget):
         super().__init__(parent)
         self.rank = "E"
         self.setFixedSize(size, size)
+        self._key = None
+        self._img = None
+        self._glow = None
+        fx.Clock.get().tick.connect(self._tick)
+
+    def _tick(self):
+        if self.isVisible():
+            self.update()
 
     def set_rank(self, r: str):
         self.rank = r
         self.update()
 
-    def paintEvent(self, e):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    def _build(self):
         w, h = self.width(), self.height()
-        m = 10
-        poly = QPolygonF([QPointF(w / 2, m), QPointF(w - m, h * .27), QPointF(w - m, h * .73),
-                          QPointF(w / 2, h - m), QPointF(m, h * .73), QPointF(m, h * .27)])
+        dpr = self.devicePixelRatioF()
+        m = 16
+        poly = QPolygonF([QPointF(w / 2, m), QPointF(w - m, h * .29), QPointF(w - m, h * .71),
+                          QPointF(w / 2, h - m), QPointF(m, h * .71), QPointF(m, h * .29)])
         path = QPainterPath()
         path.addPolygon(poly)
         path.closeSubpath()
         col = self.COLORS.get(self.rank, T.GLOW)
-        holo.glass(p, path, col, seed=4, scratches=8)
-        holo.neon_path(p, path, col, T.CORE, width=1.6, halo=5, alpha=34)
-        f = QFont(T.FONT, int(h * 0.36))
-        f.setBold(True)
-        p.setFont(f)
-        p.setPen(holo.qc(col, 70))
-        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-3, -3), (3, 3)):
-            p.drawText(QRectF(dx, dy, w, h), Qt.AlignmentFlag.AlignCenter, self.rank)
-        p.setPen(QColor(T.CORE if self.rank not in self.COLORS else col))
-        p.drawText(QRectF(0, 0, w, h), Qt.AlignmentFlag.AlignCenter, self.rank)
+        base = fx.new_image(w, h, dpr)
+        neon = fx.new_image(w, h, dpr)
+        pb = QPainter(base)
+        pb.setRenderHint(QPainter.RenderHint.Antialiasing)
+        holo.glass(pb, path, col, seed=4, strong=True, density=0.5)
+        pn = QPainter(neon)
+        pn.setRenderHint(QPainter.RenderHint.Antialiasing)
+        holo._stroke(pn, path, col, T.CORE, 2.4, 1.1)
+        inner = QPolygonF([QPointF(w / 2 + (pt.x() - w / 2) * 0.82, h / 2 + (pt.y() - h / 2) * 0.82) for pt in poly])
+        ip = QPainterPath()
+        ip.addPolygon(inner)
+        ip.closeSubpath()
+        pn.setPen(QPen(holo.qc(col, 110), 1))
+        pn.drawPath(ip)
+        pn.end()
+        pb.drawImage(0, 0, neon)
+        pb.end()
+        self._img, self._glow = base, fx.edge_fade(fx.bloom(neon, ((3, 1.2), (7, 1.0), (12, 0.7))), 14)
+
+    def paintEvent(self, e):
+        key = (self.width(), self.rank, self.devicePixelRatioF())
+        if key != self._key:
+            self._build()
+            self._key = key
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        p.drawImage(0, 0, self._img)
+        k = fx.Clock.get().pulse(3.2, 0.7, 1.0)
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
+        p.setOpacity(k)
+        p.drawImage(0, 0, self._glow)
+        p.setOpacity(1)
+        p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+        col = self.COLORS.get(self.rank, T.GLOW)
+        f = QFont(T.FONT, int(self.height() * 0.3))
+        f.setWeight(QFont.Weight.Bold)
+        fx.draw_glow_text(p, QRectF(self.rect()).adjusted(0, -2, 0, 0), self.rank, f, col, T.CORE, glow=1.3, intensity=k)
 
 
-class _HoloBody(QWidget):
+class _HoloBody(QWidget, holo.Surface):
+    MX, MY = 136, 92
+
     def __init__(self, tone, parent=None):
-        super().__init__(parent)
+        QWidget.__init__(self, parent)
         self.tone = tone
+        self.surface_init()
+
+    def surface_spec(self):
+        r = QRectF(self.rect()).adjusted(self.MX, self.MY, -self.MX, -self.MY)
+        return holo.SurfaceSpec(r, self.tone, cut=4, beams=True, brackets=False, strong=True, seed=11,
+                                glass_alpha=215)
 
     def paintEvent(self, e):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        holo.holo_frame(p, QRectF(self.rect()).adjusted(44, 40, -44, -40), self.tone, seed=11, cut=6,
-                        beams=True, strong=True, brackets=False)
+        self.paint_surface(p)
 
 
 class SystemDialog(QDialog):
@@ -159,11 +290,11 @@ class SystemDialog(QDialog):
         body_w = _HoloBody(tone)
         outer.addWidget(body_w)
         lay = QVBoxLayout(body_w)
-        lay.setContentsMargins(84, 70, 84, 70)
-        lay.setSpacing(18)
+        lay.setContentsMargins(_HoloBody.MX + 34, _HoloBody.MY + 30, _HoloBody.MX + 34, _HoloBody.MY + 30)
+        lay.setSpacing(20)
         row = QHBoxLayout()
         row.addStretch()
-        row.addWidget(holo.TitleBar(title, icon, tone, 16))
+        row.addWidget(holo.TitleBar(title, icon, tone, 17))
         row.addStretch()
         lay.addLayout(row)
         b = QLabel(body)
@@ -221,7 +352,8 @@ class SystemDialog(QDialog):
 
 class _Dimmer(QWidget):
     def paintEvent(self, e):
-        QPainter(self).fillRect(self.rect(), QColor(0, 3, 12, 170))
+        p = QPainter(self)
+        p.fillRect(self.rect(), QColor(0, 3, 12, 185))
 
 
 class Dialogs:
@@ -278,25 +410,37 @@ class Dialogs:
         return self.current is not None or bool(self.queue)
 
 
-class _Toast(QWidget):
+class _Toast(QWidget, holo.Surface):
+    sweep = False
+
     def __init__(self, parent, text, icon_name, gold):
-        super().__init__(parent)
+        QWidget.__init__(self, parent)
         self.gold = gold
-        lay = QHBoxLayout(self)
-        lay.setContentsMargins(20, 12, 22, 12)
-        lay.setSpacing(10)
-        col = T.GOLD if gold else T.CORE
-        lay.addWidget(icon_label(icon_name, 18, col))
-        l = QLabel(text)
-        l.setStyleSheet(f"color:{col};font-weight:600;font-size:14px;")
-        lay.addWidget(l)
-        self.adjustSize()
+        self.text_, self.icon_name = text, icon_name
+        self.fade = 1.0
+        self.surface_init()
+        self.font_ = QFont(T.FONT, 10)
+        self.font_.setWeight(QFont.Weight.DemiBold)
+        from PySide6.QtGui import QFontMetricsF
+        w = QFontMetricsF(self.font_).horizontalAdvance(text)
+        self.setFixedSize(int(w + 100), 66)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+    def surface_spec(self):
+        return holo.SurfaceSpec(QRectF(self.rect()).adjusted(14, 14, -14, -14), "gold" if self.gold else "", cut=6,
+                                brackets=False, strong=True, seed=5, glass_alpha=240, density=0.3, small=True)
 
     def paintEvent(self, e):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        holo.holo_frame(p, QRectF(self.rect()).adjusted(4, 4, -4, -4), "gold" if self.gold else "", 5, cut=6,
-                        strong=True, brackets=False)
+        p.setOpacity(self.fade)
+        self.paint_surface(p)
+        p.setOpacity(self.fade)
+        col = T.GOLD if self.gold else T.CORE
+        icons.paint(p, self.icon_name, QRectF(34, (self.height() - 18) / 2, 18, 18), col, 1.9)
+        p.setFont(self.font_)
+        p.setPen(QColor(col))
+        p.drawText(QRectF(62, 0, self.width() - 70, self.height()), Qt.AlignmentFlag.AlignVCenter, self.text_)
 
 
 class Toaster:
@@ -310,12 +454,12 @@ class Toaster:
         t.raise_()
         self.items.append(t)
         self._layout()
-        eff = QGraphicsOpacityEffect(t)
-        t.setGraphicsEffect(eff)
-        anim = QPropertyAnimation(eff, b"opacity", t)
+        from PySide6.QtCore import QVariantAnimation
+        anim = QVariantAnimation(t)
         anim.setDuration(600)
         anim.setStartValue(1.0)
         anim.setEndValue(0.0)
+        anim.valueChanged.connect(lambda v, t=t: setattr(t, "fade", v))
         QTimer.singleShot(2800, anim.start)
         anim.finished.connect(lambda: self._remove(t))
 
@@ -329,4 +473,101 @@ class Toaster:
         y = 12
         for t in self.items:
             t.move(self.parent.width() - t.width() - 16, y)
-            y += t.height() + 4
+            y += t.height() - 6
+
+
+class GlowLabel(QWidget):
+    """Texto con resplandor real (bloom). Para números grandes y títulos."""
+
+    def __init__(self, text: str = "", size: int = 22, weight=QFont.Weight.Bold, color: str = T.GLOW,
+                 core: str = T.CORE, align=Qt.AlignmentFlag.AlignLeft, spacing: float = 0.0, glow: float = 1.0):
+        super().__init__()
+        self.text_ = text
+        self.font_ = QFont(T.FONT, size)
+        self.font_.setWeight(weight)
+        self.color, self.core, self.align, self.spacing, self.glow = color, core, align, spacing, glow
+        self._phase = 0.0
+        fx.Clock.get().tick.connect(self._tick)
+        self._fit()
+
+    def _tick(self):
+        if self.isVisible():
+            self.update()
+
+    def _fit(self):
+        f = QFont(self.font_)
+        if self.spacing:
+            f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, self.spacing)
+        from PySide6.QtGui import QFontMetricsF
+        fm = QFontMetricsF(f)
+        self.setMinimumSize(int(fm.horizontalAdvance(self.text_) + 8), int(fm.height() + 6))
+        self.updateGeometry()
+
+    def setText(self, text: str):
+        self.text_ = str(text)
+        self._fit()
+        self.update()
+
+    def text(self):
+        return self.text_
+
+    def set_color(self, color: str):
+        self.color = color
+        self.update()
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        fx.draw_glow_text(p, QRectF(self.rect()), self.text_, self.font_, self.color, self.core, self.align,
+                          glow=self.glow, spacing=self.spacing, intensity=fx.Clock.get().pulse(3.8, 0.7, 1.0))
+
+
+class NeonBar(QWidget):
+    """Barra de progreso con tubo de luz (para XP)."""
+
+    def __init__(self, height: int = 30):
+        super().__init__()
+        self.value, self.maximum, self.text_ = 0, 100, ""
+        self.setFixedHeight(height)
+
+    def setRange(self, a, b):
+        self.maximum = max(1, b)
+        self.update()
+
+    def setValue(self, v):
+        self.value = v
+        self.update()
+
+    def setFormat(self, t):
+        self.text_ = t
+        self.update()
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = QRectF(self.rect()).adjusted(6, 7, -6, -7)
+        path = holo.chamfer(r, 4)
+        p.fillPath(path, QColor(2, 8, 22, 230))
+        k = max(0.0, min(1.0, self.value / self.maximum))
+        if k > 0:
+            fr = QRectF(r.left() + 2, r.top() + 2, (r.width() - 4) * k, r.height() - 4)
+            from PySide6.QtGui import QLinearGradient
+            g = QLinearGradient(fr.topLeft(), fr.bottomLeft())
+            g.setColorAt(0, QColor(T.GLOW))
+            g.setColorAt(0.45, QColor(T.CORE))
+            g.setColorAt(1, QColor("#1d5fd8"))
+            pulse = fx.Clock.get().pulse(3.0, 0.6, 1.0)
+            for i in range(5, 0, -1):
+                c = QColor(T.GLOW)
+                c.setAlpha(int(22 * pulse))
+                p.fillRect(fr.adjusted(-i * 1.5, -i * 1.2, i * 1.5, i * 1.2), c)
+            p.fillRect(fr, g)
+        holo.neon_path(p, path, T.GLOW, T.CORE, 1.0, 3, 2.0, 26)
+        f = QFont(T.FONT, 9)
+        f.setWeight(QFont.Weight.DemiBold)
+        f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.5)
+        p.setFont(f)
+        p.setPen(QColor(0, 0, 0, 150))
+        p.drawText(r.translated(1, 1), Qt.AlignmentFlag.AlignCenter, self.text_)
+        p.setPen(QColor("white"))
+        p.drawText(r, Qt.AlignmentFlag.AlignCenter, self.text_)

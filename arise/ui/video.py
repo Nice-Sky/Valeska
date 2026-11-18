@@ -5,7 +5,7 @@ from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QImage, QPainter, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
-from . import holo
+from . import fx, holo
 from . import theme as T
 
 CONNECTIONS = [
@@ -72,9 +72,9 @@ class VideoView(QWidget):
         f = QFont(T.FONT, size)
         f.setBold(True)
         p.setFont(f)
-        p.setPen(QColor(T.GREEN if self.pop else "white"))
-        p.drawText(QRectF(18, 8, W, size * 1.5), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop, self.count)
         cw = p.fontMetrics().horizontalAdvance(self.count)
+        fx.draw_glow_text(p, QRectF(18, 8, cw, size * 1.5), self.count, f, T.GREEN if self.pop else T.GLOW, T.CORE,
+                          Qt.AlignmentFlag.AlignLeft, glow=1.2)
         p.setFont(QFont(T.FONT, max(11, size // 4)))
         p.setPen(QColor(T.MUTED))
         p.drawText(QRectF(28 + cw, 8, W, size * 1.4), Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignBottom, self.target)
@@ -103,12 +103,7 @@ class VideoView(QWidget):
         if self.center:
             f = QFont(T.FONT, max(40, int(H * 0.26)))
             f.setBold(True)
-            p.setFont(f)
-            p.setPen(QColor(77, 225, 255, 110))
-            for dx, dy in ((-3, 0), (3, 0), (0, -3), (0, 3)):
-                p.drawText(QRectF(dx, dy, W, H), Qt.AlignmentFlag.AlignCenter, self.center)
-            p.setPen(QColor("white"))
-            p.drawText(QRectF(0, 0, W, H), Qt.AlignmentFlag.AlignCenter, self.center)
+            fx.draw_glow_text(p, QRectF(0, 0, W, H), self.center, f, T.GLOW, T.CORE, glow=1.6)
         if self.center_small:
             p.setFont(QFont(T.FONT, max(12, int(H * 0.035))))
             p.setPen(QColor("white"))

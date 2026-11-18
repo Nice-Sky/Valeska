@@ -87,3 +87,4 @@ Cada push compila, prueba y publica el instalador con GitHub Actions (`.github/w
 - `arise/ui/`: interfaz (PySide6 / Qt)
 
 Íconos: [Lucide](https://lucide.dev) (licencia ISC, ver `assets/icons/LICENSE-lucide.txt`).
+Tipografía: Montserrat (licencia SIL OFL, ver `assets/fonts/OFL-Montserrat.txt`).
