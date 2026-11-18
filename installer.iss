@@ -29,7 +29,7 @@ Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 CloseApplications=force
-RestartApplications=yes
+RestartApplications=no
 AppMutex=AriseTrainerAppMutex
 
 [Languages]
@@ -51,7 +51,7 @@ Name: "{userdesktop}\Arise Trainer"; Filename: "{app}\AriseTrainer.exe"; Tasks: 
 
 [Run]
 Filename: "{app}\AriseTrainer.exe"; Description: "Abrir Arise Trainer ahora"; Flags: nowait postinstall skipifsilent
-Filename: "{app}\AriseTrainer.exe"; Flags: nowait; Check: WizardSilent
+Filename: "{app}\AriseTrainer.exe"; Parameters: "--actualizado"; Flags: nowait; Check: WizardSilent and not NoRelaunch
 
 [UninstallRun]
 Filename: "reg.exe"; Parameters: "delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v AriseTrainer /f"; Flags: runhidden; RunOnceId: "QuitarInicio"
@@ -69,6 +69,16 @@ begin
   StringChangeEx(Key, '{{', '{', True);
   if not RegQueryStringValue(HKCU, Key, 'DisplayVersion', Result) then
     RegQueryStringValue(HKLM, Key, 'DisplayVersion', Result);
+end;
+
+function NoRelaunch(): Boolean;
+var
+  i: Integer;
+begin
+  Result := False;
+  for i := 1 to ParamCount do
+    if CompareText(ParamStr(i), '/NORELAUNCH') = 0 then
+      Result := True;
 end;
 
 function IsUpgrade(): Boolean;

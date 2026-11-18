@@ -38,8 +38,11 @@ def fetch_latest(timeout: float = 10) -> Optional[dict]:
     req = urllib.request.Request(API, headers={"Accept": "application/vnd.github+json", "User-Agent": "AriseTrainer"})
     with urllib.request.urlopen(req, timeout=timeout) as r:
         data = json.load(r)
-    url = next((a["browser_download_url"] for a in data.get("assets", []) if a.get("name") == ASSET), None)
-    return {"version": data.get("tag_name", "").lstrip("v"), "name": data.get("name", ""), "url": url,
+    asset = next((a for a in data.get("assets", []) if a.get("name") == ASSET), None)
+    digest = (asset or {}).get("digest") or ""
+    return {"version": data.get("tag_name", "").lstrip("v"), "name": data.get("name", ""),
+            "url": asset and asset.get("browser_download_url"),
+            "sha256": digest.split(":", 1)[1] if digest.startswith("sha256:") else None,
             "notes": data.get("body", "")}
 
 
@@ -53,10 +56,15 @@ def check_async(callback: Callable[[Optional[dict], Optional[str]], None]):
     threading.Thread(target=run, daemon=True).start()
 
 
-def download_async(url: str, progress: Callable[[float], None], done: Callable[[Optional[str], Optional[str]], None]):
+def download_async(url: str, progress: Callable[[float], None], done: Callable[[Optional[str], Optional[str]], None],
+                   sha256: Optional[str] = None):
+    """Descarga el instalador. Si GitHub informa la huella SHA-256, se verifica antes de aceptarlo."""
+    import hashlib
+
     def run():
         try:
             path = os.path.join(tempfile.gettempdir(), ASSET)
+            h = hashlib.sha256()
             req = urllib.request.Request(url, headers={"User-Agent": "AriseTrainer"})
             with urllib.request.urlopen(req, timeout=60) as r, open(path, "wb") as f:
                 total = int(r.headers.get("Content-Length") or 0)
@@ -66,19 +74,25 @@ def download_async(url: str, progress: Callable[[float], None], done: Callable[[
                     if not chunk:
                         break
                     f.write(chunk)
+                    h.update(chunk)
                     got += len(chunk)
                     if total:
                         progress(got / total)
+            if sha256 and h.hexdigest().lower() != sha256.lower():
+                os.remove(path)
+                raise ValueError("la descarga no coincide con la huella publicada (archivo dañado)")
             done(path, None)
         except Exception as e:  # noqa: BLE001
             done(None, str(e))
     threading.Thread(target=run, daemon=True).start()
 
 
-def run_installer(path: str) -> bool:
-    """Lanza el instalador en modo actualización silenciosa (cierra la app, actualiza y la vuelve a abrir)."""
+def run_installer(path: str, relaunch: bool = True) -> bool:
+    """Lanza el instalador en modo silencioso: cierra la app, actualiza y (si relaunch) la vuelve a abrir minimizada."""
     if sys.platform != "win32":
         return False
-    subprocess.Popen([path, "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS"],
-                     close_fds=True)
+    args = [path, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS"]
+    if not relaunch:
+        args.append("/NORELAUNCH")
+    subprocess.Popen(args, close_fds=True, creationflags=getattr(subprocess, "DETACHED_PROCESS", 0))
     return True

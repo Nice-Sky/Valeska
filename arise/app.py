@@ -152,6 +152,15 @@ class MainWindow(QMainWindow):
         self.guardian = Guardian(self)
         self._setup_tray()
 
+        self.pending_update = None
+        self._downloading = False
+        self._ready_notified = False
+        self.update_timer = QTimer(self)  # busca actualizaciones cada 3 horas mientras la app está abierta
+        self.update_timer.timeout.connect(lambda: self._auto_update_enabled() and self.check_updates())
+        self.install_timer = QTimer(self)
+        self.install_timer.setSingleShot(True)
+        self.install_timer.timeout.connect(self._maybe_install_update)
+
         self.day_timer = QTimer(self)
         self.day_timer.timeout.connect(self.game.rollover)
         self.day_timer.start(60_000)
@@ -256,11 +265,17 @@ class MainWindow(QMainWindow):
 
     # ------------------------------------------------------------ actualizaciones
     def check_updates(self, manual: bool = False):
+        """Consulta GitHub Releases. En automático descarga e instala sola en segundo plano."""
         from . import updater
 
         def done(info, err):
             QTimer.singleShot(0, lambda: self._update_result(info, err, manual))
         updater.check_async(done)
+
+    def _auto_update_enabled(self) -> bool:
+        import sys as _sys
+        return (self.game.s["settings"].get("autoUpdate", True) and _sys.platform == "win32"
+                and getattr(_sys, "frozen", False))
 
     def _update_result(self, info, err, manual):
         from . import updater
@@ -269,38 +284,91 @@ class MainWindow(QMainWindow):
                 self.notifier.show("SIN CONEXIÓN", "No pude consultar si hay versión nueva. Probá más tarde.",
                                    "circle-alert", "", timeout=6)
             return
-        if updater.is_newer(info["version"]):
+        if not updater.is_newer(info["version"]):
+            if manual:
+                self.notifier.show("ESTÁS AL DÍA", f"Tenés la última versión ({updater.VERSION}).", "circle-check", "",
+                                   timeout=5)
+            return
+        if self.pending_update and self.pending_update["version"] == info["version"]:
+            self._maybe_install_update(manual)
+            return
+        if self._auto_update_enabled() or manual:
+            self._download_update(info, show_progress=manual)
+        else:
             self.notifier.show("ACTUALIZACIÓN DISPONIBLE",
                                f"Hay una versión nueva: <b>{info['version']}</b> (tenés {updater.VERSION}).",
-                               "download", "gold", timeout=30, sound="notify",
-                               actions=[("Actualizar ahora", lambda i=info: self.install_update(i)), ("Después", lambda: None)])
-        elif manual:
-            self.notifier.show("ESTÁS AL DÍA", f"Tenés la última versión ({updater.VERSION}).", "circle-check", "", timeout=5)
+                               "download", "gold", timeout=30,
+                               actions=[("Actualizar", lambda i=info: self._download_update(i, True))])
 
-    def install_update(self, info):
+    def _download_update(self, info, show_progress=False):
         from . import updater
         import sys as _sys
         if not info.get("url") or _sys.platform != "win32" or not getattr(_sys, "frozen", False):
             import webbrowser
             webbrowser.open(updater.RELEASES_PAGE)
             return
-        card = self.notifier.show("DESCARGANDO ACTUALIZACIÓN", "0%", "download", "", timeout=0)
-        body = card.findChildren(QLabel)[-1]
+        if self._downloading:
+            return
+        self._downloading = True
+        card = body = None
+        if show_progress:
+            card = self.notifier.show("DESCARGANDO ACTUALIZACIÓN", "0%", "download", "", timeout=0)
+            body = card.findChildren(QLabel)[-1]
 
         def prog(k):
-            QTimer.singleShot(0, lambda: body.setText(f"{int(k * 100)}%"))
+            if body is not None:
+                QTimer.singleShot(0, lambda: body.setText(f"{int(k * 100)}%"))
 
         def done(path, err):
             def ui():
-                card.dismiss()
+                self._downloading = False
+                if card is not None:
+                    card.dismiss()
                 if err or not path:
-                    self.notifier.show("ERROR", f"No se pudo descargar: {err}", "circle-alert", "red", timeout=8)
+                    if show_progress:
+                        self.notifier.show("ERROR", f"No se pudo descargar la actualización: {err}", "circle-alert",
+                                           "red", timeout=8)
                     return
-                self.notifier.show("INSTALANDO", "Arise Trainer se va a cerrar, actualizar y volver a abrir.",
-                                   "download", "gold", timeout=4)
-                QTimer.singleShot(1500, lambda: (updater.run_installer(path), self._really_quit()))
+                self.pending_update = {"version": info["version"], "path": path}
+                self._maybe_install_update(force=show_progress)
             QTimer.singleShot(0, ui)
-        updater.download_async(info["url"], prog, done)
+        updater.download_async(info["url"], prog, done, info.get("sha256"))
+
+    def _app_busy(self) -> bool:
+        return (self.is_training() or self.dialogs.busy or bool(self.guardian.windows)
+                or self.pages["cuerpo"].stack.currentIndex() == 1)
+
+    def _maybe_install_update(self, force: bool = False):
+        """Instala la actualización descargada cuando no estás usando la app (o al toque si lo pediste)."""
+        upd = self.pending_update
+        if not upd:
+            return
+        if self._app_busy():
+            self.install_timer.start(120_000)  # reintenta en 2 minutos
+            return
+        idle = not self.isVisible() or self.isMinimized() or not self.isActiveWindow()
+        if force or idle:
+            self._install_now()
+            return
+        if not self._ready_notified:
+            self._ready_notified = True
+            self.notifier.show("ACTUALIZACIÓN LISTA",
+                               f"La versión <b>{upd['version']}</b> ya está descargada. Se instala sola cuando no estés "
+                               "usando la app (o al cerrarla).", "download", "gold", timeout=12,
+                               actions=[("Instalar ahora", self._install_now)])
+        self.install_timer.start(120_000)
+
+    def _install_now(self):
+        from . import updater
+        upd = self.pending_update
+        if not upd:
+            return
+        self.install_timer.stop()
+        self._installing = True  # evita que _really_quit lo vuelva a lanzar
+        self.notifier.show("ACTUALIZANDO", f"Instalando la versión {upd['version']}… La app se vuelve a abrir sola.",
+                           "download", "gold", timeout=4)
+        self.game.save()
+        QTimer.singleShot(1200, lambda: (updater.run_installer(upd["path"]), self._really_quit()))
 
     def refresh(self):
         if not hasattr(self, "pages"):
@@ -395,6 +463,10 @@ class MainWindow(QMainWindow):
             self._really_quit()
 
     def _really_quit(self):
+        from . import updater
+        if self.pending_update and not getattr(self, "_installing", False):
+            self._installing = True
+            updater.run_installer(self.pending_update["path"], relaunch=False)
         self.quitting = True
         self.guardian.close()
         self.pages["entrenar"].stop_camera()
@@ -476,6 +548,12 @@ class MainWindow(QMainWindow):
         self.apply_settings()
         if self.game.s["settings"].get("autoUpdate", True):
             QTimer.singleShot(8000, self.check_updates)
+        self.update_timer.start(3 * 3600 * 1000)
+        if "--actualizado" in sys.argv:
+            from ._version import VERSION
+            QTimer.singleShot(2500, lambda: self.notifier.show(
+                "ACTUALIZADO", f"Arise Trainer se actualizó a la versión <b>{VERSION}</b>.", "circle-check", "gold",
+                timeout=8, sound="level", on_click=lambda: self.show_page("estado")))
         if not minimized:
             self.show()
         if not self.game.registered:
@@ -531,7 +609,7 @@ def main():
 
     win = MainWindow()
     server.newConnection.connect(lambda: (server.nextPendingConnection(), win.show_page("estado")))
-    win.startup(minimized="--minimizado" in sys.argv)
+    win.startup(minimized="--minimizado" in sys.argv or "--actualizado" in sys.argv)
     if "--autotest" in sys.argv:
         QTimer.singleShot(4000, lambda: _autotest(app))
     return app.exec()

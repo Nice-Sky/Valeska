@@ -1036,7 +1036,7 @@ class AjustesPage(QWidget):
         from .._version import VERSION
         self.version_lbl = label(f"Versión instalada: {VERSION}", "muted")
         sist.lay.addWidget(self.version_lbl)
-        self.auto_upd = QCheckBox("Buscar actualizaciones automáticamente al abrir")
+        self.auto_upd = QCheckBox("Actualizar automáticamente en segundo plano (busca cada 3 horas e instala cuando no la usás)")
         self.auto_upd.toggled.connect(lambda on: self.set_setting("autoUpdate", on))
         sist.lay.addWidget(self.auto_upd)
         urow = QHBoxLayout()
