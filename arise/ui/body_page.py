@@ -630,6 +630,7 @@ class CuerpoPage(QWidget):
         idx = self.win.game.s["settings"].get("camera", 0)
         self.worker = CameraWorker(idx, self.win.game.s["settings"].get("mirror", True), self, segmentation=True)
         self.worker.frame.connect(self.on_frame)
+        self.worker.status.connect(lambda m: (setattr(self.video, "center_small", m), self.video.update()))
         self.worker.failed.connect(lambda m: (self.win.dialogs.show("ERROR", f"No pude iniciar la cámara.<br><small>{escape(m)}</small>",
                                                                     tone="red"), self.cancel_checkin()))
         self.video.center_small = "Iniciando cámara…"
@@ -679,7 +680,7 @@ class CuerpoPage(QWidget):
             v.set_feedback(msg, "warn")
             self.stable_since = self.countdown_end = None
             v.center = ""
-            v.set_frame(img, lm, T.GOLD)
+            v.set_frame(img, lm, T.GOLD, world)
             return
         v.set_feedback(msg, "good")
         if self.countdown_end is None:
@@ -695,10 +696,10 @@ class CuerpoPage(QWidget):
                 if txt:
                     self.win.sounds.play("tick")
             if left <= 0:
-                v.set_frame(img, lm, T.GREEN)
+                v.set_frame(img, lm, T.GREEN, world)
                 self.capture()
                 return
-        v.set_frame(img, lm, T.GREEN)
+        v.set_frame(img, lm, T.GREEN, world)
 
     def capture(self, force: bool = False):
         if not self.worker or not self.worker.latest:

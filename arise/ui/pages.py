@@ -491,8 +491,10 @@ class EntrenarPage(QWidget):
         self.btn_cam.setText("Cargando IA…")
         self.video.center_small = "Iniciando cámara y modelo de visión…"
         self.video.update()
-        self.worker = CameraWorker(idx, self.win.game.s["settings"].get("mirror", True), self)
+        self.worker = CameraWorker(idx, self.win.game.s["settings"].get("mirror", True), self,
+                                   holo_view=self.win.game.s["settings"].get("holoCam", True))
         self.worker.ready.connect(self.on_ready)
+        self.worker.status.connect(lambda m: (setattr(self.video, "center_small", m), self.video.update()))
         self.worker.failed.connect(self.on_failed)
         self.worker.frame.connect(self.on_frame)
         self.worker.finished.connect(self.on_worker_finished)
@@ -537,7 +539,7 @@ class EntrenarPage(QWidget):
     def on_frame(self, img, lm, world, aspect, t):
         color = T.GLOW
         if self.ex is None:
-            self.video.set_frame(img, lm, color)
+            self.video.set_frame(img, lm, color, world)
             return
         v = self.video
         if lm is None and self.state in ("rest", "paused"):
@@ -573,9 +575,9 @@ class EntrenarPage(QWidget):
         elif self.state == "running":
             color = self.process(lm, world, aspect, t)
         elif self.state in ("rest", "paused"):
-            v.set_frame(img, lm, T.MUTED)
+            v.set_frame(img, lm, T.MUTED, world)
             return
-        v.set_frame(img, lm, color)
+        v.set_frame(img, lm, color, world)
 
     def process(self, lm, world, aspect, t) -> str:
         r = self.counter.update(lm, world, aspect, t)
@@ -979,7 +981,8 @@ class AjustesPage(QWidget):
         self.voice = QCheckBox("Voz que cuenta las repeticiones y te corrige")
         self.sound = QCheckBox("Efectos de sonido")
         self.mirror = QCheckBox("Cámara en modo espejo")
-        for cb, key in ((self.voice, "voice"), (self.sound, "sound"), (self.mirror, "mirror")):
+        self.holocam = QCheckBox("Cámara holográfica (filtro azul + rig del esqueleto) al entrenar")
+        for cb, key in ((self.voice, "voice"), (self.sound, "sound"), (self.mirror, "mirror"), (self.holocam, "holoCam")):
             cb.toggled.connect(lambda on, key=key: self.set_setting(key, on))
             jug.lay.addWidget(cb)
 
@@ -1078,6 +1081,7 @@ class AjustesPage(QWidget):
         self.voice.setChecked(st["voice"])
         self.sound.setChecked(st["sound"])
         self.mirror.setChecked(st.get("mirror", True))
+        self.holocam.setChecked(st.get("holoCam", True))
         n = st["nag"]
         self.nag.setChecked(n["enabled"])
         self.hour.setValue(int(n["startHour"]))
