@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 import copy
+import math
 import time
 from datetime import date, datetime, timedelta
 from html import escape
 from typing import Callable, Optional
 
+from . import coach
 from .exercises import EXERCISE_ORDER, EXERCISES
+from .i18n import t
 from .storage import Store
 
 PLANS = {
@@ -61,12 +64,15 @@ def fmt(n) -> str:
 
 # Atributos calculados a partir de tus récords y volumen real (no se reparten a mano)
 STATS = {
-    "FUE": ("Fuerza", "Récords y volumen de flexiones y sentadillas",
-            lambda s, r, t: 10 + r["pushup"] // 2 + r["squat"] // 4 + t["pushup"] // 150 + t["squat"] // 300),
+    "FUE": ("Fuerza", "Récords y volumen de flexiones, sentadillas, dominadas y pesas",
+            lambda s, r, t: 10 + r["pushup"] // 2 + r["squat"] // 4 + t["pushup"] // 150 + t["squat"] // 300
+            + r.get("pullup", 0) + r.get("chinup", 0) // 2 + (t.get("curl", 0) + t.get("press", 0) + t.get("row", 0)) // 200),
     "RES": ("Resistencia", "Récords de plancha y abdominales, y volumen total",
-            lambda s, r, t: 10 + int(r["plank"]) // 10 + r["situp"] // 4 + t["situp"] // 150 + int(t["plank"]) // 300),
-    "AGI": ("Agilidad", "Récords y volumen de jumping jacks y zancadas",
-            lambda s, r, t: 10 + r["jack"] // 6 + r["lunge"] // 4 + t["jack"] // 300 + t["lunge"] // 150),
+            lambda s, r, t: 10 + int(r["plank"]) // 10 + r["situp"] // 4 + t["situp"] // 150 + int(t["plank"]) // 300
+            + int(r.get("side_plank", 0)) // 15),
+    "AGI": ("Agilidad", "Récords y volumen de jumping jacks, zancadas y escaladores",
+            lambda s, r, t: 10 + r["jack"] // 6 + r["lunge"] // 4 + t["jack"] // 300 + t["lunge"] // 150
+            + r.get("climber", 0) // 8),
 }
 
 ACHIEVEMENTS = [
@@ -90,6 +96,11 @@ ACHIEVEMENTS = [
     ("rankS", "Rango S", "Llegá al nivel 75", lambda s: s["player"]["level"] >= 75),
     ("extremo", "Plan extremo", "Cumplí un día en el plan Extremo", lambda s: s["extremeDone"] >= 1),
     ("redemption", "Deuda saldada", "Cumplí un día de penalización", lambda s: s["penaltiesCleared"] >= 1),
+    ("pull1", "Primera dominada", "Tu primera dominada con buena técnica", lambda s: s["records"].get("pullup", 0) >= 1),
+    ("pull10", "10 dominadas seguidas", "10 dominadas en una sola serie", lambda s: s["records"].get("pullup", 0) >= 10),
+    ("sessions25", "25 sesiones", "Completá 25 sesiones de entrenamiento", lambda s: s.get("sessionsDone", 0) >= 25),
+    ("water7", "Bien hidratado", "Cumplí tu meta de agua 7 días", lambda s: sum(1 for v in s.get("water", {}).values() if v.get("done")) >= 7),
+    ("sleep7", "Descanso de verdad", "7 noches durmiendo lo que te propusiste", lambda s: sum(1 for v in s.get("sleepLog", {}).values() if v.get("ok")) >= 7),
     ("checkin1", "Punto de partida", "Hacé tu primer control corporal", lambda s: len(s.get("checkins", [])) >= 1),
     ("checkin4", "Un mes documentado", "4 controles corporales", lambda s: len(s.get("checkins", [])) >= 4),
     ("checkin12", "Tres meses de cambios", "12 controles corporales", lambda s: len(s.get("checkins", [])) >= 12),
@@ -103,8 +114,10 @@ def new_state() -> dict:
         "settings": {
             "plan": "principiante", "autoProgress": True, "restDays": [6], "checkinDay": 0,
             "voice": True, "sound": True, "camera": 0, "mirror": True, "volume": 70, "quality": "alto",
-            "autoUpdate": True,
+            "autoUpdate": True, "lang": "", "equipment": [], "adjustableKg": True, "autoSets": True,
             "nag": {"enabled": True, "startHour": 18, "intervalMin": 20, "snoozesPerDay": 2, "hard": False},
+            "water": {"enabled": True, "goalMl": 0, "glassMl": 250, "start": 9, "end": 22, "everyMin": 90},
+            "sleep": {"enabled": True, "bed": "23:30", "wake": "07:30", "remind": True},
         },
         "progression": 1.0, "progressCount": 0,
         "quest": None,
@@ -119,12 +132,16 @@ def new_state() -> dict:
         "profile": {"heightCm": 0, "sex": ""},
         "weights": {},
         "checkins": [],
+        "prog": {}, "fatigue": 0.0, "sessionsDone": 0, "lastRecovery": "",
+        "water": {}, "sleepLog": {},
+        "remind": {},
     }
 
 
 def _merge(base: dict, extra: dict) -> dict:
     for k, v in (extra or {}).items():
-        if isinstance(v, dict) and isinstance(base.get(k), dict) and k not in ("history", "daily", "weights"):
+        if isinstance(v, dict) and isinstance(base.get(k), dict) and k not in ("history", "daily", "weights", "prog",
+                                                                                "water", "sleepLog"):
             _merge(base[k], v)
         else:
             base[k] = v
@@ -139,7 +156,17 @@ def _migrate(s: dict) -> dict:
         s["quest"]["plan"] = _OLD_PLANS.get(s["quest"].pop("difficulty"), "principiante")
     s["player"].pop("freePoints", None)
     s["player"].pop("alloc", None)
-    s["version"] = 3
+    for e in EXERCISE_ORDER:  # ejercicios nuevos
+        s["totals"].setdefault(e, 0)
+        s["records"].setdefault(e, 0)
+    if s.get("version", 3) < 4:
+        # la progresión vieja (factor global) se convierte en el punto de partida de cada ejercicio
+        s["prog"] = {}
+        s["sessionsDone"] = max(s.get("sessionsDone", 0), s.get("questsDone", 0))
+        q = s.get("quest")
+        if q and "session" not in q:  # objetivo de hoy en formato viejo: se rearma al cargar
+            q["legacy"] = True
+    s["version"] = 4
     return s
 
 
@@ -157,6 +184,15 @@ class Game:
         self._today = today or date.today
         loaded = self.store.load()
         self.s = _migrate(_merge(new_state(), loaded)) if loaded else new_state()
+        q = self.s.get("quest")
+        if q and q.pop("legacy", False):  # objetivo de la versión anterior: se pasa a series
+            if q["date"] == self.today() and not q["completed"] and not any(q["progress"].values()):
+                self.new_quest(q["date"], q.get("penalty", False))
+            else:
+                q["session"] = [{"ex": k, "sets": 3, "reps": max(1, -(-v // 3)), "kg": 0.0,
+                                 "rest": coach.rest_seconds(k, q.get("plan", "principiante"))}
+                                for k, v in q.get("targets", {}).items()]
+                q.setdefault("results", {})
 
     # ------------------------------------------------------------ helpers
     def today(self) -> str:
@@ -262,20 +298,124 @@ class Game:
                        "sparkles")
 
     # ------------------------------------------------------------ objetivo diario
+    # ------------------------------------------------------------ entrenador: sesión del día
+    def day_index(self, day: str) -> int:
+        return date.fromisoformat(day).toordinal()
+
+    def pool(self) -> list[str]:
+        return coach.unlocked(self.s["sessionsDone"], self.settings["plan"], self.settings.get("equipment", []))
+
+    def prog_for(self, ex: str) -> dict:
+        p = self.s["prog"].get(ex)
+        if p is None:
+            factor = self.s.get("progression", 1.0) or 1.0
+            p = coach.initial(ex, self.settings["plan"], factor)
+            self.s["prog"][ex] = p
+        return p
+
+    def build_session(self, day: str, penalty: bool) -> list[dict]:
+        plan = self.settings["plan"]
+        chosen = coach.pick_exercises(self.pool(), plan, self.s["sessionsDone"], self.day_index(day))
+        out = []
+        for k in chosen:
+            p = self.prog_for(k)
+            reps = p["reps"]
+            if penalty:
+                reps = int(math.ceil(reps * PENALTY_FACTOR))
+            out.append({"ex": k, "sets": p["sets"], "reps": reps, "kg": p.get("kg", 0.0),
+                        "rest": coach.rest_seconds(k, plan)})
+        return out
+
     def build_targets(self, penalty: bool) -> dict:
-        plan = PLANS.get(self.settings["plan"], PLANS["principiante"])
-        scale = self.s["progression"] * (PENALTY_FACTOR if penalty else 1)
-        return {k: int(-(-v * scale // 5) * 5) for k, v in plan["targets"].items()}
+        return {it["ex"]: coach.volume(it) for it in self.build_session(self.today(), penalty)}
 
     def new_quest(self, day: str, penalty: bool):
-        if self.is_rest_day(day):
-            self.s["quest"] = {"date": day, "penalty": False, "rest": True, "plan": self.settings["plan"],
-                               "targets": {}, "progress": {}, "completed": True}
+        reason = ""
+        if not self.is_rest_day(day) and not penalty:
+            reason = coach.needs_rest(self.s["history"], date.fromisoformat(day), self.settings["plan"],
+                                      self.settings.get("restDays", []), self.s.get("fatigue", 0.0)) or ""
+        if self.is_rest_day(day) or reason:
+            self.s["quest"] = {"date": day, "penalty": False, "rest": True, "restReason": reason,
+                               "plan": self.settings["plan"], "targets": {}, "progress": {}, "completed": True,
+                               "session": [], "results": {}}
             return
+        session = self.build_session(day, penalty)
+        session, why = coach.adapt(session, "", self.s.get("fatigue", 0.0))
         self.s["quest"] = {
             "date": day, "penalty": penalty, "rest": False, "plan": self.settings["plan"],
-            "targets": self.build_targets(penalty), "progress": {}, "completed": False,
+            "session": session, "targets": {it["ex"]: coach.volume(it) for it in session},
+            "progress": {}, "completed": False, "adapted": why, "readiness": None, "results": {},
         }
+
+    def session_items(self) -> list[dict]:
+        q = self.quest
+        return list(q.get("session", [])) if q else []
+
+    def set_readiness(self, level: str) -> str:
+        """Cómo te sentís hoy: adapta la sesión si todavía no empezaste. Devuelve el motivo (o '')."""
+        q = self.quest
+        if not q or q.get("rest") or q["completed"]:
+            return ""
+        q["readiness"] = level
+        if level == "dolorido":
+            if self.s.get("lastRecovery") and (self._today() - date.fromisoformat(self.s["lastRecovery"])).days < 7:
+                q["readiness"] = "cansado"
+                level = "cansado"
+            else:
+                self.s["lastRecovery"] = self.today()
+        if any(q["progress"].values()) and level != "dolorido":
+            self.save()
+            return ""
+        base = self.build_session(q["date"], q["penalty"]) if not q.get("adaptedFrom") else q["adaptedFrom"]
+        session, why = coach.adapt(base, level, self.s.get("fatigue", 0.0))
+        if why:
+            q["adaptedFrom"] = base
+        q["session"] = session
+        q["targets"] = {it["ex"]: coach.volume(it) for it in session}
+        q["adapted"] = why
+        if why:
+            self.log(t(why) + ".")
+        self.save()
+        self.emit("changed")
+        return why
+
+    def record_exercise(self, ex: str, sets: list[dict], rpe: Optional[int] = None) -> tuple[str, str]:
+        """Guarda cómo te fue en un ejercicio de la sesión y ajusta la progresión. Devuelve (tipo, texto)."""
+        q = self.quest
+        recovery = any(it.get("recovery") for it in q.get("session", []) if it["ex"] == ex) if q else False
+        if q is not None:
+            q.setdefault("results", {})[ex] = {"rpe": rpe, "sets": sets}
+        if recovery:
+            self.save()
+            return "hold", t("Recuperación: no cambia tu progresión")
+        p = self.prog_for(ex)
+        item = next((it for it in (q or {}).get("session", []) if it["ex"] == ex), None)
+        if item and item.get("sets", 0) < p["sets"]:
+            # sesión adaptada por cansancio: no cuenta como fallo ni como avance
+            new = dict(p, hist=(p.get("hist", []) + [{"d": self.today(), "sets": [x.get("good", 0) for x in sets],
+                                                         "q": 1.0, "rpe": rpe or 3, "target": "adaptada"}])[-12:])
+            kind, txt = "hold", "Sesión adaptada: tu progresión se mantiene"
+        else:
+            # en días de penalización se pidió más: se evalúa contra tu objetivo normal
+            new, kind, txt = coach.progress(p, ex, sets, rpe, self.settings.get("adjustableKg", True), self.today())
+        self.s["prog"][ex] = new
+        name = EXERCISES[ex].name
+        if kind == "up":
+            self.log(t("Progresión: {name} → {txt}", name=t(name), txt=t(txt) if not txt[0].isdigit() else txt) + ".")
+        elif kind == "down":
+            self.log(t("Ajuste: {name} → {txt}", name=t(name), txt=t(txt.split(":")[0]) + txt[len(txt.split(":")[0]):]) + ".")
+        self.save()
+        return kind, txt
+
+    def set_weight_kg(self, ex: str, kg: float):
+        p = self.prog_for(ex)
+        p["kg"] = max(0.0, round(float(kg), 1))
+        q = self.quest
+        for it in (q or {}).get("session", []):
+            if it["ex"] == ex:
+                it["kg"] = p["kg"]
+        self.save()
+        self.emit("changed")
 
     def _untouched(self) -> bool:
         q = self.quest
@@ -283,10 +423,10 @@ class Game:
 
     def set_plan(self, plan: str):
         self.settings["plan"] = plan
+        self.s["prog"] = {k: v for k, v in self.s["prog"].items() if v.get("hist")}  # los no usados se recalculan
         if self._untouched():
-            self.quest["plan"] = plan
-            self.quest["targets"] = self.build_targets(self.quest["penalty"])
-            self.emit("toast", text="Objetivo de hoy actualizado", gold=False, icon="check")
+            self.new_quest(self.quest["date"], self.quest["penalty"])
+            self.emit("toast", text=t("Objetivo de hoy actualizado"), gold=False, icon="check")
         self.save()
         self.emit("changed")
 
@@ -371,16 +511,24 @@ class Game:
         self.log(f"Objetivo diario cumplido. +{fmt(total)} XP. Racha: {s['streak']}.")
         self.emit("say", text="Objetivo diario cumplido", force=True)
         prog = ""
-        if self.settings.get("autoProgress", True):
-            s["progressCount"] += 1
-            if s["progressCount"] % PROGRESS_EVERY == 0 and s["progression"] < PROGRESS_MAX:
-                s["progression"] = round(min(PROGRESS_MAX, s["progression"] + PROGRESS_STEP), 2)
-                pct = round((s["progression"] - 1) * 100)
-                self.log(f"Progresión: los objetivos suben a +{pct}% sobre el plan base.")
-                prog = f"<br><br><b>Progresión:</b> desde mañana los objetivos suben 5% (+{pct}% sobre el plan base)."
-        self.modal("OBJETIVO CUMPLIDO",
+        s["sessionsDone"] = s.get("sessionsDone", 0) + 1
+        res = q.get("results", {})
+        rpes = [r["rpe"] for r in res.values() if r.get("rpe")]
+        missed = 0
+        if res:
+            missed = sum(1 for k, r in res.items()
+                         if any(st.get("good", 0) < next((it["reps"] for it in q["session"] if it["ex"] == k), 0)
+                                for st in r.get("sets", []))) / len(res)
+        s["fatigue"] = coach.update_fatigue(s.get("fatigue", 0.0), rpes, missed)
+        before = set(coach.unlocked(s["sessionsDone"] - 1, self.settings["plan"], self.settings.get("equipment", [])))
+        new = [k for k in self.pool() if k not in before]
+        if new:
+            names = ", ".join(t(EXERCISES[k].name) for k in new)
+            self.log(t("Ejercicios nuevos en tu rotación: {names}.", names=names))
+            prog = "<br><br>" + t("<b>Nuevo en tu rotación:</b> {names}.", names=names)
+        self.modal(t("OBJETIVO CUMPLIDO"),
                    f"<span style='font-size:26px;color:#ffd166'><b>+{fmt(total)} XP</b></span><br>"
-                   f"Racha: <b>{s['streak']}</b> día{'s' if s['streak'] != 1 else ''} (+{bonus} por racha){prog}",
+                   + t("Racha: <b>{n}</b> días (+{bonus} por racha)", n=s["streak"], bonus=bonus) + prog,
                    "gold", "quest", "circle-check")
         self.gain_xp(total)
 

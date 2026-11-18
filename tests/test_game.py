@@ -117,19 +117,91 @@ def test_records(tmp_path):
     assert g.s["records"]["pushup"] == 15
 
 
-def test_progression(tmp_path):
+def _do_session(g, rpe=2, quality=1.0, short=0):
+    for it in g.session_items():
+        sets = [{"good": it["reps"] - short, "bad": 0, "quality": quality, "slowdown": 1.0} for _ in range(it["sets"])]
+        g.record_exercise(it["ex"], sets, rpe)
+        g.add_reps(it["ex"], it["sets"] * it["reps"])
+
+
+def test_smart_progression_goes_up_when_easy(tmp_path):
     g, clock, _ = make(tmp_path, d=date(2026, 11, 16))  # lunes
-    base = g.quest["targets"]["pushup"]
-    day = date(2026, 11, 16)
-    for i in range(8):  # 7 días de entrenamiento + el domingo de descanso
-        clock.d = date.fromordinal(day.toordinal() + i)
-        g.rollover()
-        for k, t in g.quest["targets"].items():
-            g.add_reps(k, t)
-    assert g.s["progression"] == 1.05
-    clock.d = date(2026, 11, 24)
+    first = {it["ex"]: (it["sets"], it["reps"]) for it in g.session_items()}
+    _do_session(g, rpe=2)
+    for ex, (sets, reps) in first.items():
+        p = g.s["prog"][ex]
+        assert p["sets"] * p["reps"] > sets * reps, ex
+
+
+def test_progression_holds_when_hard_and_drops_after_failing(tmp_path):
+    g, clock, _ = make(tmp_path, d=date(2026, 11, 16))
+    it = g.session_items()[0]
+    ex, reps = it["ex"], it["reps"]
+    g.record_exercise(ex, [{"good": reps, "quality": 1.0}] * it["sets"], 3)
+    assert g.s["prog"][ex]["reps"] == reps
+    bad = [{"good": reps - 3, "quality": 1.0}] * it["sets"]
+    g.record_exercise(ex, bad, 4)
+    assert g.s["prog"][ex]["reps"] < reps
+
+
+def test_bad_technique_does_not_progress(tmp_path):
+    g, clock, _ = make(tmp_path, d=date(2026, 11, 16))
+    it = g.session_items()[0]
+    g.record_exercise(it["ex"], [{"good": it["reps"], "bad": 6, "quality": 0.5}] * it["sets"], 2)
+    assert g.s["prog"][it["ex"]]["reps"] == it["reps"]
+
+
+def test_tired_adapts_session_without_counting_as_failure(tmp_path):
+    g, clock, _ = make(tmp_path, d=date(2026, 11, 16))
+    full = [it["sets"] for it in g.session_items()]
+    why = g.set_readiness("cansado")
+    assert why
+    assert all(it["sets"] <= s for it, s in zip(g.session_items(), full))
+    it = g.session_items()[0]
+    g.record_exercise(it["ex"], [{"good": it["reps"], "quality": 1.0}] * it["sets"], 3)
+    assert g.s["prog"][it["ex"]]["fails"] == 0
+
+
+def test_recovery_session_once_a_week(tmp_path):
+    g, clock, _ = make(tmp_path, d=date(2026, 11, 16))
+    g.set_readiness("dolorido")
+    assert all(it.get("recovery") for it in g.session_items())
+    _do_session(g)
+    assert g.quest["completed"]
+    clock.d = date(2026, 11, 17)
     g.rollover()
-    assert g.quest["targets"]["pushup"] > base
+    g.set_readiness("dolorido")  # segunda vez en la semana: solo sesión "cansado"
+    assert not any(it.get("recovery") for it in g.session_items())
+
+
+def test_scheduled_rest_after_many_days(tmp_path):
+    g, clock, _ = make(tmp_path, d=date(2026, 11, 16), plan="principiante")
+    g.set_rest_days([])
+    for i in range(3):
+        clock.d = date(2026, 11, 16 + i)
+        g.rollover()
+        _do_session(g)
+    clock.d = date(2026, 11, 19)
+    g.rollover()
+    assert g.quest["rest"] and g.quest["restReason"]
+
+
+def test_new_exercises_unlock_with_sessions(tmp_path):
+    g, clock, ev = make(tmp_path, d=date(2026, 11, 16), plan="principiante")
+    g.set_rest_days([])
+    start = set(g.pool())
+    for i in range(6):
+        clock.d = date.fromordinal(date(2026, 11, 16).toordinal() + i * 2)
+        g.rollover()
+        _do_session(g)
+    assert set(g.pool()) > start
+
+
+def test_equipment_adds_exercises(tmp_path):
+    g, clock, _ = make(tmp_path)
+    assert "pullup" not in g.pool()
+    g.settings["equipment"] = ["bar", "dumbbell"]
+    assert {"pullup", "curl", "press"} <= set(g.pool())
 
 
 def test_adherence(tmp_path):
@@ -151,6 +223,7 @@ def test_migrates_old_save(tmp_path):
     (tmp_path / "p.json").write_text(json.dumps(old))
     g = Game(Store(tmp_path / "p.json"), today=Clock(date(2026, 11, 18)))
     assert g.settings["plan"] == "avanzado"
+    assert g.quest["session"]  # el objetivo viejo se pasa a series
     assert "freePoints" not in g.player
     assert g.player["level"] == 3
 
