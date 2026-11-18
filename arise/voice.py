@@ -94,7 +94,7 @@ class Sounds:
         try:
             from PySide6.QtCore import QUrl
             from PySide6.QtMultimedia import QSoundEffect
-            d = Path(tempfile.gettempdir()) / "ascenso_sfx"
+            d = Path(tempfile.gettempdir()) / "arise_sfx"
             d.mkdir(exist_ok=True)
             for name, (notes, kind, vol) in SOUNDS.items():
                 p = d / f"{name}.wav"

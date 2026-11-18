@@ -1,0 +1,480 @@
+"""Reglas: XP, niveles, rangos, objetivo diario, progresión, récords, descanso y penalizaciones."""
+from __future__ import annotations
+
+import copy
+import time
+from datetime import date, datetime, timedelta
+from html import escape
+from typing import Callable, Optional
+
+from .exercises import EXERCISE_ORDER, EXERCISES
+from .storage import Store
+
+PLANS = {
+    "principiante": {"label": "Principiante", "reward": 100,
+                     "desc": "Para arrancar o volver después de un tiempo parado.",
+                     "targets": {"pushup": 10, "squat": 20, "situp": 15, "plank": 30}},
+    "intermedio":   {"label": "Intermedio", "reward": 200,
+                     "desc": "Ya entrenás con algo de regularidad.",
+                     "targets": {"pushup": 25, "squat": 40, "situp": 30, "jack": 50, "plank": 60}},
+    "avanzado":     {"label": "Avanzado", "reward": 350,
+                     "desc": "Buena base física, querés exigirte.",
+                     "targets": {"pushup": 50, "squat": 75, "situp": 50, "jack": 100, "plank": 90}},
+    "extremo":      {"label": "Extremo", "reward": 600,
+                     "desc": "100 flexiones, 100 abdominales, 100 sentadillas y 2 minutos de plancha. Todos los días.",
+                     "targets": {"pushup": 100, "squat": 100, "situp": 100, "plank": 120}},
+}
+PLAN_ORDER = list(PLANS)
+_OLD_PLANS = {"facil": "principiante", "normal": "intermedio", "dificil": "avanzado", "extremo": "extremo"}
+
+WEEKDAYS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
+PENALTY_FACTOR = 1.3
+PROGRESS_EVERY = 7      # cada 7 días cumplidos...
+PROGRESS_STEP = 0.05    # ...los objetivos suben 5%
+PROGRESS_MAX = 2.5
+
+RANKS = [(75, "S"), (50, "A"), (35, "B"), (20, "C"), (10, "D"), (1, "E")]
+
+
+def rank_of(level: int) -> str:
+    return next(r for lv, r in RANKS if level >= lv)
+
+
+def next_rank(level: int):
+    for lv, r in sorted(RANKS):
+        if lv > level:
+            return lv, r
+    return None
+
+
+def xp_needed(level: int) -> int:
+    return round(80 * level ** 1.4 + 20)
+
+
+def total_reps(s) -> int:
+    return sum(s["totals"].get(e, 0) for e in EXERCISE_ORDER if e != "plank")
+
+
+def fmt(n) -> str:
+    return f"{int(n):,}".replace(",", ".")
+
+
+# Atributos calculados a partir de tus récords y volumen real (no se reparten a mano)
+STATS = {
+    "FUE": ("Fuerza", "Récords y volumen de flexiones y sentadillas",
+            lambda s, r, t: 10 + r["pushup"] // 2 + r["squat"] // 4 + t["pushup"] // 150 + t["squat"] // 300),
+    "RES": ("Resistencia", "Récords de plancha y abdominales, y volumen total",
+            lambda s, r, t: 10 + int(r["plank"]) // 10 + r["situp"] // 4 + t["situp"] // 150 + int(t["plank"]) // 300),
+    "AGI": ("Agilidad", "Récords y volumen de jumping jacks y zancadas",
+            lambda s, r, t: 10 + r["jack"] // 6 + r["lunge"] // 4 + t["jack"] // 300 + t["lunge"] // 150),
+}
+
+ACHIEVEMENTS = [
+    ("first", "Primer paso", "Primera repetición registrada", lambda s: total_reps(s) >= 1 or s["totals"]["plank"] >= 1),
+    ("quest1", "Primer día cumplido", "Completá tu primer objetivo diario", lambda s: s["questsDone"] >= 1),
+    ("streak7", "Una semana sin fallar", "Racha de 7 días", lambda s: s["bestStreak"] >= 7),
+    ("streak30", "Un mes sin fallar", "Racha de 30 días", lambda s: s["bestStreak"] >= 30),
+    ("streak100", "100 días", "Racha de 100 días", lambda s: s["bestStreak"] >= 100),
+    ("push100", "100 flexiones", "100 flexiones en total", lambda s: s["totals"]["pushup"] >= 100),
+    ("push1000", "1.000 flexiones", "1.000 flexiones en total", lambda s: s["totals"]["pushup"] >= 1000),
+    ("pr30", "30 seguidas", "30 flexiones en una sola serie", lambda s: s["records"]["pushup"] >= 30),
+    ("pr50", "50 seguidas", "50 flexiones en una sola serie", lambda s: s["records"]["pushup"] >= 50),
+    ("squat1000", "1.000 sentadillas", "1.000 sentadillas en total", lambda s: s["totals"]["squat"] >= 1000),
+    ("plank120", "2 minutos firmes", "Plancha de 2 minutos en una serie", lambda s: s["records"]["plank"] >= 120),
+    ("reps5000", "5.000 repeticiones", "5.000 repeticiones en total", lambda s: total_reps(s) >= 5000),
+    ("reps25000", "25.000 repeticiones", "25.000 repeticiones en total", lambda s: total_reps(s) >= 25000),
+    ("rankD", "Rango D", "Llegá al nivel 10", lambda s: s["player"]["level"] >= 10),
+    ("rankC", "Rango C", "Llegá al nivel 20", lambda s: s["player"]["level"] >= 20),
+    ("rankB", "Rango B", "Llegá al nivel 35", lambda s: s["player"]["level"] >= 35),
+    ("rankA", "Rango A", "Llegá al nivel 50", lambda s: s["player"]["level"] >= 50),
+    ("rankS", "Rango S", "Llegá al nivel 75", lambda s: s["player"]["level"] >= 75),
+    ("extremo", "Plan extremo", "Cumplí un día en el plan Extremo", lambda s: s["extremeDone"] >= 1),
+    ("redemption", "Deuda saldada", "Cumplí un día de penalización", lambda s: s["penaltiesCleared"] >= 1),
+]
+
+
+def new_state() -> dict:
+    return {
+        "version": 3,
+        "player": {"name": "", "level": 1, "xp": 0.0, "createdAt": time.time()},
+        "settings": {
+            "plan": "principiante", "autoProgress": True, "restDays": [6],
+            "voice": True, "sound": True, "camera": 0, "mirror": True,
+            "nag": {"enabled": True, "startHour": 18, "intervalMin": 20, "snoozesPerDay": 2, "hard": False},
+        },
+        "progression": 1.0, "progressCount": 0,
+        "quest": None,
+        "streak": 0, "bestStreak": 0, "questsDone": 0, "extremeDone": 0, "penaltiesCleared": 0,
+        "totals": {e: 0 for e in EXERCISE_ORDER},
+        "records": {e: 0 for e in EXERCISE_ORDER},
+        "daily": {},
+        "history": {},
+        "achievements": [],
+        "log": [],
+        "guardian": {"date": "", "snoozes": 0, "surrender": False},
+    }
+
+
+def _merge(base: dict, extra: dict) -> dict:
+    for k, v in (extra or {}).items():
+        if isinstance(v, dict) and isinstance(base.get(k), dict) and k not in ("history", "daily"):
+            _merge(base[k], v)
+        else:
+            base[k] = v
+    return base
+
+
+def _migrate(s: dict) -> dict:
+    st = s["settings"]
+    if "difficulty" in st:  # datos de la versión anterior
+        st["plan"] = _OLD_PLANS.get(st.pop("difficulty"), "principiante")
+    if s.get("quest") and "difficulty" in s["quest"]:
+        s["quest"]["plan"] = _OLD_PLANS.get(s["quest"].pop("difficulty"), "principiante")
+    s["player"].pop("freePoints", None)
+    s["player"].pop("alloc", None)
+    s["version"] = 3
+    return s
+
+
+class Game:
+    """Contiene el estado y aplica las reglas. Avisa a la interfaz mediante `on_event`.
+
+    Eventos: ("modal", dict(title, body, color, sound, icon)), ("toast", dict(text, gold, icon)),
+             ("say", dict(text, force)), ("changed", {})
+    """
+
+    def __init__(self, store: Store | None = None, on_event: Optional[Callable] = None,
+                 today: Optional[Callable[[], date]] = None):
+        self.store = store or Store()
+        self.on_event = on_event or (lambda kind, data: None)
+        self._today = today or date.today
+        loaded = self.store.load()
+        self.s = _migrate(_merge(new_state(), loaded)) if loaded else new_state()
+
+    # ------------------------------------------------------------ helpers
+    def today(self) -> str:
+        return self._today().isoformat()
+
+    def save(self):
+        self.store.save(self.s)
+
+    def emit(self, kind, **data):
+        self.on_event(kind, data)
+
+    def modal(self, title, body, color="", sound="open", icon=""):
+        self.emit("modal", title=title, body=body, color=color, sound=sound, icon=icon)
+
+    def log(self, msg):
+        self.s["log"].insert(0, {"t": time.time(), "msg": msg})
+        del self.s["log"][200:]
+
+    @property
+    def player(self):
+        return self.s["player"]
+
+    @property
+    def quest(self):
+        return self.s["quest"]
+
+    @property
+    def settings(self):
+        return self.s["settings"]
+
+    @property
+    def registered(self) -> bool:
+        return bool(self.player["name"])
+
+    def is_rest_day(self, day: str | date) -> bool:
+        d = date.fromisoformat(day) if isinstance(day, str) else day
+        return d.weekday() in self.settings.get("restDays", [])
+
+    def stat_value(self, k) -> int:
+        return STATS[k][2](self.s, self.s["records"], self.s["totals"])
+
+    def adherence(self, days: int = 30) -> Optional[int]:
+        """% de días de entrenamiento cumplidos (sin contar descansos). None si todavía no hay datos."""
+        today = self._today()
+        created = date.fromtimestamp(self.player["createdAt"])
+        start = max(created, today - timedelta(days=days - 1))
+        total = done = 0
+        d = start
+        while d <= today:
+            k = d.isoformat()
+            if k == today.isoformat():
+                q = self.quest
+                if q and not q.get("rest") and q["completed"]:
+                    total += 1
+                    done += 1
+            else:
+                h = self.s["history"].get(k)
+                if h and not h.get("rest"):
+                    total += 1
+                    done += 1 if h.get("completed") else 0
+            d += timedelta(days=1)
+        return round(100 * done / total) if total else None
+
+    def last_achievement(self) -> str:
+        for aid, title, *_ in reversed(ACHIEVEMENTS):
+            if aid in self.s["achievements"]:
+                return title
+        return "—"
+
+    # ------------------------------------------------------------ registro
+    def register(self, name: str, plan: str):
+        self.player["name"] = name.strip()[:24]
+        self.player["createdAt"] = time.time()
+        self.settings["plan"] = plan
+        self.new_quest(self.today(), False)
+        self.log(f"Registro: {self.player['name']}, plan {PLANS[plan]['label']}.")
+        self.save()
+        self.emit("changed")
+
+    # ------------------------------------------------------------ XP / niveles
+    def gain_xp(self, amount: float):
+        p = self.player
+        p["xp"] += amount
+        leveled = 0
+        while p["xp"] >= xp_needed(p["level"]):
+            p["xp"] -= xp_needed(p["level"])
+            old_rank = rank_of(p["level"])
+            p["level"] += 1
+            leveled += 1
+            self.log(f"Nivel {p['level']}.")
+            new_rank = rank_of(p["level"])
+            if new_rank != old_rank:
+                self.log(f"Nuevo rango: {new_rank}.")
+                self.modal("NUEVO RANGO",
+                           f"Rango <span style='font-size:30px;color:#ffd166'><b>{new_rank}</b></span><br>"
+                           f"Nivel {p['level']} alcanzado. Seguí así.", "gold", "level", "crown")
+        if leveled:
+            self.emit("say", text=f"Nivel {p['level']}", force=True)
+            nr = next_rank(p["level"])
+            extra = f"<br><small>Próximo rango ({nr[1]}) en el nivel {nr[0]}.</small>" if nr else ""
+            self.modal("NIVEL ALCANZADO",
+                       f"<span style='font-size:34px;color:#ffd166'><b>{p['level']}</b></span>{extra}", "gold", "level",
+                       "sparkles")
+
+    # ------------------------------------------------------------ objetivo diario
+    def build_targets(self, penalty: bool) -> dict:
+        plan = PLANS.get(self.settings["plan"], PLANS["principiante"])
+        scale = self.s["progression"] * (PENALTY_FACTOR if penalty else 1)
+        return {k: int(-(-v * scale // 5) * 5) for k, v in plan["targets"].items()}
+
+    def new_quest(self, day: str, penalty: bool):
+        if self.is_rest_day(day):
+            self.s["quest"] = {"date": day, "penalty": False, "rest": True, "plan": self.settings["plan"],
+                               "targets": {}, "progress": {}, "completed": True}
+            return
+        self.s["quest"] = {
+            "date": day, "penalty": penalty, "rest": False, "plan": self.settings["plan"],
+            "targets": self.build_targets(penalty), "progress": {}, "completed": False,
+        }
+
+    def _untouched(self) -> bool:
+        q = self.quest
+        return bool(q) and not q["completed"] and not any(q["progress"].values())
+
+    def set_plan(self, plan: str):
+        self.settings["plan"] = plan
+        if self._untouched():
+            self.quest["plan"] = plan
+            self.quest["targets"] = self.build_targets(self.quest["penalty"])
+            self.emit("toast", text="Objetivo de hoy actualizado", gold=False, icon="check")
+        self.save()
+        self.emit("changed")
+
+    def set_rest_days(self, days: list[int]):
+        self.settings["restDays"] = sorted(set(days))
+        q = self.quest
+        if q and (self._untouched() or q.get("rest")):
+            self.new_quest(q["date"], q.get("penalty", False))
+        self.save()
+        self.emit("changed")
+
+    def rollover(self) -> bool:
+        """Cierra el día anterior si cambió la fecha. Devuelve True si hubo cambio."""
+        if not self.registered:
+            return False
+        today = self.today()
+        q = self.quest
+        if not q:
+            self.new_quest(today, False)
+            self.save()
+            return True
+        if q["date"] == today:
+            return False
+
+        self.s["history"][q["date"]] = {k: q.get(k) for k in ("completed", "penalty", "progress", "targets", "rest")}
+        gap = (date.fromisoformat(today) - date.fromisoformat(q["date"])).days
+        if gap < 0:  # el reloj fue para atrás: reiniciamos sin castigar
+            self.new_quest(today, False)
+            self.save()
+            return True
+        missed = 0 if q["completed"] else 1
+        for i in range(1, gap):
+            d = (date.fromisoformat(q["date"]) + timedelta(days=i))
+            rest = self.is_rest_day(d)
+            self.s["history"][d.isoformat()] = {"completed": rest, "penalty": False, "progress": {},
+                                                "targets": {}, "rest": rest}
+            missed += 0 if rest else 1
+
+        if missed:
+            p = self.player
+            lost = min(p["xp"], round(xp_needed(p["level"]) * 0.15 * min(missed, 5)))
+            p["xp"] -= lost
+            prev = self.s["streak"]
+            self.s["streak"] = 0
+            self.log(f"Día no cumplido ({missed}). -{fmt(lost)} XP. Racha reiniciada (era {prev}).")
+            self.new_quest(today, True)
+            dias = f"<b>{missed} días</b> sin cumplir" if missed > 1 else "Ayer no cumpliste el objetivo"
+            penal = ("Hoy los objetivos son <b>+30%</b>. Cumplilos para recuperar el ritmo."
+                     if not self.quest.get("rest") else "Hoy es día de descanso: mañana se retoma.")
+            self.modal("PENALIZACIÓN",
+                       f"{dias}.<br><br>"
+                       f"<span style='color:#ff3b5c'><b>-{fmt(lost)} XP</b></span>  ·  Racha reiniciada (era {prev} días)<br><br>"
+                       f"{penal}", "red", "alarm", "triangle-alert")
+        else:
+            self.new_quest(today, False)
+        self.save()
+        self.emit("changed")
+        return True
+
+    def remaining(self) -> list[tuple[str, float]]:
+        q = self.quest
+        if not q:
+            return []
+        return [(k, t - q["progress"].get(k, 0)) for k, t in q["targets"].items() if q["progress"].get(k, 0) < t]
+
+    def _check_complete(self):
+        q = self.quest
+        if q["completed"] or q.get("rest") or self.remaining():
+            return
+        q["completed"] = True
+        s = self.s
+        s["streak"] += 1
+        s["bestStreak"] = max(s["bestStreak"], s["streak"])
+        s["questsDone"] += 1
+        if q.get("plan") == "extremo":
+            s["extremeDone"] += 1
+        if q["penalty"]:
+            s["penaltiesCleared"] += 1
+        base = PLANS.get(q.get("plan"), PLANS["principiante"])["reward"]
+        bonus = min(200, s["streak"] * 10)
+        total = round(base * (1.3 if q["penalty"] else 1) + bonus)
+        self.log(f"Objetivo diario cumplido. +{fmt(total)} XP. Racha: {s['streak']}.")
+        self.emit("say", text="Objetivo diario cumplido", force=True)
+        prog = ""
+        if self.settings.get("autoProgress", True):
+            s["progressCount"] += 1
+            if s["progressCount"] % PROGRESS_EVERY == 0 and s["progression"] < PROGRESS_MAX:
+                s["progression"] = round(min(PROGRESS_MAX, s["progression"] + PROGRESS_STEP), 2)
+                pct = round((s["progression"] - 1) * 100)
+                self.log(f"Progresión: los objetivos suben a +{pct}% sobre el plan base.")
+                prog = f"<br><br><b>Progresión:</b> desde mañana los objetivos suben 5% (+{pct}% sobre el plan base)."
+        self.modal("OBJETIVO CUMPLIDO",
+                   f"<span style='font-size:26px;color:#ffd166'><b>+{fmt(total)} XP</b></span><br>"
+                   f"Racha: <b>{s['streak']}</b> día{'s' if s['streak'] != 1 else ''} (+{bonus} por racha){prog}",
+                   "gold", "level", "circle-check")
+        self.gain_xp(total)
+
+    def add_reps(self, ex: str, n: float, manual: bool = False) -> float:
+        """Suma repeticiones (o segundos de plancha). Devuelve la XP ganada."""
+        if n <= 0 or not self.registered:
+            return 0.0
+        self.rollover()
+        self.s["totals"][ex] = self.s["totals"].get(ex, 0) + n
+        day = self.s["daily"].setdefault(self.today(), {})
+        day[ex] = day.get(ex, 0) + n
+        if len(self.s["daily"]) > 400:
+            for k in sorted(self.s["daily"])[:-400]:
+                del self.s["daily"][k]
+        q = self.quest
+        if ex in q["targets"]:
+            before = q["progress"].get(ex, 0)
+            q["progress"][ex] = before + n
+            if before < q["targets"][ex] <= q["progress"][ex]:
+                name = EXERCISES[ex].name
+                self.emit("toast", text=f"{name}: objetivo cumplido", gold=True, icon="circle-check")
+                self.emit("say", text=f"{name} completo", force=True)
+        xp = n * EXERCISES[ex].xp * (0.7 if manual else 1.0)
+        self.gain_xp(xp)
+        self._check_complete()
+        self.check_achievements()
+        self.save()
+        self.emit("changed")
+        return xp
+
+    def finish_set(self, ex: str, good: float, bad: int, xp: float) -> bool:
+        """Registra una serie terminada. Devuelve True si fue récord personal."""
+        e = EXERCISES[ex]
+        unit = " s" if e.timed else " reps"
+        extra = f", {bad} mal hechas" if bad else ""
+        self.log(f"Serie de {e.name}: {fmt(good)}{unit}{extra}. +{fmt(xp)} XP")
+        record = False
+        prev = self.s["records"].get(ex, 0)
+        if good > prev:
+            self.s["records"][ex] = int(good)
+            record = prev > 0
+            if record:
+                self.log(f"Récord personal: {e.name} {fmt(good)}{unit} en una serie (antes {fmt(prev)}).")
+        self.check_achievements()
+        self.save()
+        self.emit("changed")
+        return record
+
+    def check_achievements(self):
+        for aid, title, desc, test in ACHIEVEMENTS:
+            if aid not in self.s["achievements"] and test(self.s):
+                self.s["achievements"].append(aid)
+                self.log(f"Logro: {title}.")
+                self.modal("LOGRO",
+                           f"<span style='font-size:22px;color:#ffd166'><b>{escape(title)}</b></span>"
+                           f"<br><small>{escape(desc)}</small>", "gold", "open", "award")
+
+    # ------------------------------------------------------------ Guardián
+    def guardian(self) -> dict:
+        g = self.s["guardian"]
+        if g.get("date") != self.today():
+            g.update(date=self.today(), snoozes=0, surrender=False)
+        return g
+
+    def nag_settings(self) -> dict:
+        return self.settings["nag"]
+
+    def should_nag(self, now: Optional[datetime] = None) -> bool:
+        now = now or datetime.now()
+        nag = self.nag_settings()
+        if not nag["enabled"] or not self.registered:
+            return False
+        self.rollover()
+        if self.quest["completed"] or self.quest.get("rest") or self.guardian()["surrender"]:
+            return False
+        return now.hour >= int(nag["startHour"])
+
+    def snooze(self):
+        self.guardian()["snoozes"] += 1
+        self.save()
+
+    def snoozes_left(self) -> int:
+        return max(0, int(self.nag_settings()["snoozesPerDay"]) - self.guardian()["snoozes"])
+
+    def surrender(self):
+        self.guardian()["surrender"] = True
+        self.log("Te rendiste por hoy.")
+        self.save()
+
+    # ------------------------------------------------------------ datos
+    def export(self) -> dict:
+        return copy.deepcopy(self.s)
+
+    def import_state(self, data: dict):
+        if not isinstance(data, dict) or "player" not in data:
+            raise ValueError("Archivo inválido")
+        self.s = _migrate(_merge(new_state(), data))
+        self.save()
+        self.emit("changed")
+
+    def reset(self):
+        self.s = new_state()
+        self.save()
+        self.emit("changed")

@@ -1,21 +1,21 @@
-; Instalador de ASCENSO (Inno Setup 6)
-#define AppVersion GetEnv("ASCENSO_VERSION")
+; Instalador de Arise Trainer (Inno Setup 6)
+#define AppVersion GetEnv("ARISE_VERSION")
 #if AppVersion == ""
   #define AppVersion "1.0.0"
 #endif
 
 [Setup]
-AppId={{6B7E1C52-3F1A-4C7B-9E2D-ASCENSO000001}
-AppName=Ascenso
+AppId={{8D2F4A61-7C3B-4E9A-B1D5-A215E7124A11}
+AppName=Arise Trainer
 AppVersion={#AppVersion}
-AppPublisher=Ascenso
-DefaultDirName={localappdata}\Programs\Ascenso
-DefaultGroupName=Ascenso
+AppPublisher=Arise Trainer
+DefaultDirName={localappdata}\Programs\AriseTrainer
+DefaultGroupName=Arise Trainer
 PrivilegesRequired=lowest
 OutputDir=dist
-OutputBaseFilename=Ascenso-Instalador
+OutputBaseFilename=AriseTrainer-Instalador
 SetupIconFile=assets\icon.ico
-UninstallDisplayIcon={app}\Ascenso.exe
+UninstallDisplayIcon={app}\AriseTrainer.exe
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -28,14 +28,14 @@ Name: "es"; MessagesFile: "compiler:Languages\Spanish.isl"
 Name: "desktopicon"; Description: "Crear acceso directo en el escritorio"; GroupDescription: "Accesos directos:"
 
 [Files]
-Source: "dist\Ascenso\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
+Source: "dist\AriseTrainer\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 
 [Icons]
-Name: "{group}\Ascenso"; Filename: "{app}\Ascenso.exe"
-Name: "{userdesktop}\Ascenso"; Filename: "{app}\Ascenso.exe"; Tasks: desktopicon
+Name: "{group}\Arise Trainer"; Filename: "{app}\AriseTrainer.exe"
+Name: "{userdesktop}\Arise Trainer"; Filename: "{app}\AriseTrainer.exe"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\Ascenso.exe"; Description: "Abrir Ascenso ahora"; Flags: nowait postinstall skipifsilent
+Filename: "{app}\AriseTrainer.exe"; Description: "Abrir Arise Trainer ahora"; Flags: nowait postinstall skipifsilent
 
 [UninstallRun]
-Filename: "reg.exe"; Parameters: "delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v Ascenso /f"; Flags: runhidden; RunOnceId: "QuitarInicio"
+Filename: "reg.exe"; Parameters: "delete HKCU\Software\Microsoft\Windows\CurrentVersion\Run /v AriseTrainer /f"; Flags: runhidden; RunOnceId: "QuitarInicio"

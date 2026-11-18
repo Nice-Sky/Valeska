@@ -2,7 +2,7 @@
 import math
 from types import SimpleNamespace as P
 
-from ascenso.exercises import EXERCISES, RepCounter
+from arise.exercises import EXERCISES, RepCounter
 
 
 def blank():

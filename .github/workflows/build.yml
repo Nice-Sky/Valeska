@@ -1,4 +1,4 @@
-name: Compilar Ascenso para Windows
+name: Compilar Arise Trainer para Windows
 
 on:
   push:
@@ -27,46 +27,46 @@ jobs:
         run: python -m pytest -q tests
 
       - name: Compilar con PyInstaller
-        run: pyinstaller ascenso.spec --noconfirm
+        run: pyinstaller arise.spec --noconfirm
 
       - name: Probar que el .exe arranca y carga la IA
         shell: pwsh
         run: |
-          $env:ASCENSO_DATA = "$env:RUNNER_TEMP\ascenso-test"
-          $p = Start-Process -FilePath "dist\Ascenso\Ascenso.exe" -ArgumentList "--autotest" -PassThru
+          $env:ARISE_DATA = "$env:RUNNER_TEMP\arise-test"
+          $p = Start-Process -FilePath "dist\AriseTrainer\AriseTrainer.exe" -ArgumentList "--autotest" -PassThru
           if (-not $p.WaitForExit(90000)) { Stop-Process -Id $p.Id -Force; Write-Error "El .exe no terminó la prueba"; exit 1 }
-          $r = Get-Content "$env:ASCENSO_DATA\autotest.txt" -ErrorAction SilentlyContinue
+          $r = Get-Content "$env:ARISE_DATA\autotest.txt" -ErrorAction SilentlyContinue
           Write-Host "Resultado: $r"
           if ($r -ne "OK") { exit 1 }
 
       - name: Crear instalador
         shell: pwsh
         run: |
-          $env:ASCENSO_VERSION = "1.0.${{ github.run_number }}"
+          $env:ARISE_VERSION = "1.1.${{ github.run_number }}"
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; }
           & $iscc installer.iss
-          Compress-Archive -Path dist\Ascenso\* -DestinationPath dist\Ascenso-portable.zip
+          Compress-Archive -Path dist\AriseTrainer\* -DestinationPath dist\AriseTrainer-portable.zip
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Ascenso-Windows
+          name: AriseTrainer-Windows
           path: |
-            dist/Ascenso-Instalador.exe
-            dist/Ascenso-portable.zip
+            dist/AriseTrainer-Instalador.exe
+            dist/AriseTrainer-portable.zip
 
       - name: Publicar versión
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: Ascenso 1.0.${{ github.run_number }}
+          tag_name: v1.1.${{ github.run_number }}
+          name: Arise Trainer 1.1.${{ github.run_number }}
           target_commitish: ${{ github.sha }}
           make_latest: true
           body: |
-            **Descargá `Ascenso-Instalador.exe`**, ejecutalo y listo.
+            **Descargá `AriseTrainer-Instalador.exe`**, ejecutalo y listo.
             (Si Windows muestra "Windows protegió tu PC": *Más información* → *Ejecutar de todas formas*.)
 
-            `Ascenso-portable.zip` es la versión sin instalar: descomprimila y abrí `Ascenso.exe`.
+            `AriseTrainer-portable.zip` es la versión sin instalar: descomprimila y abrí `AriseTrainer.exe`.
           files: |
-            dist/Ascenso-Instalador.exe
-            dist/Ascenso-portable.zip
+            dist/AriseTrainer-Instalador.exe
+            dist/AriseTrainer-portable.zip

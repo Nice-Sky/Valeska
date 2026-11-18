@@ -1,89 +1,89 @@
-# ⚔ ASCENSO — Sistema de entrenamiento
+# ARISE TRAINER
 
-Programa de Windows para entrenar como en un RPG: tenés **nivel, rango (E → S), XP, estadísticas,
-misiones diarias, rachas, logros y penalizaciones**. La **cámara analiza cómo hacés cada ejercicio**
-con IA, cuenta solo las repeticiones bien hechas y te corrige en voz alta. Y **el Guardián** vive en
-la bandeja del sistema y te persigue con alertas encima de todo hasta que cumplas la misión del día.
+Programa de Windows para entrenar todos los días y no aflojar. Tenés un **objetivo diario**, la
+**cámara cuenta tus repeticiones** con IA (solo valen las bien hechas) y un **sistema de progreso**
+con XP, niveles y rangos (E → S) que premia la constancia y penaliza los días que fallás. Si no
+entrenaste, el programa te lo recuerda con alertas encima de todo hasta que lo hagas.
 
 ## Instalar
 
-1. Andá a **[Releases](../../releases/latest)** y descargá **`Ascenso-Instalador.exe`**.
+1. Andá a **[Releases](../../releases/latest)** y descargá **`AriseTrainer-Instalador.exe`**.
 2. Ejecutalo. Si Windows dice *"Windows protegió tu PC"*: **Más información → Ejecutar de todas formas**
    (aparece porque el programa no está firmado digitalmente).
-3. Abrí Ascenso, registrate y elegí la dificultad. Te va a preguntar si querés que arranque solo con
-   Windows: decí que sí para que el Guardián no te deje escapar.
+3. Abrilo, poné tu nombre y elegí el plan. Te pregunta si querés que arranque con Windows: decí que sí.
 
-No hace falta instalar Python ni nada más. Todo corre en tu compu: ningún video sale de ahí.
+No hace falta instalar nada más. Todo corre en tu compu: ningún video sale de ahí.
 
-## Usar el iPhone como cámara
+> ¿Tenías instalada la versión anterior ("Ascenso")? Tu progreso se pasa solo. Después desinstalá
+> "Ascenso" desde *Configuración → Aplicaciones*.
 
-Si tu compu no tiene webcam (o querés ponerla en el piso para las flexiones), usá el iPhone como
-cámara inalámbrica con alguna de estas apps (instalala en el iPhone y en Windows):
+## Cómo funciona
 
-- **Camo** (Reincubate)
-- **iVCam**
-- **EpocCam**
+**Objetivo diario.** Según el plan (Principiante, Intermedio, Avanzado o Extremo), cada día tenés
+que cumplir una cantidad de flexiones, sentadillas, abdominales, jumping jacks y segundos de plancha.
 
-Después elegí esa cámara en el selector de la pantalla **Entrenar**.
+- **Progresión automática:** cada 7 días cumplidos los objetivos suben un 5% (se puede desactivar).
+- **Días de descanso:** elegís qué días de la semana descansás (por defecto, el domingo). Esos días
+  no hay objetivo ni penalización y la racha no se corta.
+- **Si fallás un día:** perdés XP, la racha vuelve a cero y al día siguiente el objetivo es +30%.
+
+**Entrenamiento por series.** Elegís el ejercicio, encendés la cámara y arranca una cuenta de 3 segundos
+cuando te detecta. Al terminar la serie elegís descansar 60 o 90 segundos (con cuenta regresiva) o
+terminar el ejercicio. Cada serie queda registrada y si superás tu mejor marca es **récord personal**.
+
+**Progreso real.**
+- Constancia: % de días cumplidos en los últimos 30.
+- Volumen diario (gráfico de 30 días) y comparación con la semana anterior.
+- Récords personales por ejercicio.
+- Racha actual y mejor racha.
+
+**XP, niveles y rangos.** Cada repetición válida suma XP; cumplir el objetivo del día suma un bonus que
+crece con la racha. Rangos: E (nivel 1), D (10), C (20), B (35), A (50), S (75). Los atributos
+(Fuerza, Resistencia, Agilidad) se calculan con tus récords y volumen. Disciplina es tu % de constancia.
 
 ## Ejercicios con cámara
 
 | Ejercicio | Dónde poner la cámara | Qué corrige |
 |---|---|---|
-| 💪 Flexiones | De costado, a la altura del piso | Profundidad, cadera caída, que estés en posición |
-| 🦵 Sentadillas | De costado o en diagonal | Profundidad, inclinación del torso |
-| 🔥 Abdominales | De costado, acostado | Que subas lo suficiente |
-| ⚡ Jumping Jacks | De frente | Brazos arriba + piernas abiertas |
-| 🏃 Zancadas | De costado | Profundidad |
-| 🧱 Plancha | De costado, al piso | Solo cuenta el tiempo con el cuerpo recto |
+| Flexiones | De costado, a la altura del piso | Profundidad, cadera caída, que estés en posición |
+| Sentadillas | De costado o en diagonal | Profundidad, inclinación del torso |
+| Abdominales | De costado, acostado | Que subas lo suficiente |
+| Jumping Jacks | De frente | Brazos arriba + piernas abiertas |
+| Zancadas | De costado | Profundidad |
+| Plancha | De costado, al piso | Solo cuenta el tiempo con el cuerpo recto |
 
-- Antes de empezar hay una cuenta regresiva de 3 segundos cuando te detecta.
-- Las repeticiones mal hechas **no cuentan** y te dice por qué.
-- Sin cámara podés sumar con +1 / +5 / +10 ("modo honor": da el 70% de la XP).
+Sin cámara podés sumar con +1 / +5 / +10 (da el 70% de la XP).
 
-## Las reglas del Sistema
+### Usar el iPhone como cámara
 
-- **Misión diaria** según la dificultad: Fácil, Normal, Difícil o Extremo (100 flexiones,
-  100 abdominales, 100 sentadillas + 2 minutos de plancha). Crece un 10% cada 5 niveles.
-- Completarla da XP grande, suma racha y Disciplina.
-- **Si no la completás antes de medianoche**: perdés XP, perdés la racha y al día siguiente te toca
-  la **Misión de Penalización** (+50% de volumen).
-- Cada nivel da **3 puntos** para repartir en FUE / AGI / RES / DIS. Además las estadísticas suben
-  solas según lo que entrenes.
+Instalá **Camo**, **iVCam** o **EpocCam** en el iPhone y en Windows, y elegí esa cámara en la
+pantalla Entrenar. Sirve para apoyar el teléfono en el piso en las flexiones.
 
-## El Guardián
+## Recordatorios
 
-Se configura en **Ajustes**:
+En **Ajustes → Recordatorios**: desde qué hora molesta (18 hs), cada cuántos minutos, cuántas veces
+podés posponer, y el **modo estricto** (la alerta cubre todas las pantallas y no se cierra hasta que
+vayas a entrenar, pospongas, o escribas `ME RINDO` para saltear el día con penalización).
+Cerrar la ventana no cierra el programa: queda al lado del reloj.
 
-- Desde qué hora empieza a molestar (18 hs por defecto) y cada cuántos minutos repite.
-- Cuántas veces por día podés posponer.
-- **Modo hardcore**: la alerta cubre **todas tus pantallas** y no se cierra hasta que vayas a
-  entrenar, uses una posposición o escribas `ME RINDO` (te deja en paz ese día, pero igual te comés
-  la penalización).
-- Mientras estás entrenando con la cámara no te interrumpe.
-- Cerrar la ventana no cierra el programa: queda en la bandeja (al lado del reloj).
-
-Tus datos se guardan en `%APPDATA%\Ascenso\progreso.json`. Podés exportarlos e importarlos desde Ajustes.
+Datos: `%APPDATA%\AriseTrainer\progreso.json` (exportables desde Ajustes).
 
 ---
 
 ## Para desarrolladores
 
 ```bat
-ejecutar.bat          :: corre desde el código (instala dependencias la primera vez, requiere Python 3.12)
-build.bat             :: compila dist\Ascenso\Ascenso.exe
+ejecutar.bat          :: corre desde el código (requiere Python 3.12)
+build.bat             :: compila dist\AriseTrainer\AriseTrainer.exe
 python -m pytest      :: tests
 ```
 
-Cada push compila el instalador automáticamente con GitHub Actions (`.github/workflows/build.yml`)
-y lo publica en Releases.
+Cada push compila, prueba y publica el instalador con GitHub Actions (`.github/workflows/build.yml`).
 
-Estructura:
-
-- `ascenso/exercises.py`: medición de cada ejercicio y contador de repeticiones
-- `ascenso/game.py`: reglas (XP, niveles, misiones, penalizaciones, logros)
-- `ascenso/camera.py`: cámara + MediaPipe Pose en un hilo aparte
-- `ascenso/guardian.py`: alertas
-- `ascenso/ui/`: interfaz (PySide6 / Qt)
+- `arise/exercises.py`: medición de cada ejercicio y contador de repeticiones
+- `arise/game.py`: reglas (XP, niveles, objetivo, progresión, descanso, récords, penalizaciones)
+- `arise/camera.py`: cámara + MediaPipe Pose en un hilo aparte
+- `arise/guardian.py`: recordatorios
+- `arise/ui/`: interfaz (PySide6 / Qt)
 
 Íconos: [Lucide](https://lucide.dev) (licencia ISC, ver `assets/icons/LICENSE-lucide.txt`).

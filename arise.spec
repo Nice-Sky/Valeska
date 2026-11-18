@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# Compilar con:  pyinstaller ascenso.spec --noconfirm
+# Compilar con:  pyinstaller arise.spec --noconfirm
 from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs
 
 datas = [("assets", "assets")] + collect_data_files("mediapipe")
@@ -19,9 +19,9 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz, a.scripts, [],
     exclude_binaries=True,
-    name="Ascenso",
+    name="AriseTrainer",
     icon="assets/icon.ico",
     console=False,
     upx=False,
 )
-coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name="Ascenso")
+coll = COLLECT(exe, a.binaries, a.datas, strip=False, upx=False, name="AriseTrainer")

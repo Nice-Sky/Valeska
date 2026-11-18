@@ -10,7 +10,7 @@ from PySide6.QtWidgets import (QApplication, QButtonGroup, QHBoxLayout, QMainWin
                                QStackedWidget, QSystemTrayIcon, QVBoxLayout, QWidget)
 
 from . import storage
-from .game import DIFF_ORDER, Game, rank_of
+from .game import PLAN_ORDER, PLANS, Game, rank_of
 from .guardian import Guardian
 from .ui import theme as T
 from .ui.pages import AjustesPage, EntrenarPage, EstadoPage, MisionPage, RegistroPage
@@ -19,9 +19,9 @@ from .ui.holo import Backdrop
 from .ui.widgets import Dialogs, Toaster, label
 from .voice import Sounds, Voice
 
-PAGES = [("estado", "ESTADO", "user-round"), ("mision", "MISIÓN", "scroll-text"), ("entrenar", "ENTRENAR", "dumbbell"),
-         ("registro", "REGISTRO", "chart-column"), ("ajustes", "AJUSTES", "settings")]
-INSTANCE_KEY = "ascenso-sistema-entrenamiento"
+PAGES = [("estado", "ESTADO", "user-round"), ("mision", "HOY", "target"), ("entrenar", "ENTRENAR", "dumbbell"),
+         ("registro", "PROGRESO", "chart-column"), ("ajustes", "AJUSTES", "settings")]
+INSTANCE_KEY = "arise-trainer-instance"
 
 
 def app_icon() -> QIcon:
@@ -43,7 +43,7 @@ def app_icon() -> QIcon:
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("ASCENSO · Sistema de entrenamiento")
+        self.setWindowTitle("Arise Trainer")
         self.setWindowIcon(app_icon())
         self.resize(1180, 820)
         self.setMinimumSize(900, 640)
@@ -72,9 +72,9 @@ class MainWindow(QMainWindow):
         nl = QVBoxLayout(nav)
         nl.setContentsMargins(0, 22, 0, 18)
         nl.setSpacing(2)
-        brand = label("ASCENSO", "brand", align=Qt.AlignmentFlag.AlignCenter)
+        brand = label("ARISE", "brand", align=Qt.AlignmentFlag.AlignCenter)
         nl.addWidget(brand)
-        nl.addWidget(label("SISTEMA DE ENTRENAMIENTO", "brandSub", align=Qt.AlignmentFlag.AlignCenter))
+        nl.addWidget(label("T R A I N E R", "brandSub", align=Qt.AlignmentFlag.AlignCenter))
         nl.addSpacing(26)
         self.nav_group = QButtonGroup(self)
         self.nav_buttons = {}
@@ -126,7 +126,7 @@ class MainWindow(QMainWindow):
             self.voice.say(data["text"], data.get("force", False))
         elif kind == "modal":
             training = self.is_training()
-            if training and data["title"] not in ("MISIÓN COMPLETADA", "PENALIZACIÓN"):
+            if training and data["title"] not in ("OBJETIVO CUMPLIDO", "PENALIZACIÓN"):
                 self.toaster.show(data["title"], True, "star")
                 self.sounds.play(data.get("sound", "open"))
                 return
@@ -152,8 +152,8 @@ class MainWindow(QMainWindow):
                 page.refresh()
         if self.tray:
             q = self.game.quest
-            state = "Misión completada" if q and q["completed"] else "Misión pendiente"
-            self.tray.setToolTip(f"ASCENSO — {p['name']} NV {p['level']}\n{state}")
+            state = ("Día de descanso" if q and q.get("rest") else "Objetivo cumplido" if q and q["completed"] else "Objetivo pendiente")
+            self.tray.setToolTip(f"Arise Trainer — {p['name']} · Nivel {p['level']}\n{state}")
 
     def show_page(self, key: str):
         self.stack.setCurrentWidget(self.pages[key])
@@ -181,8 +181,8 @@ class MainWindow(QMainWindow):
             return
         self.tray = QSystemTrayIcon(app_icon(), self)
         menu = QMenu()
-        for text, slot in (("Abrir ASCENSO", lambda: self.show_page("estado")),
-                           ("Misión de hoy", lambda: self.show_page("mision")),
+        for text, slot in (("Abrir Arise Trainer", lambda: self.show_page("estado")),
+                           ("Objetivo de hoy", lambda: self.show_page("mision")),
                            ("Entrenar", lambda: self.show_page("entrenar"))):
             a = QAction(text, menu)
             a.triggered.connect(slot)
@@ -210,8 +210,8 @@ class MainWindow(QMainWindow):
         self.hide()
         if not self.tray_hint_shown:
             self.tray_hint_shown = True
-            self.tray.showMessage("ASCENSO sigue activo",
-                                  "El Sistema te sigue vigilando desde acá (al lado del reloj).",
+            self.tray.showMessage("Arise Trainer sigue activo",
+                                  "Sigue funcionando acá, al lado del reloj, para recordarte el objetivo del día.",
                                   QSystemTrayIcon.MessageIcon.Information, 5000)
 
     def quit_app(self):
@@ -221,8 +221,8 @@ class MainWindow(QMainWindow):
                 if i == 1:
                     self._really_quit()
             self.bring_to_front()
-            self.dialogs.show("¿HUIR?", "Tu misión de hoy sigue incompleta.<br>Si cerrás el Sistema, el Guardián no podrá "
-                                       "recordártela… pero la penalización a medianoche llega igual.",
+            self.dialogs.show("¿SALIR?", "El objetivo de hoy todavía no está cumplido.<br>Si cerrás la app no vas a recibir "
+                                        "recordatorios, pero la penalización a medianoche se aplica igual.",
                               (("Me quedo", "primary"), ("Salir igual", "danger")), tone="red", callback=answer)
         else:
             self._really_quit()
@@ -247,43 +247,51 @@ class MainWindow(QMainWindow):
         d = self.dialogs
 
         def ask_name(*_):
-            d.show("REGISTRO", "¿Cómo te llamás, Jugador?", ("Confirmar",), callback=got_name,
-                   with_input=True, placeholder="Tu nombre")
+            d.show("REGISTRO", "¿Cómo te llamás?", ("Confirmar",), callback=got_name,
+                   with_input=True, placeholder="Tu nombre", icon="user-round")
 
         def got_name(_, name):
             if not name.strip():
                 ask_name()
                 return
             self._name = name.strip()
-            d.show("NIVEL INICIAL", "Elegí la dificultad de tus misiones diarias.<br><small>Podés cambiarla después en Ajustes.</small>",
-                   (("Fácil", ""), ("Normal", "primary"), ("Difícil", ""), ("Extremo", "danger")), callback=got_diff)
+            plans = "<br>".join(f"<b>{p['label']}</b>: <span style='color:#7f95bf'>{p['desc']}</span>" for p in PLANS.values())
+            d.show("PLAN", f"Elegí tu punto de partida.<br><br><div style='text-align:left'>{plans}</div><br>"
+                           "<small>Los objetivos suben solos un 5% cada 7 días cumplidos. Podés cambiar el plan en Ajustes.</small>",
+                   (("Principiante", "primary"), ("Intermedio", ""), ("Avanzado", ""), ("Extremo", "danger")),
+                   callback=got_plan, icon="target")
 
-        def got_diff(i, _):
-            self.game.register(self._name, DIFF_ORDER[max(0, i)])
+        def got_plan(i, _):
+            self.game.register(self._name, PLAN_ORDER[max(0, i)])
             if storage.autostart_supported():
-                d.show("EL GUARDIÁN", "¿Querés que el Sistema arranque solo cada vez que prendés la compu?<br>"
-                                      "<small>Así nunca se olvida de perseguirte.</small>",
-                       (("Sí, que me persiga", "primary"), ("No", "")),
+                d.show("RECORDATORIOS", "¿Querés que Arise Trainer arranque solo al prender la compu?<br>"
+                                        "<small>Así los recordatorios funcionan aunque te olvides de abrirlo.</small>",
+                       (("Sí", "primary"), ("No", "")), icon="bell-ring",
                        callback=lambda i, _: (storage.set_autostart(i == 0), show_quest()))
             else:
                 show_quest()
 
         def show_quest():
-            rem = "<br>".join(f"• {k}" for k in self._quest_lines())
-            d.show("MISIÓN DIARIA", f"Tu primera misión ya está disponible:<br><br>{rem}", ("Empezar",),
-                   callback=lambda *_: self.show_page("mision"))
+            q = self.game.quest
+            if q.get("rest"):
+                body = "Hoy es tu día de descanso. Tu primer objetivo arranca mañana.<br><small>Los días de descanso se configuran en Ajustes.</small>"
+            else:
+                body = "Tu objetivo de hoy:<br><br>" + "<br>".join(self._quest_lines())
+            d.show("OBJETIVO DIARIO", body, ("Empezar",), icon="target", callback=lambda *_: self.show_page("mision"))
 
         d.show("NOTIFICACIÓN",
-               "Cumpliste los requisitos para convertirte en <b style='color:#4de1ff'>Jugador</b>.<br><br>"
-               "El Sistema te va a asignar misiones diarias. Si las cumplís, vas a subir de nivel.<br>Si no… habrá consecuencias.",
-               ("Aceptar",), callback=ask_name)
+               "Bienvenido a <b style='color:#4fd8ff'>Arise Trainer</b>.<br><br>"
+               "Cada día tenés un objetivo de entrenamiento. Cumplirlo suma XP, racha y nivel.<br>"
+               "Fallarlo tiene penalización.<br><br>La cámara cuenta tus repeticiones: solo valen las bien hechas.",
+               ("Empezar",), callback=ask_name)
 
     def _quest_lines(self):
         from .exercises import EXERCISES
         q = self.game.quest
-        return [f"{EXERCISES[k].name}: {t}{' s' if EXERCISES[k].timed else ''}" for k, t in q["targets"].items()]
+        return [f"{EXERCISES[k].name}: <b>{t}</b>{' s' if EXERCISES[k].timed else ''}" for k, t in q["targets"].items()]
 
     def startup(self, minimized: bool):
+        storage.migrate_autostart()
         if not minimized:
             self.show()
         if not self.game.registered:
@@ -300,11 +308,11 @@ def main():
     if sys.platform == "win32":
         try:  # ícono propio en la barra de tareas
             import ctypes
-            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("ascenso.sistema.entrenamiento")
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("arise.trainer")
         except Exception:
             pass
     app = QApplication(sys.argv)
-    app.setApplicationName("Ascenso")
+    app.setApplicationName("Arise Trainer")
     app.setQuitOnLastWindowClosed(False)
     app.setStyleSheet(T.QSS)
     app.setFont(QFont(T.FONT, 10))

@@ -55,7 +55,7 @@ def img(name: str, size: int = 18, color: str = WHITE) -> str:
     import tempfile
     from pathlib import Path
     if _TMP is None:
-        _TMP = Path(tempfile.gettempdir()) / "ascenso_icons"
+        _TMP = Path(tempfile.gettempdir()) / "arise_icons"
         _TMP.mkdir(exist_ok=True)
     f = _TMP / f"{name}_{size}_{color.strip('#')}.png"
     if not f.exists():

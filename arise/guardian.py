@@ -28,7 +28,7 @@ class NagWindow(QWidget):
         self.g = guardian
         self.hard = hard
         self.allow_close = False
-        self.setWindowTitle("ALERTA DEL SISTEMA")
+        self.setWindowTitle("Arise Trainer: objetivo pendiente")
         if not hard:
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         geo = screen.geometry()
@@ -45,7 +45,7 @@ class NagWindow(QWidget):
         else:
             row = QHBoxLayout()
             row.addStretch()
-            row.addWidget(holo.TitleBar("ALERTA DEL SISTEMA", "triangle-alert", "red", 28))
+            row.addWidget(holo.TitleBar("OBJETIVO PENDIENTE", "triangle-alert", "red", 28))
             row.addStretch()
             lay.addLayout(row)
 
@@ -71,14 +71,14 @@ class NagWindow(QWidget):
         bl.setSpacing(14)
         row = QHBoxLayout()
         row.addStretch()
-        row.addWidget(holo.TitleBar("ALERTA DEL SISTEMA", "triangle-alert", "red", size))
+        row.addWidget(holo.TitleBar("OBJETIVO PENDIENTE", "triangle-alert", "red", size))
         row.addStretch()
         bl.addLayout(row)
         q = game.quest or {}
-        name = escape(game.player["name"] or "Jugador")
-        kind = "<b>MISIÓN DE PENALIZACIÓN</b>" if q.get("penalty") else "misión diaria"
-        msg = QLabel(f"{name}, tu {kind} sigue incompleta.<br>"
-                     "Si no la completás antes de medianoche recibirás una <b style='color:#ff3b5c'>penalización</b>.")
+        name = escape(game.player["name"] or "")
+        kind = "objetivo de penalización (+30%)" if q.get("penalty") else "objetivo de hoy"
+        msg = QLabel(f"{name}, tu {kind} sigue pendiente.<br>"
+                     "Si no lo cumplís antes de medianoche: <b style='color:#ff3b5c'>-XP, racha a cero y mañana +30%</b>.")
         msg.setTextFormat(Qt.TextFormat.RichText)
         msg.setAlignment(Qt.AlignmentFlag.AlignCenter)
         msg.setWordWrap(True)
@@ -87,7 +87,7 @@ class NagWindow(QWidget):
         rem = game.remaining()
         fs = 19 if self.hard else 15
         lines = [f"{icons.img(EXERCISES[k].icon, fs + 2, T.GLOW)}&nbsp;&nbsp;{EXERCISES[k].name}: faltan <b>{fmt(v)}</b>"
-                 f"{' s' if EXERCISES[k].timed else ''}" for k, v in rem] or ["Abrí el Sistema para recibir la misión de hoy"]
+                 f"{' s' if EXERCISES[k].timed else ''}" for k, v in rem] or ["Abrí Arise Trainer para ver el objetivo de hoy"]
         pend = QLabel("<br>".join(lines))
         pend.setTextFormat(Qt.TextFormat.RichText)
         pend.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -116,7 +116,7 @@ class NagWindow(QWidget):
         sl.addWidget(self.surr, 1)
         sl.addWidget(button("Confirmar", "danger", self._surrender))
         self.surr_box.hide()
-        surr_btn = button("Me rindo por hoy… (igual te comés la penalización)", "ghost",
+        surr_btn = button("Saltear hoy… (la penalización se aplica igual)", "ghost",
                           lambda: (self.surr_box.show(), self.surr.setFocus()))
         bl.addWidget(surr_btn)
         bl.addWidget(self.surr_box)
@@ -190,8 +190,8 @@ class Guardian(QObject):
             w.raise_()
             w.activateWindow()
         self.win.sounds.play("alarm")
-        self.win.voice.say("Alerta del Sistema. Misión diaria incompleta.", True)
-        self.win.tray_message("ALERTA DEL SISTEMA", "Tu misión diaria sigue incompleta.")
+        self.win.voice.say("Objetivo del día pendiente.", True)
+        self.win.tray_message("Objetivo pendiente", "Todavía no cumpliste el entrenamiento de hoy.")
         self.raise_timer.start(1500)
 
     def _keep_on_top(self):

@@ -6,7 +6,7 @@ from typing import Callable, Optional
 
 from PySide6.QtCore import QEasingCurve, QPointF, QPropertyAnimation, QRect, QRectF, Qt, QTimer, QSize
 from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPolygonF
-from PySide6.QtWidgets import (QDialog, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+from PySide6.QtWidgets import (QDialog, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QLayout, QLineEdit, QPushButton,
                                QVBoxLayout, QWidget)
 
 from . import holo, icons
@@ -155,6 +155,7 @@ class SystemDialog(QDialog):
         self.result_index = -1
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSizeConstraint(QLayout.SizeConstraint.SetFixedSize)
         body_w = _HoloBody(tone)
         outer.addWidget(body_w)
         lay = QVBoxLayout(body_w)
@@ -170,8 +171,9 @@ class SystemDialog(QDialog):
         b.setWordWrap(True)
         b.setTextFormat(Qt.TextFormat.RichText)
         b.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        b.setMinimumWidth(420)
-        b.setMaximumWidth(560)
+        b.setFixedWidth(500)
+        b.ensurePolished()
+        b.setMinimumHeight(b.heightForWidth(500) + 8)
         lay.addWidget(b, 0, Qt.AlignmentFlag.AlignHCenter)
         self.input = None
         if with_input:
@@ -195,16 +197,13 @@ class SystemDialog(QDialog):
             QTimer.singleShot(50, self.input.setFocus)
 
     def open_animated(self):
-        self.adjustSize()
-        final = self.geometry()
+        self.setWindowOpacity(0.0)
         self.open()
-        start = QRect(final.x(), final.center().y() - 2, final.width(), 4)
-        self.setGeometry(start)
-        self._anim = QPropertyAnimation(self, b"geometry", self)
-        self._anim.setDuration(260)
-        self._anim.setStartValue(start)
-        self._anim.setEndValue(final)
-        self._anim.setEasingCurve(QEasingCurve.Type.OutBack)
+        self._anim = QPropertyAnimation(self, b"windowOpacity", self)
+        self._anim.setDuration(220)
+        self._anim.setStartValue(0.0)
+        self._anim.setEndValue(1.0)
+        self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
         self._anim.start()
 
     def _choose(self, i):
@@ -268,6 +267,7 @@ class Dialogs:
             self.dimmer.setGeometry(self.parent.rect())
             self.dimmer.show()
             self.dimmer.raise_()
+            d.layout().activate()
             d.adjustSize()
             g = self.parent.frameGeometry()
             d.move(g.center() - d.rect().center())

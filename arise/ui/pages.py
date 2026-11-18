@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QFileDialog, QFormLayout, Q
 from .. import storage
 from ..camera import CameraWorker, list_cameras
 from ..exercises import EXERCISE_ORDER, EXERCISES, RepCounter
-from ..game import ACHIEVEMENTS, DIFF_ORDER, DIFFICULTY, STATS, fmt, rank_of, xp_needed
+from ..game import ACHIEVEMENTS, PLAN_ORDER, PLANS, STATS, WEEKDAYS, fmt, next_rank, rank_of, xp_needed
 from . import theme as T
 from . import holo, icons
 from .video import VideoView
@@ -46,7 +46,7 @@ def clear_layout(lay):
 
 
 class QuestList(QWidget):
-    """Lista de objetivos de la misión con barras de progreso."""
+    """Lista de objetivos del día con barras de progreso."""
 
     def __init__(self, win, with_buttons: bool):
         super().__init__()
@@ -60,6 +60,12 @@ class QuestList(QWidget):
         clear_layout(self.lay)
         q = self.win.game.quest
         if not q:
+            return
+        if q.get("rest"):
+            r = QHBoxLayout()
+            r.addWidget(icon_label("moon", 20, T.GLOW))
+            r.addWidget(label("Día de descanso. Recuperar también es parte del plan. Si querés, podés entrenar igual.", "muted", wrap=True), 1)
+            self.lay.addLayout(r)
             return
         for k, t in q["targets"].items():
             ex = EXERCISES[k]
@@ -139,15 +145,16 @@ class EstadoPage(QWidget):
         self.setObjectName("page")
         status = Panel("ESTADO", "user-round")
         head = QHBoxLayout()
-        self.badge = RankBadge(104)
+        self.badge = RankBadge(110)
         head.addWidget(self.badge)
         head.addSpacing(14)
         info = QFormLayout()
         info.setHorizontalSpacing(30)
         info.setVerticalSpacing(8)
-        self.name, self.level, self.title, self.streak = (label() for _ in range(4))
+        self.name, self.level, self.rank_next, self.streak, self.adh, self.title = (label() for _ in range(6))
         self.level.setObjectName("big")
-        for txt, w in (("NOMBRE", self.name), ("NIVEL", self.level), ("TÍTULO", self.title), ("RACHA", self.streak)):
+        for txt, w in (("NOMBRE", self.name), ("NIVEL", self.level), ("PRÓXIMO RANGO", self.rank_next),
+                       ("RACHA", self.streak), ("CONSTANCIA (30 DÍAS)", self.adh), ("ÚLTIMO LOGRO", self.title)):
             info.addRow(label(txt, "lbl"), w)
         head.addLayout(info, 1)
         status.lay.addLayout(head)
@@ -157,33 +164,47 @@ class EstadoPage(QWidget):
         self.stats = QGridLayout()
         self.stats.setSpacing(10)
         status.lay.addLayout(self.stats)
-        self.points = label("", "gold", align=Qt.AlignmentFlag.AlignCenter)
-        status.lay.addWidget(self.points)
 
-        quest = Panel("MISIÓN DIARIA", "scroll-text")
+        quest = Panel("OBJETIVO DE HOY", "target")
         self.quest = QuestList(win, False)
         quest.lay.addWidget(self.quest)
-        quest.lay.addWidget(button("Ver misión", "primary", lambda: win.go("mision"), icon="scroll-text"))
+        quest.lay.addWidget(button("Ir al objetivo", "primary", lambda: win.go("mision"), icon="target"))
+
+        rec = Panel("RÉCORDS PERSONALES", "trophy")
+        self.records = QGridLayout()
+        self.records.setSpacing(8)
+        rec.lay.addWidget(label("Mejor serie de cada ejercicio (repeticiones seguidas o segundos de plancha).", "muted", wrap=True))
+        rec.lay.addLayout(self.records)
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.addWidget(scroll_page(status, quest))
+        lay.addWidget(scroll_page(status, quest, rec))
 
     def refresh(self):
         g = self.win.game
         p = g.player
-        self.badge.set_rank(rank_of(p["level"]))
+        lvl = p["level"]
+        self.badge.set_rank(rank_of(lvl))
         self.name.setText(p["name"])
-        self.level.setText(str(p["level"]))
-        self.title.setText(g.current_title())
-        self.streak.setText(f"{g.s['streak']} día{'s' if g.s['streak'] != 1 else ''}  (máx {g.s['bestStreak']})")
-        need = xp_needed(p["level"])
+        self.level.setText(str(lvl))
+        nr = next_rank(lvl)
+        self.rank_next.setText(f"{nr[1]} en el nivel {nr[0]} (faltan {nr[0] - lvl})" if nr else "Rango máximo")
+        self.streak.setText(f"{g.s['streak']} día{'s' if g.s['streak'] != 1 else ''}  (mejor: {g.s['bestStreak']})")
+        adh = g.adherence()
+        self.adh.setText("—" if adh is None else f"{adh}%")
+        self.adh.setStyleSheet(f"color:{T.GREEN if (adh or 0) >= 80 else T.GOLD if (adh or 0) >= 50 else T.RED if adh is not None else T.TEXT};font-weight:700;")
+        self.title.setText(g.last_achievement())
+        need = xp_needed(lvl)
         self.xp.setRange(0, need)
         self.xp.setValue(int(p["xp"]))
         self.xp.setFormat(f"XP  {fmt(p['xp'])} / {fmt(need)}")
         clear_layout(self.stats)
-        for i, (k, (name, _)) in enumerate(STATS.items()):
+        cards = [(k, name, tip, str(g.stat_value(k))) for k, (name, tip, _) in STATS.items()]
+        cards.append(("DIS", "Disciplina", "Porcentaje de días cumplidos en los últimos 30 (sin contar descansos)",
+                      "—" if adh is None else f"{adh}%"))
+        for i, (k, name, tip, val) in enumerate(cards):
             card = Panel(compact=True)
+            card.setToolTip(tip)
             row = QHBoxLayout()
             col = QVBoxLayout()
             t = label(k)
@@ -192,16 +213,21 @@ class EstadoPage(QWidget):
             col.addWidget(label(name, "lbl"))
             row.addLayout(col)
             row.addStretch()
-            v = label(str(g.stat_value(k)))
+            v = label(val)
             v.setStyleSheet("font-size:26px;font-weight:700;color:white;")
             row.addWidget(v)
-            if p["freePoints"] > 0:
-                b = button("+", "primary", lambda _=False, k=k: self.win.game.allocate(k))
-                b.setFixedSize(34, 34)
-                row.addWidget(b)
             card.lay.addLayout(row)
             self.stats.addWidget(card, i // 2, i % 2)
-        self.points.setText(f"Puntos disponibles: {p['freePoints']}" if p["freePoints"] else "")
+        clear_layout(self.records)
+        for i, e in enumerate(EXERCISE_ORDER):
+            ex = EXERCISES[e]
+            r = g.s["records"].get(e, 0)
+            box = label(f"<span style='font-size:22px;font-weight:700;color:white'>{fmt(r) if r else '—'}</span>"
+                        f"<span style='color:{T.MUTED}'>{' s' if ex.timed and r else ''}</span><br>"
+                        f"{icons.img(ex.icon, 15, T.GLOW)}&nbsp; {ex.name}", align=Qt.AlignmentFlag.AlignCenter)
+            box.setTextFormat(Qt.TextFormat.RichText)
+            box.setStyleSheet("border:1px solid #1c3a70;padding:8px;")
+            self.records.addWidget(box, i // 3, i % 3)
         self.quest.refresh()
 
 
@@ -211,7 +237,7 @@ class MisionPage(QWidget):
         super().__init__()
         self.win = win
         self.setObjectName("page")
-        self.panel = Panel("MISIÓN DIARIA", "scroll-text")
+        self.panel = Panel("OBJETIVO DE HOY", "target")
         self.sub = label("", "muted", align=Qt.AlignmentFlag.AlignCenter)
         self.panel.lay.addWidget(self.sub)
         self.list = QuestList(win, True)
@@ -232,24 +258,33 @@ class MisionPage(QWidget):
         q = self.win.game.quest
         if not q:
             return
-        self.panel.set_title("MISIÓN DE PENALIZACIÓN" if q["penalty"] else "MISIÓN DIARIA")
-        self.panel.title.set_icon("skull" if q["penalty"] else "scroll-text")
+        g = self.win.game
+        rest = q.get("rest")
+        self.panel.set_title("DÍA DE DESCANSO" if rest else "PENALIZACIÓN: OBJETIVO +30%" if q["penalty"] else "OBJETIVO DE HOY")
+        self.panel.title.set_icon("moon" if rest else "triangle-alert" if q["penalty"] else "target")
         self.panel.set_tone("red" if q["penalty"] else "")
-        diff = DIFFICULTY.get(q["difficulty"], DIFFICULTY["facil"])["label"]
-        self.sub.setText(f"Dificultad: {diff}" + ("  ·  +50% por fallar" if q["penalty"] else ""))
+        plan = PLANS.get(q.get("plan"), PLANS["principiante"])["label"]
+        pct = round((g.s["progression"] - 1) * 100)
+        prog = f"  ·  Progresión +{pct}%" if pct else ""
+        left = 7 - g.s["progressCount"] % 7
+        nxt = f"  ·  Próxima subida en {left} día{'s' if left != 1 else ''} cumplido{'s' if left != 1 else ''}" if g.settings.get("autoProgress", True) else ""
+        self.sub.setText(f"Plan {plan}{prog}{nxt}")
         self.list.refresh()
-        if q["completed"]:
+        if rest:
             self.warning.setObjectName("ok")
-            self.warning.setText(icons.img("circle-check", 18, T.GREEN) + "&nbsp; MISIÓN COMPLETADA. Descansá, cazador.")
+            self.warning.setText("")
+        elif q["completed"]:
+            self.warning.setObjectName("ok")
+            self.warning.setText(icons.img("circle-check", 18, T.GREEN) + "&nbsp; Objetivo cumplido. Mañana, de nuevo.")
         else:
             self.warning.setObjectName("warn")
-            self.warning.setText(icons.img("triangle-alert", 18, T.RED) + "&nbsp; ADVERTENCIA: si no completás la misión antes de medianoche recibirás una penalización.")
+            self.warning.setText(icons.img("triangle-alert", 18, T.RED) + "&nbsp; Si no lo cumplís antes de medianoche: pérdida de XP, racha a cero y mañana +30%.")
         restyle(self.warning)
         self.tick()
 
     def tick(self):
         q = self.win.game.quest
-        if not q or q["completed"]:
+        if not q or q["completed"] or q.get("rest"):
             self.count.setText("")
             return
         now = datetime.now()
@@ -316,7 +351,18 @@ class EntrenarPage(QWidget):
             w.setTextFormat(Qt.TextFormat.RichText)
             stats.addWidget(w, 1)
         train.lay.addLayout(stats)
-        train.lay.addWidget(button("Terminar serie", "danger", self.finish, icon="flag"))
+        end = QHBoxLayout()
+        self.btn_skip = button("Saltar descanso", "", self.end_rest, icon="play")
+        self.btn_skip.hide()
+        end.addWidget(self.btn_skip)
+        end.addWidget(button("Terminar serie", "primary", self.finish_set, icon="check"), 1)
+        end.addWidget(button("Terminar ejercicio", "danger", self.finish, icon="flag"), 1)
+        train.lay.addLayout(end)
+        self.rest_timer = QTimer(self)
+        self.rest_timer.timeout.connect(self.rest_tick)
+        self.rest_end = 0.0
+        self.set_no = 1
+        self.sess = {"good": 0, "bad": 0, "xp": 0.0, "sets": 0}
         wrap = QWidget()
         wl = QVBoxLayout(wrap)
         wl.setContentsMargins(4, 4, 14, 8)
@@ -338,9 +384,9 @@ class EntrenarPage(QWidget):
             ex = EXERCISES[k]
             if q and k in q["targets"]:
                 t = q["targets"][k]
-                sub = f"Misión {min(q['progress'].get(k, 0), t):g}/{t}"
+                sub = f"Hoy {min(q['progress'].get(k, 0), t):g}/{t}"
             else:
-                sub = "Libre"
+                sub = "Extra"
             b = ExCard(ex.icon, ex.name, f"{sub}  ·  {ex.stat}", done=bool(q and k in q["targets"] and q["progress"].get(k, 0) >= q["targets"][k]))
             b.clicked.connect(lambda _=False, k=k: self.open(k))
             self.grid.addWidget(b, i // 3, i % 3)
@@ -350,6 +396,8 @@ class EntrenarPage(QWidget):
         self.counter = RepCounter(self.ex)
         self.good = self.bad = 0
         self.xp = 0.0
+        self.set_no = 1
+        self.sess = {"good": 0, "bad": 0, "xp": 0.0, "sets": 0}
         self.train_panel.set_title(self.ex.name.upper())
         self.train_panel.title.set_icon(self.ex.icon)
         self.tip.setText(self.ex.tip)
@@ -374,7 +422,8 @@ class EntrenarPage(QWidget):
             return
         q = self.win.game.quest
         t = q["targets"].get(self.ex.id) if q else None
-        self.video.target = f"misión {min(q['progress'].get(self.ex.id, 0), t):g}/{t}" if t else ""
+        hoy = f"  ·  hoy {min(q['progress'].get(self.ex.id, 0), t):g}/{t}" if t else ""
+        self.video.target = f"serie {self.set_no}{hoy}"
         big = "font-size:22px;font-weight:700;color:white;"
         self.lbl_good.setText(f"<span style='{big}'>{fmt(self.good)}</span><br><span style='color:{T.MUTED}'>{'segundos' if self.ex.timed else 'buenas'}</span>")
         self.lbl_bad.setText(f"<span style='{big}'>{self.bad}</span><br><span style='color:{T.MUTED}'>mal hechas</span>")
@@ -384,7 +433,7 @@ class EntrenarPage(QWidget):
     # ---------------------------------------------------------------- cámara
     @property
     def training(self) -> bool:
-        return self.worker is not None and self.state in ("countdown", "running")
+        return self.ex is not None and self.state in ("countdown", "running", "rest", "paused")
 
     def toggle_camera(self):
         if self.worker:
@@ -410,7 +459,8 @@ class EntrenarPage(QWidget):
         self.btn_cam.setProperty("kind", "")
         restyle(self.btn_cam)
         self.video.center_small = ""
-        self.wait_for_body()
+        if self.state not in ("rest", "paused"):
+            self.wait_for_body()
 
     def on_failed(self, msg: str):
         self.win.dialogs.show("ERROR", f"No pude iniciar la cámara.<br><small>{escape(msg)}</small><br><br>"
@@ -418,7 +468,8 @@ class EntrenarPage(QWidget):
 
     def on_worker_finished(self):
         self.worker = None
-        self.state = "idle"
+        if self.state not in ("rest", "paused"):
+            self.state = "idle"
         self.btn_cam.setEnabled(True)
         self.btn_cam.setText("Encender cámara")
         self.btn_cam.setIcon(icons.icon("camera", 18))
@@ -443,6 +494,9 @@ class EntrenarPage(QWidget):
             self.video.set_frame(img, lm, color)
             return
         v = self.video
+        if lm is None and self.state in ("rest", "paused"):
+            v.set_frame(img, None, color)
+            return
         if lm is None:
             if self.state in ("waiting", "countdown"):
                 self.state = "waiting"
@@ -472,6 +526,9 @@ class EntrenarPage(QWidget):
                 QTimer.singleShot(600, lambda: setattr(self.video, "center", ""))
         elif self.state == "running":
             color = self.process(lm, world, aspect, t)
+        elif self.state in ("rest", "paused"):
+            v.set_frame(img, lm, T.MUTED)
+            return
         v.set_frame(img, lm, color)
 
     def process(self, lm, world, aspect, t) -> str:
@@ -526,20 +583,108 @@ class EntrenarPage(QWidget):
         self.xp += self.win.game.add_reps(self.ex.id, n, manual=True)
         self.update_stats()
 
+    # ---------------------------------------------------------------- series y descanso
+    def _record_current_set(self) -> bool:
+        """Guarda la serie actual. Devuelve True si fue récord personal."""
+        if not self.ex or not (self.good or self.bad):
+            return False
+        rec = self.win.game.finish_set(self.ex.id, self.good, self.bad, self.xp)
+        for k, v in (("good", self.good), ("bad", self.bad), ("xp", self.xp)):
+            self.sess[k] += v
+        self.sess["sets"] += 1
+        return rec
+
+    def _remaining_text(self) -> str:
+        g = self.win.game
+        rem = g.remaining()
+        if rem and not g.quest["completed"]:
+            return "<br><small>Falta hoy: " + "  ·  ".join(f"{EXERCISES[k].name} {fmt(v)}" for k, v in rem) + "</small>"
+        return ""
+
+    def finish_set(self):
+        ex = self.ex
+        if not ex or self.state == "rest":
+            return
+        if not (self.good or self.bad):
+            self.win.toaster.show("Todavía no hiciste ninguna repetición en esta serie", icon="circle-alert")
+            return
+        good, bad, xp, n = self.good, self.bad, self.xp, self.set_no
+        rec = self._record_current_set()
+        res = (f"Tiempo válido: <b style='color:{T.GLOW}'>{fmt(good)} s</b>" if ex.timed else
+               f"Repeticiones válidas: <b style='color:{T.GLOW}'>{good}</b>" + (f"  ·  Mal hechas: {bad}" if bad else ""))
+        recl = (f"<br><span style='color:{T.GOLD}'>{icons.img('trophy', 16, T.GOLD)}&nbsp; <b>Récord personal</b></span>"
+                if rec else "")
+        self.state = "paused"
+
+        def answer(i, _):
+            if i in (0, 1):
+                self.start_rest(60 if i == 0 else 90)
+            else:
+                self.finish()
+        self.win.dialogs.show(f"SERIE {n} TERMINADA",
+                              f"{icons.img(ex.icon, 20)}&nbsp; <b>{ex.name}</b><br><br>{res}<br>"
+                              f"<span style='color:{T.GOLD}'><b>+{fmt(xp)} XP</b></span>{recl}{self._remaining_text()}",
+                              (("Descansar 60 s", "primary"), ("Descansar 90 s", ""), ("Terminar ejercicio", "")),
+                              callback=answer, icon="check")
+
+    def start_rest(self, seconds: int):
+        self.set_no += 1
+        self.counter = RepCounter(self.ex)
+        self.good = self.bad = 0
+        self.xp = 0.0
+        self.video.count = "0"
+        self.video.progress = 0
+        self.state = "rest"
+        self.rest_end = time.monotonic() + seconds
+        self.btn_skip.show()
+        self.video.set_feedback(f"Descanso · después viene la serie {self.set_no}", "")
+        self.rest_timer.start(200)
+        self.rest_tick()
+        self.update_stats()
+
+    def rest_tick(self):
+        left = self.rest_end - time.monotonic()
+        if left <= 0:
+            self.end_rest()
+            return
+        txt = str(int(left) + 1)
+        if txt != self.video.center:
+            self.video.center = txt
+            self.video.center_small = ""
+            if int(left) + 1 <= 3:
+                self.win.sounds.play("tick")
+            elif int(left) + 1 == 10:
+                self.win.voice.say("Diez segundos")
+            self.video.update()
+
+    def end_rest(self):
+        self.rest_timer.stop()
+        self.btn_skip.hide()
+        self.video.center = ""
+        self.win.voice.say(f"Serie {self.set_no}", True)
+        if self.worker:
+            self.wait_for_body()
+        else:
+            self.state = "idle"
+            self.video.set_feedback(f"Serie {self.set_no}: usá los botones o encendé la cámara", "")
+        self.video.update()
+
     def finish(self):
         ex = self.ex
         g = self.win.game
+        self.rest_timer.stop()
+        self.btn_skip.hide()
         if ex and (self.good or self.bad):
-            g.log_set(ex.id, self.good, self.bad, self.xp)
-            rem = g.remaining()
-            falta = ""
-            if rem and not g.quest["completed"]:
-                falta = "<br><small>Te falta: " + ", ".join(f"{EXERCISES[k].name} {fmt(v)}" for k, v in rem) + "</small>"
-            res = (f"Tiempo válido: <b style='color:{T.GLOW}'>{fmt(self.good)} s</b>" if ex.timed else
-                   f"Repeticiones válidas: <b style='color:{T.GLOW}'>{self.good}</b><br>Mal hechas: {self.bad}")
-            self.win.dialogs.show("SERIE TERMINADA",
-                                  f"{icons.img(ex.icon, 20)}&nbsp; <b>{ex.name}</b><br><br>{res}<br>"
-                                  f"<span style='font-size:22px;color:{T.GOLD}'><b>+{fmt(self.xp)} XP</b></span>{falta}")
+            self._record_current_set()
+        if ex and self.sess["sets"]:
+            sess = self.sess
+            res = (f"Tiempo válido total: <b style='color:{T.GLOW}'>{fmt(sess['good'])} s</b>" if ex.timed else
+                   f"Repeticiones válidas: <b style='color:{T.GLOW}'>{fmt(sess['good'])}</b>"
+                   + (f"  ·  Mal hechas: {sess['bad']}" if sess["bad"] else ""))
+            self.win.dialogs.show("EJERCICIO TERMINADO",
+                                  f"{icons.img(ex.icon, 20)}&nbsp; <b>{ex.name}</b>  ·  {sess['sets']} serie{'s' if sess['sets'] != 1 else ''}<br><br>{res}<br>"
+                                  f"<span style='font-size:22px;color:{T.GOLD}'><b>+{fmt(sess['xp'])} XP</b></span>{self._remaining_text()}",
+                                  icon="flag")
         self.ex = None
         self.counter = None
         self.state = "waiting" if self.worker else "idle"
@@ -550,16 +695,66 @@ class EntrenarPage(QWidget):
 
 
 # =================================================================== REGISTRO
+class VolumeChart(QWidget):
+    """Barras de repeticiones por día (últimos 30 días)."""
+
+    def __init__(self):
+        super().__init__()
+        self.setMinimumHeight(190)
+        self.data: list[tuple[str, float, str]] = []  # (etiqueta, valor, estado)
+
+    def set_data(self, data):
+        self.data = data
+        self.update()
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        W, H = self.width(), self.height()
+        top, bottom, left = 18, 26, 36
+        mx = max([v for _, v, _ in self.data] + [10])
+        p.setFont(QFont(T.FONT, 8))
+        for frac in (0, 0.5, 1):
+            y = top + (H - top - bottom) * (1 - frac)
+            p.setPen(QColor(79, 216, 255, 30))
+            p.drawLine(left, int(y), W, int(y))
+            p.setPen(QColor(T.MUTED))
+            p.drawText(QRectF(0, y - 8, left - 6, 16), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, fmt(mx * frac))
+        n = len(self.data) or 1
+        bw = (W - left) / n
+        for i, (lab, v, st) in enumerate(self.data):
+            h = (H - top - bottom) * (v / mx)
+            r = QRectF(left + i * bw + bw * 0.18, H - bottom - h, bw * 0.64, h)
+            col = {"ok": T.GREEN, "fail": T.RED, "rest": T.MUTED}.get(st, T.GLOW)
+            c = QColor(col)
+            c.setAlpha(60)
+            p.fillRect(r.adjusted(-2, -2, 2, 0), c)
+            c.setAlpha(220)
+            p.fillRect(r, c)
+            if i % 5 == 4 or i == n - 1:
+                p.setPen(QColor(T.MUTED))
+                p.drawText(QRectF(left + i * bw - 10, H - bottom + 4, bw + 20, 16), Qt.AlignmentFlag.AlignCenter, lab)
+
+
 class RegistroPage(QWidget):
     def __init__(self, win):
         super().__init__()
         self.win = win
         self.setObjectName("page")
+        summ = Panel("RESUMEN", "activity")
+        self.summary = QGridLayout()
+        self.summary.setSpacing(8)
+        summ.lay.addLayout(self.summary)
+        vol = Panel("VOLUMEN DIARIO · 30 DÍAS", "chart-column")
+        self.chart = VolumeChart()
+        vol.lay.addWidget(self.chart)
+        vol.lay.addWidget(label("Repeticiones totales por día (la plancha cuenta 1 por cada 5 s). "
+                                "Verde: objetivo cumplido · Rojo: no cumplido · Gris: descanso.", "muted", wrap=True))
         heat = Panel("ÚLTIMOS 28 DÍAS", "calendar-days")
         self.heat = QGridLayout()
         self.heat.setSpacing(6)
         heat.lay.addLayout(self.heat)
-        tot = Panel("TOTALES", "activity")
+        tot = Panel("TOTALES", "dumbbell")
         self.totals = QGridLayout()
         self.totals.setSpacing(8)
         tot.lay.addLayout(self.totals)
@@ -567,26 +762,67 @@ class RegistroPage(QWidget):
         self.ach = QGridLayout()
         self.ach.setSpacing(8)
         ach.lay.addLayout(self.ach)
-        log = Panel("MENSAJES DEL SISTEMA", "terminal")
+        log = Panel("HISTORIAL", "terminal")
         self.log = QListWidget()
         self.log.setMinimumHeight(240)
         log.lay.addWidget(self.log)
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.addWidget(scroll_page(heat, tot, ach, log))
+        lay.addWidget(scroll_page(summ, vol, heat, tot, ach, log))
+
+    def _day_volume(self, k):
+        d = self.win.game.s["daily"].get(k, {})
+        return sum(v for e, v in d.items() if e != "plank") + d.get("plank", 0) / 5
+
+    def _day_state(self, k, today):
+        g = self.win.game
+        h = g.quest if k == today else g.s["history"].get(k)
+        if not h:
+            return ""
+        if h.get("rest"):
+            return "rest"
+        if h.get("completed"):
+            return "ok"
+        return "" if k == today else "fail"
 
     def refresh(self):
         g = self.win.game
         s = g.s
-        clear_layout(self.heat)
         today = g.today()
+        t0 = date.fromisoformat(today)
+        days = [(t0 - timedelta(days=29 - i)) for i in range(30)]
+        self.chart.set_data([(f"{d.day}/{d.month}", self._day_volume(d.isoformat()), self._day_state(d.isoformat(), today))
+                             for d in days])
+        week = sum(self._day_volume((t0 - timedelta(days=i)).isoformat()) for i in range(7))
+        prev = sum(self._day_volume((t0 - timedelta(days=i)).isoformat()) for i in range(7, 14))
+        delta = ("—" if not prev else f"{'+' if week >= prev else ''}{round((week - prev) / prev * 100)}%")
+        adh = g.adherence()
+        cumplidos = sum(1 for d in days if self._day_state(d.isoformat(), today) == "ok")
+        clear_layout(self.summary)
+        items = [("Constancia 30 días", "—" if adh is None else f"{adh}%"),
+                 ("Días cumplidos (30 d)", str(cumplidos)),
+                 ("Volumen últimos 7 días", fmt(week)),
+                 ("vs. semana anterior", delta),
+                 ("Racha actual", str(s["streak"])),
+                 ("Mejor racha", str(s["bestStreak"])),
+                 ("Progresión de objetivos", f"+{round((s['progression'] - 1) * 100)}%"),
+                 ("Nivel / Rango", f"{s['player']['level']} / {rank_of(s['player']['level'])}")]
+        for i, (name, val) in enumerate(items):
+            box = label(f"<span style='font-size:22px;font-weight:700;color:white'>{val}</span><br>"
+                        f"<span style='color:{T.MUTED}'>{name}</span>", align=Qt.AlignmentFlag.AlignCenter)
+            box.setTextFormat(Qt.TextFormat.RichText)
+            box.setStyleSheet("border:1px solid #1c3a70;padding:10px;")
+            self.summary.addWidget(box, i // 4, i % 4)
+        clear_layout(self.heat)
         for i in range(28):
             d = (date.fromisoformat(today) - timedelta(days=27 - i))
             k = d.isoformat()
-            h = {"completed": g.quest and g.quest["completed"]} if k == today else s["history"].get(k)
+            h = g.quest if k == today else s["history"].get(k)
             c = label(str(d.day), align=Qt.AlignmentFlag.AlignCenter)
             c.setMinimumHeight(40)
-            if h and h.get("completed"):
+            if h and h.get("rest"):
+                st = f"background:rgba(127,149,191,0.12);border:1px solid #33456b;color:{T.MUTED};"
+            elif h and h.get("completed"):
                 st = f"background:rgba(61,255,168,0.3);border:1px solid {T.GREEN};color:white;"
             elif h and k != today:
                 st = f"background:rgba(255,59,92,0.2);border:1px solid {T.RED};color:{T.MUTED};"
@@ -633,7 +869,36 @@ class AjustesPage(QWidget):
         self.setObjectName("page")
         self._loading = False
 
-        jug = Panel("JUGADOR", "user-round")
+        plan = Panel("PLAN DE ENTRENAMIENTO", "target")
+        pf = QFormLayout()
+        pf.setVerticalSpacing(12)
+        pf.setHorizontalSpacing(24)
+        self.plan = QComboBox()
+        for k in PLAN_ORDER:
+            self.plan.addItem(f"{PLANS[k]['label']} — " + ", ".join(
+                f"{v}{' s' if EXERCISES[e].timed else ''} {EXERCISES[e].name.lower()}" for e, v in PLANS[k]["targets"].items()))
+        self.plan.currentIndexChanged.connect(lambda i: not self._loading and self.win.game.set_plan(PLAN_ORDER[i]))
+        pf.addRow("Plan base", self.plan)
+        plan.lay.addLayout(pf)
+        plan.lay.addWidget(label("Si cambiás el plan, se aplica hoy (si todavía no empezaste) o desde mañana.", "muted", wrap=True))
+        self.auto_prog = QCheckBox("Progresión automática: +5% en los objetivos cada 7 días cumplidos")
+        self.auto_prog.toggled.connect(lambda on: self.set_setting("autoProgress", on))
+        plan.lay.addWidget(self.auto_prog)
+        self.prog_lbl = label("", "muted")
+        plan.lay.addWidget(self.prog_lbl)
+        plan.lay.addWidget(button("Reiniciar progresión a 0%", "ghost", self.reset_prog))
+        plan.lay.addWidget(label("Días de descanso (sin objetivo ni penalización):", "lbl"))
+        rd = QHBoxLayout()
+        self.rest_cbs = []
+        for i, d in enumerate(WEEKDAYS):
+            cb = QCheckBox(d[:3])
+            cb.toggled.connect(lambda _=False: self.save_rest())
+            self.rest_cbs.append(cb)
+            rd.addWidget(cb)
+        rd.addStretch()
+        plan.lay.addLayout(rd)
+
+        jug = Panel("PERFIL Y CÁMARA", "user-round")
         f = QFormLayout()
         f.setVerticalSpacing(12)
         f.setHorizontalSpacing(24)
@@ -642,12 +907,7 @@ class AjustesPage(QWidget):
         self.name.setMaxLength(24)
         self.name.editingFinished.connect(self.save_name)
         f.addRow("Nombre", self.name)
-        self.diff = QComboBox()
-        self.diff.addItems(["Fácil — empezando", "Normal", "Difícil", "Extremo — 100/100/100"])
-        self.diff.currentIndexChanged.connect(lambda i: not self._loading and self.win.game.set_difficulty(DIFF_ORDER[i]))
-        f.addRow("Dificultad", self.diff)
         jug.lay.addLayout(f)
-        jug.lay.addWidget(label("La dificultad nueva se aplica desde mañana (o ya, si todavía no empezaste la misión de hoy).", "muted", wrap=True))
         self.voice = QCheckBox("Voz que cuenta las repeticiones y te corrige")
         self.sound = QCheckBox("Efectos de sonido")
         self.mirror = QCheckBox("Cámara en modo espejo")
@@ -655,9 +915,9 @@ class AjustesPage(QWidget):
             cb.toggled.connect(lambda on, key=key: self.set_setting(key, on))
             jug.lay.addWidget(cb)
 
-        guard = Panel("EL GUARDIÁN", "shield")
-        guard.lay.addWidget(label("Mientras ASCENSO esté abierto (aunque sea en la bandeja, al lado del reloj), "
-                                  "te va a perseguir con alertas encima de todo hasta que completes la misión.",
+        guard = Panel("RECORDATORIOS", "bell-ring")
+        guard.lay.addWidget(label("Mientras Arise Trainer esté abierto (aunque sea minimizado al lado del reloj), "
+                                  "te muestra una alerta encima de todo hasta que cumplas el objetivo del día.",
                                   "muted", wrap=True))
         self.nag = QCheckBox("Activado")
         self.nag.toggled.connect(lambda on: self.set_nag("enabled", on))
@@ -678,10 +938,10 @@ class AjustesPage(QWidget):
         gf.addRow("Repetir cada", self.every)
         gf.addRow("Posposiciones por día", self.snooze)
         guard.lay.addLayout(gf)
-        self.hard = QCheckBox("Modo hardcore: pantalla completa que no se puede cerrar")
+        self.hard = QCheckBox("Modo estricto: la alerta cubre todas las pantallas y no se puede cerrar")
         self.hard.toggled.connect(self.toggle_hard)
         guard.lay.addWidget(self.hard)
-        self.auto = QCheckBox("Arrancar ASCENSO automáticamente al prender la compu")
+        self.auto = QCheckBox("Abrir Arise Trainer automáticamente al prender la compu")
         self.auto.toggled.connect(self.toggle_auto)
         guard.lay.addWidget(self.auto)
         guard.lay.addWidget(button("Probar alerta ahora", "", lambda: self.win.guardian.show(test=True), icon="bell-ring"))
@@ -698,14 +958,18 @@ class AjustesPage(QWidget):
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.addWidget(scroll_page(jug, guard, datos))
+        lay.addWidget(scroll_page(plan, jug, guard, datos))
 
     def refresh(self):
         self._loading = True
         s = self.win.game.s
         st = s["settings"]
         self.name.setText(s["player"]["name"])
-        self.diff.setCurrentIndex(DIFF_ORDER.index(st["difficulty"]) if st["difficulty"] in DIFF_ORDER else 0)
+        self.plan.setCurrentIndex(PLAN_ORDER.index(st["plan"]) if st["plan"] in PLAN_ORDER else 0)
+        self.auto_prog.setChecked(st.get("autoProgress", True))
+        self.prog_lbl.setText(f"Progresión actual: +{round((s['progression'] - 1) * 100)}% sobre el plan base")
+        for i, cb in enumerate(self.rest_cbs):
+            cb.setChecked(i in st.get("restDays", []))
         self.voice.setChecked(st["voice"])
         self.sound.setChecked(st["sound"])
         self.mirror.setChecked(st.get("mirror", True))
@@ -719,6 +983,21 @@ class AjustesPage(QWidget):
         self.auto.setChecked(storage.autostart_enabled())
         self.path.setText(f"Tus datos se guardan en: {self.win.game.store.path}")
         self._loading = False
+
+    def save_rest(self):
+        if self._loading:
+            return
+        self.win.game.set_rest_days([i for i, cb in enumerate(self.rest_cbs) if cb.isChecked()])
+
+    def reset_prog(self):
+        g = self.win.game
+        g.s["progression"] = 1.0
+        g.s["progressCount"] = 0
+        if g._untouched():
+            g.quest["targets"] = g.build_targets(g.quest["penalty"])
+        g.save()
+        self.win.refresh()
+        self.refresh()
 
     def save_name(self):
         if self.name.text().strip():
@@ -754,7 +1033,7 @@ class AjustesPage(QWidget):
                 self.hard.setChecked(False)
                 self._loading = False
         self.win.dialogs.show("CONFIRMAR",
-                              "En modo hardcore la alerta cubre <b>todas tus pantallas</b> y no se puede cerrar "
+                              "En modo estricto la alerta cubre <b>todas tus pantallas</b> y no se puede cerrar "
                               "hasta que vayas a entrenar, uses una posposición o escribas la frase de rendición.<br><br>¿Aceptás?",
                               (("Acepto", "danger"), ("Mejor no", "")), tone="red", callback=answer)
 
@@ -763,7 +1042,7 @@ class AjustesPage(QWidget):
             self.win.toaster.show("No pude cambiar el inicio automático")
 
     def export(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Exportar progreso", f"ascenso-{date.today()}.json", "JSON (*.json)")
+        path, _ = QFileDialog.getSaveFileName(self, "Exportar progreso", f"arise-trainer-{date.today()}.json", "JSON (*.json)")
         if path:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(self.win.game.export(), f, ensure_ascii=False, indent=1)
