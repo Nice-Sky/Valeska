@@ -29,10 +29,12 @@ class CameraWorker(QThread):
     failed = Signal(str)
     ready = Signal()
 
-    def __init__(self, index: int = 0, mirror: bool = True, parent=None):
+    def __init__(self, index: int = 0, mirror: bool = True, parent=None, segmentation: bool = False):
         super().__init__(parent)
         self.index = index
         self.mirror = mirror
+        self.segmentation = segmentation
+        self.latest = None  # (rgb, mask, landmarks) del último cuadro, para sacar fotos
         self._stop = False
 
     def stop(self):
@@ -67,6 +69,7 @@ class CameraWorker(QThread):
                 min_pose_detection_confidence=0.5,
                 min_pose_presence_confidence=0.5,
                 min_tracking_confidence=0.5,
+                output_segmentation_masks=self.segmentation,
             )
             landmarker = vision.PoseLandmarker.create_from_options(options)
         except Exception as e:
@@ -98,6 +101,11 @@ class CameraWorker(QThread):
                 res = landmarker.detect_for_video(mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb), ts)
                 lm = res.pose_landmarks[0] if res.pose_landmarks else None
                 world = res.pose_world_landmarks[0] if res.pose_world_landmarks else None
+                if self.segmentation:
+                    mask = res.segmentation_masks[0].numpy_view().copy() if res.segmentation_masks else None
+                    if mask is not None and mask.ndim == 3:
+                        mask = mask[..., 0]
+                    self.latest = (rgb, mask, lm)
                 h, w = rgb.shape[:2]
                 img = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
                 self.frame.emit(img, lm, world, w / h, now)

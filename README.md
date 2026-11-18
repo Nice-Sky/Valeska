@@ -41,6 +41,27 @@ terminar el ejercicio. Cada serie queda registrada y si superás tu mejor marca 
 crece con la racha. Rangos: E (nivel 1), D (10), C (20), B (35), A (50), S (75). Los atributos
 (Fuerza, Resistencia, Agilidad) se calculan con tus récords y volumen. Disciplina es tu % de constancia.
 
+## Control corporal semanal (pantalla CUERPO)
+
+Una vez por semana (elegís el día en Ajustes) la app te guía para sacar **3 fotos: frente, perfil
+izquierdo y perfil derecho**. Mientras te acomodás, la foto de la semana anterior aparece superpuesta y
+semitransparente para que te pares en el mismo lugar y la misma posición. Las fotos se sacan solas
+cuando estás bien ubicado (cuenta regresiva de 3 segundos).
+
+- **Peso:** el día del control lo cargás (y cualquier otro día también). Ves último peso,
+  promedio de 7 días, de 30 días, total, cambio semanal y un gráfico con la media móvil.
+- **Medidas:** la IA recorta tu silueta y mide el ancho (frente) y la profundidad (perfiles) de
+  cuello, cintura y cadera. Con tu altura como escala calcula los contornos en cm.
+- **% de grasa estimado** con el método de la Marina de EE.UU., que usa contornos y altura, **no el
+  peso**. Por eso **ganar músculo no se cuenta como grasa** (a diferencia del IMC). Con el peso
+  separa masa magra y masa grasa.
+- **Comparación con la semana anterior en lenguaje claro**, por ejemplo: *"Subiste 1,2 kg pero la
+  cintura no creció: lo más probable es que sea músculo, no grasa"*.
+- **Comparador de fotos:** cualquier fecha contra otra, superpuestas (con opacidad ajustable) o lado a lado.
+
+Es una estimación (margen ±3-4%). Para que sirva, sacá las fotos siempre igual: misma luz, misma
+distancia, ropa ajustada o poca ropa, y a la misma hora. Las fotos quedan solo en tu compu.
+
 ## Ejercicios con cámara
 
 | Ejercicio | Dónde poner la cámara | Qué corrige |

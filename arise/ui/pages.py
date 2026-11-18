@@ -250,9 +250,19 @@ class MisionPage(QWidget):
         self.panel.lay.addWidget(self.warning)
         self.count = label("", "countdown", align=Qt.AlignmentFlag.AlignCenter)
         self.panel.lay.addWidget(self.count)
+        self.checkin = Panel("CONTROL SEMANAL", "scan-line")
+        self.checkin.set_tone("gold")
+        self.checkin.lay.addWidget(label("Hoy te toca: 3 fotos (frente, perfil izquierdo y derecho) y tu peso.",
+                                         "muted", wrap=True, align=Qt.AlignmentFlag.AlignCenter))
+        crow = QHBoxLayout()
+        crow.addStretch()
+        crow.addWidget(button("Hacer control", "primary", lambda: (win.show_page("cuerpo"), win.pages["cuerpo"].start_checkin()),
+                              icon="camera"))
+        crow.addStretch()
+        self.checkin.lay.addLayout(crow)
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.addWidget(scroll_page(self.panel))
+        lay.addWidget(scroll_page(self.panel, self.checkin))
         t = QTimer(self)
         t.timeout.connect(self.tick)
         t.start(1000)
@@ -262,6 +272,7 @@ class MisionPage(QWidget):
         if not q:
             return
         g = self.win.game
+        self.checkin.setVisible(g.checkin_due())
         rest = q.get("rest")
         self.panel.set_title("DÍA DE DESCANSO" if rest else "PENALIZACIÓN: OBJETIVO +30%" if q["penalty"] else "OBJETIVO DE HOY")
         self.panel.title.set_icon("moon" if rest else "triangle-alert" if q["penalty"] else "target")
@@ -901,6 +912,28 @@ class AjustesPage(QWidget):
         rd.addStretch()
         plan.lay.addLayout(rd)
 
+        cuerpo = Panel("CONTROL CORPORAL", "scan-line")
+        cf = QFormLayout()
+        cf.setVerticalSpacing(10)
+        self.height_cm = QSpinBox()
+        self.height_cm.setRange(0, 230)
+        self.height_cm.setSuffix(" cm")
+        self.height_cm.setSpecialValueText("sin definir")
+        self.height_cm.valueChanged.connect(lambda v: self._set_profile("heightCm", v))
+        self.sex = QComboBox()
+        self.sex.addItems(["Sin definir", "Hombre", "Mujer"])
+        self.sex.currentIndexChanged.connect(lambda i: self._set_profile("sex", ["", "m", "f"][i]))
+        self.ck_day = QComboBox()
+        self.ck_day.addItems(WEEKDAYS)
+        self.ck_day.currentIndexChanged.connect(lambda i: self.set_setting("checkinDay", i))
+        cf.addRow("Altura", self.height_cm)
+        cf.addRow("Sexo (para la fórmula de grasa)", self.sex)
+        cf.addRow("Día del control semanal", self.ck_day)
+        cuerpo.lay.addLayout(cf)
+        cuerpo.lay.addWidget(label("Las fotos se guardan solo en tu compu, en la carpeta de datos (ver abajo), subcarpeta \"fotos\".",
+                                   "muted", wrap=True))
+        self.cuerpo_panel = cuerpo
+
         jug = Panel("PERFIL Y CÁMARA", "user-round")
         f = QFormLayout()
         f.setVerticalSpacing(12)
@@ -961,7 +994,7 @@ class AjustesPage(QWidget):
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.addWidget(scroll_page(plan, jug, guard, datos))
+        lay.addWidget(scroll_page(plan, cuerpo, jug, guard, datos))
 
     def refresh(self):
         self._loading = True
@@ -973,6 +1006,10 @@ class AjustesPage(QWidget):
         self.prog_lbl.setText(f"Progresión actual: +{round((s['progression'] - 1) * 100)}% sobre el plan base")
         for i, cb in enumerate(self.rest_cbs):
             cb.setChecked(i in st.get("restDays", []))
+        prof = s.get("profile", {})
+        self.height_cm.setValue(int(prof.get("heightCm") or 0))
+        self.sex.setCurrentIndex({"m": 1, "f": 2}.get(prof.get("sex"), 0))
+        self.ck_day.setCurrentIndex(st.get("checkinDay", 0))
         self.voice.setChecked(st["voice"])
         self.sound.setChecked(st["sound"])
         self.mirror.setChecked(st.get("mirror", True))
@@ -986,6 +1023,12 @@ class AjustesPage(QWidget):
         self.auto.setChecked(storage.autostart_enabled())
         self.path.setText(f"Tus datos se guardan en: {self.win.game.store.path}")
         self._loading = False
+
+    def _set_profile(self, key, val):
+        if self._loading:
+            return
+        self.win.game.s["profile"][key] = val
+        self.win.game.save()
 
     def save_rest(self):
         if self._loading:

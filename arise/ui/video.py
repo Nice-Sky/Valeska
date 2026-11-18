@@ -31,6 +31,9 @@ class VideoView(QWidget):
         self.center = ""
         self.center_small = ""
         self.pop = 0
+        self.ghost: QImage | None = None   # foto anterior superpuesta (control semanal)
+        self.ghost_opacity = 0.35
+        self.flash = 0
 
     def set_frame(self, img: QImage, lm, color: str):
         self.image, self.landmarks, self.skeleton = img, lm, color
@@ -62,6 +65,13 @@ class VideoView(QWidget):
             s = min(W / iw, H / ih)
             area = QRectF((W - iw * s) / 2, (H - ih * s) / 2, iw * s, ih * s)
             p.drawImage(area, self.image)
+            if self.ghost is not None and not self.ghost.isNull():
+                p.setOpacity(self.ghost_opacity)
+                p.drawImage(area, self.ghost)
+                p.setOpacity(1.0)
+            if self.flash:
+                p.fillRect(area, QColor(255, 255, 255, int(255 * self.flash / 6)))
+                self.flash -= 1
             if self.landmarks is not None:
                 self._skeleton(p, area)
         p.setPen(QPen(QColor(T.LINE), 1))

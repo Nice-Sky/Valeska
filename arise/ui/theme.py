@@ -61,7 +61,7 @@ QProgressBar::chunk {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 #
 QProgressBar[done="true"]::chunk {{ background: {GREEN}; }}
 QProgressBar#thin {{ max-height: 6px; min-height: 6px; border-color: #1c3a70; }}
 
-QLineEdit, QSpinBox, QComboBox {{
+QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox {{
   background: rgba(0,0,0,0.45); border: 1px solid {LINE}; padding: 7px 10px; font-size: 15px; color: white;
   selection-background-color: {LINE};
 }}

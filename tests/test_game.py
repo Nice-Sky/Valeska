@@ -153,3 +153,21 @@ def test_migrates_old_save(tmp_path):
     assert g.settings["plan"] == "avanzado"
     assert "freePoints" not in g.player
     assert g.player["level"] == 3
+
+
+def test_weights_and_checkins(tmp_path):
+    g, clock, _ = make(tmp_path, d=date(2026, 11, 16))  # lunes
+    assert g.checkin_due()
+    for i, kg in enumerate((80, 80.4, 79.8, 80.2, 80.0, 79.6, 79.9, 79.5)):
+        clock.d = date.fromordinal(date(2026, 11, 9).toordinal() + i)
+        g.log_weight(kg)
+    clock.d = date(2026, 11, 16)
+    st = g.weight_stats()
+    assert st["count"] == 8 and st["last"] == 79.5
+    assert st["avg7"] is not None and st["week_change"] is not None
+    g.add_checkin(79.5, {}, {"waist_cm": 84, "reliable": True}, [])
+    assert not g.checkin_due()
+    assert g.next_checkin().startswith("lunes")
+    clock.d = date(2026, 11, 23)
+    assert g.checkin_due()
+    assert "checkin1" in g.s["achievements"]

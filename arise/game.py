@@ -90,6 +90,9 @@ ACHIEVEMENTS = [
     ("rankS", "Rango S", "Llegá al nivel 75", lambda s: s["player"]["level"] >= 75),
     ("extremo", "Plan extremo", "Cumplí un día en el plan Extremo", lambda s: s["extremeDone"] >= 1),
     ("redemption", "Deuda saldada", "Cumplí un día de penalización", lambda s: s["penaltiesCleared"] >= 1),
+    ("checkin1", "Punto de partida", "Hacé tu primer control corporal", lambda s: len(s.get("checkins", [])) >= 1),
+    ("checkin4", "Un mes documentado", "4 controles corporales", lambda s: len(s.get("checkins", [])) >= 4),
+    ("checkin12", "Tres meses de cambios", "12 controles corporales", lambda s: len(s.get("checkins", [])) >= 12),
 ]
 
 
@@ -98,7 +101,7 @@ def new_state() -> dict:
         "version": 3,
         "player": {"name": "", "level": 1, "xp": 0.0, "createdAt": time.time()},
         "settings": {
-            "plan": "principiante", "autoProgress": True, "restDays": [6],
+            "plan": "principiante", "autoProgress": True, "restDays": [6], "checkinDay": 0,
             "voice": True, "sound": True, "camera": 0, "mirror": True,
             "nag": {"enabled": True, "startHour": 18, "intervalMin": 20, "snoozesPerDay": 2, "hard": False},
         },
@@ -112,12 +115,15 @@ def new_state() -> dict:
         "achievements": [],
         "log": [],
         "guardian": {"date": "", "snoozes": 0, "surrender": False},
+        "profile": {"heightCm": 0, "sex": ""},
+        "weights": {},
+        "checkins": [],
     }
 
 
 def _merge(base: dict, extra: dict) -> dict:
     for k, v in (extra or {}).items():
-        if isinstance(v, dict) and isinstance(base.get(k), dict) and k not in ("history", "daily"):
+        if isinstance(v, dict) and isinstance(base.get(k), dict) and k not in ("history", "daily", "weights"):
             _merge(base[k], v)
         else:
             base[k] = v
@@ -430,6 +436,77 @@ class Game:
                 self.modal("LOGRO",
                            f"<span style='font-size:22px;color:#ffd166'><b>{escape(title)}</b></span>"
                            f"<br><small>{escape(desc)}</small>", "gold", "open", "award")
+
+    # ------------------------------------------------------------ cuerpo: peso y controles semanales
+    @property
+    def profile(self):
+        return self.s["profile"]
+
+    def log_weight(self, kg: float, day: Optional[str] = None):
+        if not (20 <= kg <= 350):
+            raise ValueError("Peso fuera de rango")
+        self.s["weights"][day or self.today()] = round(float(kg), 2)
+        self.save()
+        self.emit("changed")
+
+    def _avg(self, days: int, end: Optional[date] = None) -> Optional[float]:
+        end = end or self._today()
+        vals = [v for k, v in self.s["weights"].items()
+                if 0 <= (end - date.fromisoformat(k)).days < days]
+        return round(sum(vals) / len(vals), 2) if vals else None
+
+    def weight_stats(self) -> dict:
+        w = self.s["weights"]
+        if not w:
+            return {"count": 0}
+        last_day = max(w)
+        avg7, prev7 = self._avg(7), self._avg(7, self._today() - timedelta(days=7))
+        return {
+            "count": len(w), "last": w[last_day], "last_day": last_day,
+            "avg7": avg7, "avg30": self._avg(30), "avg_all": round(sum(w.values()) / len(w), 2),
+            "week_change": None if (avg7 is None or prev7 is None) else round(avg7 - prev7, 2),
+            "min": min(w.values()), "max": max(w.values()),
+        }
+
+    def last_checkin(self) -> Optional[dict]:
+        return self.s["checkins"][-1] if self.s["checkins"] else None
+
+    def checkin_due(self) -> bool:
+        if not self.registered:
+            return False
+        last = self.last_checkin()
+        today = self._today()
+        if last is None:
+            return True
+        days = (today - date.fromisoformat(last["date"])).days
+        if days >= 7:
+            return True
+        return today.weekday() == self.settings.get("checkinDay", 0) and days >= 4
+
+    def next_checkin(self) -> str:
+        if self.checkin_due():
+            return "hoy"
+        today = self._today()
+        last = date.fromisoformat(self.last_checkin()["date"])
+        target = self.settings.get("checkinDay", 0)
+        d = today + timedelta(days=1)
+        while d.weekday() != target or (d - last).days < 4:
+            d += timedelta(days=1)
+        return f"{WEEKDAYS[d.weekday()].lower()} {d.day}/{d.month}"
+
+    def add_checkin(self, weight: float, photos: dict, metrics: dict, findings: list) -> dict:
+        today = self.today()
+        self.log_weight(weight, today)
+        entry = {"date": today, "weight": round(weight, 2), "photos": photos, "metrics": metrics, "findings": findings}
+        self.s["checkins"] = [c for c in self.s["checkins"] if c["date"] != today] + [entry]
+        bf = metrics.get("body_fat")
+        self.log(f"Control corporal: {weight:.1f} kg" + (f", ~{bf:.1f}% grasa" if bf else "") +
+                 (f", cintura {metrics['waist_cm']:.1f} cm" if metrics.get("reliable") else "") + ".")
+        self.gain_xp(100)
+        self.check_achievements()
+        self.save()
+        self.emit("changed")
+        return entry
 
     # ------------------------------------------------------------ Guardián
     def guardian(self) -> dict:

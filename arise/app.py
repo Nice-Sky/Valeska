@@ -13,6 +13,7 @@ from . import storage
 from .game import PLAN_ORDER, PLANS, Game, rank_of
 from .guardian import Guardian
 from .ui import theme as T
+from .ui.body_page import CuerpoPage
 from .ui.pages import AjustesPage, EntrenarPage, EstadoPage, MisionPage, RegistroPage
 from .ui import icons
 from .ui.holo import Backdrop
@@ -20,7 +21,7 @@ from .ui.widgets import Dialogs, GlowLabel, Toaster, label
 from .voice import Sounds, Voice
 
 PAGES = [("estado", "ESTADO", "user-round"), ("mision", "HOY", "target"), ("entrenar", "ENTRENAR", "dumbbell"),
-         ("registro", "PROGRESO", "chart-column"), ("ajustes", "AJUSTES", "settings")]
+         ("registro", "PROGRESO", "chart-column"), ("cuerpo", "CUERPO", "scan-line"), ("ajustes", "AJUSTES", "settings")]
 INSTANCE_KEY = "arise-trainer-instance"
 
 
@@ -121,7 +122,7 @@ class MainWindow(QMainWindow):
 
         self.pages = {
             "estado": EstadoPage(self), "mision": MisionPage(self), "entrenar": EntrenarPage(self),
-            "registro": RegistroPage(self), "ajustes": AjustesPage(self),
+            "registro": RegistroPage(self), "cuerpo": CuerpoPage(self), "ajustes": AjustesPage(self),
         }
         for key, *_ in PAGES:
             self.stack.addWidget(self.pages[key])
@@ -153,7 +154,9 @@ class MainWindow(QMainWindow):
                               icon=data.get("icon", ""))
 
     def is_training(self) -> bool:
-        return self.pages["entrenar"].training if hasattr(self, "pages") else False
+        if not hasattr(self, "pages"):
+            return False
+        return self.pages["entrenar"].training or self.pages["cuerpo"].worker is not None
 
     def apply_settings(self):
         st = self.game.s["settings"]
@@ -320,6 +323,8 @@ class MainWindow(QMainWindow):
             self.game.rollover()
             self.game.check_achievements()
             self.refresh()
+            if self.game.checkin_due():
+                QTimer.singleShot(2500, lambda: self.toaster.show("Hoy te toca el control corporal semanal", True, "scan-line"))
         QTimer.singleShot(5000, self.guardian.check)
 
 
@@ -368,7 +373,8 @@ def _autotest(app):
         from mediapipe.tasks.python import BaseOptions, vision
         from .camera import MODEL
         opts = vision.PoseLandmarkerOptions(base_options=BaseOptions(model_asset_buffer=MODEL.read_bytes()),
-                                            running_mode=vision.RunningMode.VIDEO, num_poses=1)
+                                            running_mode=vision.RunningMode.VIDEO, num_poses=1,
+                                            output_segmentation_masks=True)
         with vision.PoseLandmarker.create_from_options(opts) as lm:
             img = mp.Image(image_format=mp.ImageFormat.SRGB, data=np.zeros((360, 640, 3), np.uint8))
             lm.detect_for_video(img, 1)
