@@ -85,3 +85,5 @@ Estructura:
 - `ascenso/camera.py`: cámara + MediaPipe Pose en un hilo aparte
 - `ascenso/guardian.py`: alertas
 - `ascenso/ui/`: interfaz (PySide6 / Qt)
+
+Íconos: [Lucide](https://lucide.dev) (licencia ISC, ver `assets/icons/LICENSE-lucide.txt`).

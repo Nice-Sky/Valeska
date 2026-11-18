@@ -1,8 +1,9 @@
 """Colores y hoja de estilos (estilo "ventana del Sistema")."""
-BG = "#050914"
+BG = "#02060f"
 PANEL = "#0a1630"
-LINE = "#2a7fff"
-GLOW = "#4de1ff"
+LINE = "#2f7dff"
+GLOW = "#4fd8ff"
+CORE = "#dcf8ff"
 TEXT = "#dceaff"
 MUTED = "#7f95bf"
 GOLD = "#ffd166"
@@ -19,27 +20,18 @@ QMainWindow, #root {{ background: {BG}; }}
 QWidget#page {{ background: transparent; }}
 QToolTip {{ background: {PANEL}; border: 1px solid {GLOW}; color: {TEXT}; }}
 
-#brand {{ font-size: 26px; font-weight: 700; letter-spacing: 6px; color: white; }}
-#brandSub {{ font-size: 9px; letter-spacing: 1px; color: {GLOW}; }}
+#brand {{ font-size: 26px; font-weight: 700; letter-spacing: 7px; color: {CORE}; background: transparent; }}
+#brandSub {{ font-size: 9px; letter-spacing: 1px; color: {GLOW}; background: transparent; }}
 
 #nav QPushButton {{
-  text-align: left; padding: 12px 16px; font-size: 15px; letter-spacing: 2px; color: {MUTED};
+  text-align: left; padding: 13px 18px; font-size: 15px; letter-spacing: 2px; color: {MUTED};
   background: transparent; border: none; border-left: 3px solid transparent;
 }}
 #nav QPushButton:hover {{ color: white; background: rgba(42,127,255,0.12); }}
-#nav QPushButton:checked {{ color: white; border-left: 3px solid {GLOW}; background: rgba(42,127,255,0.22); }}
+#nav QPushButton:checked {{ color: white; border-left: 3px solid {CORE}; background: qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 rgba(79,216,255,0.30), stop:1 rgba(79,216,255,0.0)); }}
 #navPlayer {{ color: {MUTED}; font-size: 13px; }}
 
-QFrame#panel {{ background: rgba(10,22,48,0.92); border: 1px solid {LINE}; }}
-QFrame#panel[tone="red"] {{ border-color: {RED}; }}
-QFrame#panel[tone="gold"] {{ border-color: {GOLD}; }}
-QLabel#panelTitle {{
-  font-size: 15px; font-weight: 700; letter-spacing: 4px; color: white;
-  border: 1px solid {GLOW}; padding: 6px 18px; background: rgba(77,225,255,0.06);
-}}
-QFrame#panel[tone="red"] QLabel#panelTitle {{ border-color: {RED}; color: {RED}; }}
-QFrame#panel[tone="gold"] QLabel#panelTitle {{ border-color: {GOLD}; color: {GOLD}; }}
-
+QLabel {{ background: transparent; }}
 QLabel#muted {{ color: {MUTED}; }}
 QLabel#lbl {{ color: {MUTED}; font-size: 13px; letter-spacing: 1px; }}
 QLabel#big {{ font-size: 24px; font-weight: 700; color: white; }}
@@ -49,10 +41,10 @@ QLabel#gold {{ color: {GOLD}; font-weight: 700; }}
 QLabel#countdown {{ color: {MUTED}; letter-spacing: 2px; }}
 
 QPushButton {{
-  background: rgba(42,127,255,0.15); border: 1px solid {LINE}; padding: 9px 16px;
-  font-size: 15px; font-weight: 600; letter-spacing: 1px; color: white;
+  background: rgba(10,30,70,0.55); border: 1px solid rgba(79,216,255,0.75); padding: 9px 18px;
+  font-size: 15px; font-weight: 600; letter-spacing: 2px; color: {CORE};
 }}
-QPushButton:hover {{ background: rgba(42,127,255,0.35); border-color: {GLOW}; }}
+QPushButton:hover {{ background: rgba(47,125,255,0.38); border-color: {CORE}; color: white; }}
 QPushButton:pressed {{ background: rgba(77,225,255,0.45); }}
 QPushButton:disabled {{ color: {MUTED}; border-color: #1c3260; background: transparent; }}
 QPushButton[kind="primary"] {{ background: qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 #1b5cff, stop:1 #2fb8ff); border-color: {GLOW}; }}
@@ -85,15 +77,6 @@ QScrollBar::add-line, QScrollBar::sub-line {{ height: 0; }}
 QListWidget {{ background: transparent; border: none; font-size: 14px; }}
 QListWidget::item {{ border-bottom: 1px solid rgba(42,127,255,0.15); padding: 5px 2px; }}
 
-QDialog#sysDialog {{ background: transparent; }}
-QFrame#sysBox {{ background: rgba(8,18,40,0.98); border: 2px solid {GLOW}; }}
-QFrame#sysBox[tone="red"] {{ border-color: {RED}; }}
-QFrame#sysBox[tone="gold"] {{ border-color: {GOLD}; }}
-QLabel#sysTitle {{ font-size: 17px; font-weight: 700; letter-spacing: 4px; padding: 6px 16px; border: 1px solid {GLOW}; color: white; }}
-QFrame#sysBox[tone="red"] QLabel#sysTitle {{ border-color: {RED}; color: {RED}; }}
-QFrame#sysBox[tone="gold"] QLabel#sysTitle {{ border-color: {GOLD}; color: {GOLD}; }}
-QLabel#sysBody {{ font-size: 16px; }}
+QLabel#sysBody {{ font-size: 17px; color: {CORE}; background: transparent; }}
 
-QLabel#toast {{ background: rgba(8,18,40,0.97); border: 1px solid {GLOW}; padding: 9px 16px; font-weight: 600; }}
-QLabel#toast[gold="true"] {{ border-color: {GOLD}; color: {GOLD}; }}
 """

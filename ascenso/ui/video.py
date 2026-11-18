@@ -5,6 +5,7 @@ from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QImage, QPainter, QPen
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
+from . import holo
 from . import theme as T
 
 CONNECTIONS = [
@@ -92,11 +93,10 @@ class VideoView(QWidget):
             fm = p.fontMetrics()
             tw = min(W - 40, fm.horizontalAdvance(self.feedback) + 36)
             r = QRectF((W - tw) / 2, H - fm.height() - 28, tw, fm.height() + 14)
-            col = QColor(TONES.get(self.tone, T.GLOW))
-            p.setPen(QPen(col, 1.5))
-            p.setBrush(QColor(5, 9, 20, 215))
-            p.drawRect(r)
-            p.setPen(col if self.tone else QColor("white"))
+            col = TONES.get(self.tone, T.GLOW)
+            holo.holo_frame(p, r.adjusted(-6, -4, 6, 4), {T.GREEN: "", T.GOLD: "gold", T.RED: "red"}.get(col, ""),
+                            7, cut=5, strong=True, brackets=False)
+            p.setPen(QColor(col if self.tone else T.CORE))
             p.drawText(r, Qt.AlignmentFlag.AlignCenter, fm.elidedText(self.feedback, Qt.TextElideMode.ElideRight, int(tw - 20)))
 
         # texto central (cuenta regresiva / estado)

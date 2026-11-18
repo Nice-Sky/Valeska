@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QSize, Qt, QTimer
 from PySide6.QtGui import QAction, QColor, QFont, QIcon, QPainter, QPixmap
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 from PySide6.QtWidgets import (QApplication, QButtonGroup, QHBoxLayout, QMainWindow, QMenu, QPushButton,
@@ -14,11 +14,13 @@ from .game import DIFF_ORDER, Game, rank_of
 from .guardian import Guardian
 from .ui import theme as T
 from .ui.pages import AjustesPage, EntrenarPage, EstadoPage, MisionPage, RegistroPage
+from .ui import icons
+from .ui.holo import Backdrop
 from .ui.widgets import Dialogs, Toaster, label
 from .voice import Sounds, Voice
 
-PAGES = [("estado", "ESTADO"), ("mision", "MISIÓN"), ("entrenar", "ENTRENAR"),
-         ("registro", "REGISTRO"), ("ajustes", "AJUSTES")]
+PAGES = [("estado", "ESTADO", "user-round"), ("mision", "MISIÓN", "scroll-text"), ("entrenar", "ENTRENAR", "dumbbell"),
+         ("registro", "REGISTRO", "chart-column"), ("ajustes", "AJUSTES", "settings")]
 INSTANCE_KEY = "ascenso-sistema-entrenamiento"
 
 
@@ -55,7 +57,7 @@ class MainWindow(QMainWindow):
         self.game = Game(on_event=self.on_game_event)
         self.apply_settings()
 
-        root = QWidget()
+        root = Backdrop()
         root.setObjectName("root")
         self.setCentralWidget(root)
         h = QHBoxLayout(root)
@@ -65,7 +67,8 @@ class MainWindow(QMainWindow):
         nav = QWidget()
         nav.setObjectName("nav")
         nav.setFixedWidth(220)
-        nav.setStyleSheet(f"#nav {{ background: rgba(10,22,48,0.7); border-right: 1px solid {T.LINE}; }}")
+        nav.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        nav.setStyleSheet(f"#nav {{ background: rgba(4,12,30,0.78); border-right: 1px solid rgba(79,216,255,0.55); }}")
         nl = QVBoxLayout(nav)
         nl.setContentsMargins(0, 22, 0, 18)
         nl.setSpacing(2)
@@ -75,8 +78,10 @@ class MainWindow(QMainWindow):
         nl.addSpacing(26)
         self.nav_group = QButtonGroup(self)
         self.nav_buttons = {}
-        for key, text in PAGES:
-            b = QPushButton(text)
+        for key, text, ic in PAGES:
+            b = QPushButton("  " + text)
+            b.setIcon(icons.icon(ic, 18))
+            b.setIconSize(QSize(18, 18))
             b.setCheckable(True)
             b.setCursor(Qt.CursorShape.PointingHandCursor)
             b.clicked.connect(lambda _=False, k=key: self.show_page(k))
@@ -99,7 +104,7 @@ class MainWindow(QMainWindow):
             "estado": EstadoPage(self), "mision": MisionPage(self), "entrenar": EntrenarPage(self),
             "registro": RegistroPage(self), "ajustes": AjustesPage(self),
         }
-        for key, _ in PAGES:
+        for key, *_ in PAGES:
             self.stack.addWidget(self.pages[key])
 
         self.guardian = Guardian(self)
@@ -116,16 +121,17 @@ class MainWindow(QMainWindow):
         if kind == "changed":
             self.refresh()
         elif kind == "toast":
-            self.toaster.show(data["text"], data.get("gold", False))
+            self.toaster.show(data["text"], data.get("gold", False), data.get("icon", ""))
         elif kind == "say":
             self.voice.say(data["text"], data.get("force", False))
         elif kind == "modal":
             training = self.is_training()
             if training and data["title"] not in ("MISIÓN COMPLETADA", "PENALIZACIÓN"):
-                self.toaster.show(f"★ {data['title']}", True)
+                self.toaster.show(data["title"], True, "star")
                 self.sounds.play(data.get("sound", "open"))
                 return
-            self.dialogs.show(data["title"], data["body"], tone=data.get("color", ""), sound=data.get("sound", "open"))
+            self.dialogs.show(data["title"], data["body"], tone=data.get("color", ""), sound=data.get("sound", "open"),
+                              icon=data.get("icon", ""))
 
     def is_training(self) -> bool:
         return self.pages["entrenar"].training if hasattr(self, "pages") else False
@@ -146,7 +152,7 @@ class MainWindow(QMainWindow):
                 page.refresh()
         if self.tray:
             q = self.game.quest
-            state = "Misión completada ✔" if q and q["completed"] else "Misión pendiente"
+            state = "Misión completada" if q and q["completed"] else "Misión pendiente"
             self.tray.setToolTip(f"ASCENSO — {p['name']} NV {p['level']}\n{state}")
 
     def show_page(self, key: str):
@@ -233,6 +239,8 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, e):
         super().resizeEvent(e)
         self.toaster._layout()
+        if self.dialogs.current:
+            self.dialogs.dimmer.setGeometry(self.rect())
 
     # ------------------------------------------------------------ primer inicio
     def start_onboarding(self):

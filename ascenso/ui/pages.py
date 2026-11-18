@@ -6,17 +6,19 @@ import time
 from datetime import date, datetime, timedelta
 from html import escape
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QRectF, Qt, QTimer
+from PySide6.QtGui import QColor, QFont, QPainter
 from PySide6.QtWidgets import (QCheckBox, QComboBox, QFileDialog, QFormLayout, QGridLayout, QHBoxLayout, QLabel,
-                               QListWidget, QProgressBar, QScrollArea, QSpinBox, QStackedWidget, QVBoxLayout, QWidget)
+                               QListWidget, QProgressBar, QPushButton, QScrollArea, QSpinBox, QStackedWidget, QVBoxLayout, QWidget)
 
 from .. import storage
 from ..camera import CameraWorker, list_cameras
 from ..exercises import EXERCISE_ORDER, EXERCISES, RepCounter
 from ..game import ACHIEVEMENTS, DIFF_ORDER, DIFFICULTY, STATS, fmt, rank_of, xp_needed
 from . import theme as T
+from . import holo, icons
 from .video import VideoView
-from .widgets import Panel, RankBadge, button, label, restyle
+from .widgets import Panel, RankBadge, button, icon_label, label, restyle
 
 
 def scroll_page(*widgets) -> QScrollArea:
@@ -64,7 +66,8 @@ class QuestList(QWidget):
             v = min(q["progress"].get(k, 0), t)
             done = v >= t
             row = QHBoxLayout()
-            name = label(f"{ex.icon}  {ex.name}")
+            row.addWidget(icon_label(ex.icon, 20, T.GREEN if done else icons.WHITE))
+            name = label(ex.name)
             name.setStyleSheet("font-size:17px;font-weight:600;")
             row.addWidget(name)
             row.addStretch()
@@ -72,10 +75,11 @@ class QuestList(QWidget):
             num.setStyleSheet(f"font-size:16px;color:{T.GREEN if done else 'white'};")
             row.addWidget(num)
             if self.with_buttons and not done:
-                row.addWidget(button("Entrenar", "", lambda _=False, k=k: self.win.open_training(k)))
+                row.addWidget(button("Entrenar", "", lambda _=False, k=k: self.win.open_training(k), icon="swords"))
             self.lay.addLayout(row)
             bar = QProgressBar()
             bar.setObjectName("thin")
+            bar.setFixedHeight(6)
             bar.setTextVisible(False)
             bar.setRange(0, t)
             bar.setValue(int(v))
@@ -84,13 +88,56 @@ class QuestList(QWidget):
             self.lay.addSpacing(6)
 
 
+class ExCard(QPushButton):
+    """Tarjeta de ejercicio holográfica con ícono grande."""
+
+    def __init__(self, icon_name, title, sub, done=False):
+        super().__init__()
+        self.icon_name, self.title_text, self.sub, self.done = icon_name, title, sub, done
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setMinimumHeight(140)
+        self.setStyleSheet("QPushButton { background: transparent; border: none; }")
+        self.hover = False
+
+    def enterEvent(self, e):
+        self.hover = True
+        self.update()
+
+    def leaveEvent(self, e):
+        self.hover = False
+        self.update()
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        tone = "gold" if self.done else ""
+        holo.holo_frame(p, QRectF(self.rect()).adjusted(4, 4, -4, -4), tone, sum(map(ord, self.title_text)), cut=8,
+                        strong=self.hover, brackets=self.hover)
+        color, core = holo.palette(tone)
+        s = 38
+        r = QRectF((self.width() - s) / 2, 22, s, s)
+        p.setOpacity(0.5 if self.hover else 0.3)
+        icons.paint(p, self.icon_name, r, color, 4.5)
+        p.setOpacity(1)
+        icons.paint(p, self.icon_name, r, core, 1.6)
+        f = QFont(T.FONT, 13)
+        f.setBold(True)
+        f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 2)
+        p.setFont(f)
+        p.setPen(QColor(core))
+        p.drawText(QRectF(0, 68, self.width(), 26), Qt.AlignmentFlag.AlignCenter, self.title_text.upper())
+        p.setFont(QFont(T.FONT, 10))
+        p.setPen(QColor(T.GOLD if self.done else T.MUTED))
+        p.drawText(QRectF(0, 96, self.width(), 22), Qt.AlignmentFlag.AlignCenter, self.sub)
+
+
 # =================================================================== ESTADO
 class EstadoPage(QWidget):
     def __init__(self, win):
         super().__init__()
         self.win = win
         self.setObjectName("page")
-        status = Panel("ESTADO")
+        status = Panel("ESTADO", "user-round")
         head = QHBoxLayout()
         self.badge = RankBadge(104)
         head.addWidget(self.badge)
@@ -113,10 +160,10 @@ class EstadoPage(QWidget):
         self.points = label("", "gold", align=Qt.AlignmentFlag.AlignCenter)
         status.lay.addWidget(self.points)
 
-        quest = Panel("MISIÓN DIARIA")
+        quest = Panel("MISIÓN DIARIA", "scroll-text")
         self.quest = QuestList(win, False)
         quest.lay.addWidget(self.quest)
-        quest.lay.addWidget(button("Ver misión", "primary", lambda: win.go("mision")))
+        quest.lay.addWidget(button("Ver misión", "primary", lambda: win.go("mision"), icon="scroll-text"))
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
@@ -136,8 +183,7 @@ class EstadoPage(QWidget):
         self.xp.setFormat(f"XP  {fmt(p['xp'])} / {fmt(need)}")
         clear_layout(self.stats)
         for i, (k, (name, _)) in enumerate(STATS.items()):
-            card = Panel()
-            card.lay.setContentsMargins(14, 8, 14, 8)
+            card = Panel(compact=True)
             row = QHBoxLayout()
             col = QVBoxLayout()
             t = label(k)
@@ -165,12 +211,13 @@ class MisionPage(QWidget):
         super().__init__()
         self.win = win
         self.setObjectName("page")
-        self.panel = Panel("MISIÓN DIARIA")
+        self.panel = Panel("MISIÓN DIARIA", "scroll-text")
         self.sub = label("", "muted", align=Qt.AlignmentFlag.AlignCenter)
         self.panel.lay.addWidget(self.sub)
         self.list = QuestList(win, True)
         self.panel.lay.addWidget(self.list)
         self.warning = label("", "warn", wrap=True, align=Qt.AlignmentFlag.AlignCenter)
+        self.warning.setTextFormat(Qt.TextFormat.RichText)
         self.panel.lay.addWidget(self.warning)
         self.count = label("", "countdown", align=Qt.AlignmentFlag.AlignCenter)
         self.panel.lay.addWidget(self.count)
@@ -185,17 +232,18 @@ class MisionPage(QWidget):
         q = self.win.game.quest
         if not q:
             return
-        self.panel.title.setText("MISIÓN DE PENALIZACIÓN" if q["penalty"] else "MISIÓN DIARIA")
+        self.panel.set_title("MISIÓN DE PENALIZACIÓN" if q["penalty"] else "MISIÓN DIARIA")
+        self.panel.title.set_icon("skull" if q["penalty"] else "scroll-text")
         self.panel.set_tone("red" if q["penalty"] else "")
         diff = DIFFICULTY.get(q["difficulty"], DIFFICULTY["facil"])["label"]
         self.sub.setText(f"Dificultad: {diff}" + ("  ·  +50% por fallar" if q["penalty"] else ""))
         self.list.refresh()
         if q["completed"]:
             self.warning.setObjectName("ok")
-            self.warning.setText("✔ MISIÓN COMPLETADA. Descansá, cazador.")
+            self.warning.setText(icons.img("circle-check", 18, T.GREEN) + "&nbsp; MISIÓN COMPLETADA. Descansá, cazador.")
         else:
             self.warning.setObjectName("warn")
-            self.warning.setText("⚠ ADVERTENCIA: si no completás la misión antes de medianoche recibirás una penalización.")
+            self.warning.setText(icons.img("triangle-alert", 18, T.RED) + "&nbsp; ADVERTENCIA: si no completás la misión antes de medianoche recibirás una penalización.")
         restyle(self.warning)
         self.tick()
 
@@ -229,7 +277,7 @@ class EntrenarPage(QWidget):
 
         self.stack = QStackedWidget()
         # --- selector
-        picker = Panel("ELEGÍ EL EJERCICIO")
+        picker = Panel("ELEGÍ EL EJERCICIO", "dumbbell")
         self.grid = QGridLayout()
         self.grid.setSpacing(12)
         picker.lay.addLayout(self.grid)
@@ -238,7 +286,7 @@ class EntrenarPage(QWidget):
         self.stack.addWidget(scroll_page(picker))
 
         # --- entrenamiento
-        train = Panel("ENTRENAMIENTO")
+        train = Panel("ENTRENAMIENTO", "dumbbell")
         self.train_panel = train
         self.tip = label("", "muted", wrap=True, align=Qt.AlignmentFlag.AlignCenter)
         train.lay.addWidget(self.tip)
@@ -248,7 +296,7 @@ class EntrenarPage(QWidget):
         self.cam_combo = QComboBox()
         self.cam_combo.setMinimumWidth(220)
         ctr.addWidget(self.cam_combo, 1)
-        self.btn_cam = button("📷  Encender cámara", "primary", self.toggle_camera)
+        self.btn_cam = button("Encender cámara", "primary", self.toggle_camera, icon="camera")
         ctr.addWidget(self.btn_cam)
         train.lay.addLayout(ctr)
         man = QHBoxLayout()
@@ -268,7 +316,7 @@ class EntrenarPage(QWidget):
             w.setTextFormat(Qt.TextFormat.RichText)
             stats.addWidget(w, 1)
         train.lay.addLayout(stats)
-        train.lay.addWidget(button("Terminar serie", "danger", self.finish))
+        train.lay.addWidget(button("Terminar serie", "danger", self.finish, icon="flag"))
         wrap = QWidget()
         wl = QVBoxLayout(wrap)
         wl.setContentsMargins(4, 4, 14, 8)
@@ -293,9 +341,8 @@ class EntrenarPage(QWidget):
                 sub = f"Misión {min(q['progress'].get(k, 0), t):g}/{t}"
             else:
                 sub = "Libre"
-            b = button(f"{ex.icon}\n{ex.name}\n{sub} · {ex.stat}", "", lambda _=False, k=k: self.open(k))
-            b.setObjectName("exCard")
-            b.setMinimumHeight(110)
+            b = ExCard(ex.icon, ex.name, f"{sub}  ·  {ex.stat}", done=bool(q and k in q["targets"] and q["progress"].get(k, 0) >= q["targets"][k]))
+            b.clicked.connect(lambda _=False, k=k: self.open(k))
             self.grid.addWidget(b, i // 3, i % 3)
 
     def open(self, k: str):
@@ -303,7 +350,8 @@ class EntrenarPage(QWidget):
         self.counter = RepCounter(self.ex)
         self.good = self.bad = 0
         self.xp = 0.0
-        self.train_panel.title.setText(f"{self.ex.icon}  {self.ex.name.upper()}")
+        self.train_panel.set_title(self.ex.name.upper())
+        self.train_panel.title.set_icon(self.ex.icon)
         self.tip.setText(self.ex.tip)
         for b, n in zip(self.manual_btns, (1, 5, 10)):
             b.setText(f"+{n}{' s' if self.ex.timed else ''}")
@@ -358,6 +406,7 @@ class EntrenarPage(QWidget):
     def on_ready(self):
         self.btn_cam.setEnabled(True)
         self.btn_cam.setText("Apagar cámara")
+        self.btn_cam.setIcon(icons.icon("camera-off", 18))
         self.btn_cam.setProperty("kind", "")
         restyle(self.btn_cam)
         self.video.center_small = ""
@@ -371,7 +420,8 @@ class EntrenarPage(QWidget):
         self.worker = None
         self.state = "idle"
         self.btn_cam.setEnabled(True)
-        self.btn_cam.setText("📷  Encender cámara")
+        self.btn_cam.setText("Encender cámara")
+        self.btn_cam.setIcon(icons.icon("camera", 18))
         self.btn_cam.setProperty("kind", "primary")
         restyle(self.btn_cam)
         self.video.center = self.video.center_small = ""
@@ -488,7 +538,7 @@ class EntrenarPage(QWidget):
             res = (f"Tiempo válido: <b style='color:{T.GLOW}'>{fmt(self.good)} s</b>" if ex.timed else
                    f"Repeticiones válidas: <b style='color:{T.GLOW}'>{self.good}</b><br>Mal hechas: {self.bad}")
             self.win.dialogs.show("SERIE TERMINADA",
-                                  f"{ex.icon} <b>{ex.name}</b><br><br>{res}<br>"
+                                  f"{icons.img(ex.icon, 20)}&nbsp; <b>{ex.name}</b><br><br>{res}<br>"
                                   f"<span style='font-size:22px;color:{T.GOLD}'><b>+{fmt(self.xp)} XP</b></span>{falta}")
         self.ex = None
         self.counter = None
@@ -505,19 +555,19 @@ class RegistroPage(QWidget):
         super().__init__()
         self.win = win
         self.setObjectName("page")
-        heat = Panel("ÚLTIMOS 28 DÍAS")
+        heat = Panel("ÚLTIMOS 28 DÍAS", "calendar-days")
         self.heat = QGridLayout()
         self.heat.setSpacing(6)
         heat.lay.addLayout(self.heat)
-        tot = Panel("TOTALES")
+        tot = Panel("TOTALES", "activity")
         self.totals = QGridLayout()
         self.totals.setSpacing(8)
         tot.lay.addLayout(self.totals)
-        ach = Panel("LOGROS")
+        ach = Panel("LOGROS", "trophy")
         self.ach = QGridLayout()
         self.ach.setSpacing(8)
         ach.lay.addLayout(self.ach)
-        log = Panel("MENSAJES DEL SISTEMA")
+        log = Panel("MENSAJES DEL SISTEMA", "terminal")
         self.log = QListWidget()
         self.log.setMinimumHeight(240)
         log.lay.addWidget(self.log)
@@ -549,8 +599,8 @@ class RegistroPage(QWidget):
             self.heat.addWidget(c, i // 7, i % 7)
 
         clear_layout(self.totals)
-        items = [(EXERCISES[e].icon + " " + EXERCISES[e].name + (" (seg)" if EXERCISES[e].timed else ""), s["totals"].get(e, 0))
-                 for e in EXERCISE_ORDER] + [("🏆 Misiones cumplidas", s["questsDone"])]
+        items = [(icons.img(EXERCISES[e].icon, 16, T.GLOW) + "&nbsp; " + EXERCISES[e].name + (" (seg)" if EXERCISES[e].timed else ""), s["totals"].get(e, 0))
+                 for e in EXERCISE_ORDER] + [(icons.img("trophy", 16, T.GOLD) + "&nbsp; Misiones cumplidas", s["questsDone"])]
         for i, (name, val) in enumerate(items):
             box = label(f"<span style='font-size:24px;font-weight:700;color:white'>{fmt(val)}</span><br>{name}",
                         align=Qt.AlignmentFlag.AlignCenter)
@@ -561,7 +611,7 @@ class RegistroPage(QWidget):
         clear_layout(self.ach)
         for i, (aid, title, desc, _) in enumerate(ACHIEVEMENTS):
             on = aid in s["achievements"]
-            box = label(f"<b style='color:{T.GOLD if on else T.MUTED}'>{'★' if on else '☆'} {escape(title)}</b><br>"
+            box = label(f"{icons.img('award' if on else 'lock', 16, T.GOLD if on else T.MUTED)}&nbsp; <b style='color:{T.GOLD if on else T.MUTED}'>{escape(title)}</b><br>"
                         f"<span style='color:{T.MUTED}'>{escape(desc)}</span>", wrap=True)
             box.setTextFormat(Qt.TextFormat.RichText)
             box.setStyleSheet(f"border:1px solid {T.GOLD if on else '#1c3a70'};padding:8px;")
@@ -583,7 +633,7 @@ class AjustesPage(QWidget):
         self.setObjectName("page")
         self._loading = False
 
-        jug = Panel("JUGADOR")
+        jug = Panel("JUGADOR", "user-round")
         f = QFormLayout()
         f.setVerticalSpacing(12)
         f.setHorizontalSpacing(24)
@@ -605,7 +655,7 @@ class AjustesPage(QWidget):
             cb.toggled.connect(lambda on, key=key: self.set_setting(key, on))
             jug.lay.addWidget(cb)
 
-        guard = Panel("EL GUARDIÁN (MODO MOLESTO)")
+        guard = Panel("EL GUARDIÁN", "shield")
         guard.lay.addWidget(label("Mientras ASCENSO esté abierto (aunque sea en la bandeja, al lado del reloj), "
                                   "te va a perseguir con alertas encima de todo hasta que completes la misión.",
                                   "muted", wrap=True))
@@ -634,13 +684,13 @@ class AjustesPage(QWidget):
         self.auto = QCheckBox("Arrancar ASCENSO automáticamente al prender la compu")
         self.auto.toggled.connect(self.toggle_auto)
         guard.lay.addWidget(self.auto)
-        guard.lay.addWidget(button("Probar alerta ahora", "", lambda: self.win.guardian.show(test=True)))
+        guard.lay.addWidget(button("Probar alerta ahora", "", lambda: self.win.guardian.show(test=True), icon="bell-ring"))
 
-        datos = Panel("DATOS")
+        datos = Panel("DATOS", "download")
         row = QHBoxLayout()
-        row.addWidget(button("Exportar progreso", "", self.export))
-        row.addWidget(button("Importar", "", self.import_))
-        row.addWidget(button("Reiniciar todo", "danger", self.reset))
+        row.addWidget(button("Exportar progreso", "", self.export, icon="download"))
+        row.addWidget(button("Importar", "", self.import_, icon="upload"))
+        row.addWidget(button("Reiniciar todo", "danger", self.reset, icon="trash-2"))
         datos.lay.addLayout(row)
         self.path = label("", "muted", wrap=True)
         self.path.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)

@@ -1,22 +1,26 @@
-"""Componentes reutilizables: paneles, insignia de rango, ventanas del Sistema, avisos."""
+"""Componentes reutilizables: paneles holográficos, insignia de rango, ventanas del Sistema, avisos."""
 from __future__ import annotations
 
 from collections import deque
 from typing import Callable, Optional
 
-from PySide6.QtCore import QPointF, QRectF, Qt, QTimer, QPropertyAnimation
-from PySide6.QtGui import QColor, QFont, QPainter, QPen, QPolygonF
-from PySide6.QtWidgets import (QDialog, QFrame, QGraphicsDropShadowEffect, QGraphicsOpacityEffect, QHBoxLayout,
-                               QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget)
+from PySide6.QtCore import QEasingCurve, QPointF, QPropertyAnimation, QRect, QRectF, Qt, QTimer, QSize
+from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPolygonF
+from PySide6.QtWidgets import (QDialog, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QLineEdit, QPushButton,
+                               QVBoxLayout, QWidget)
 
+from . import holo, icons
 from . import theme as T
 
 
-def button(text: str, kind: str = "", slot: Optional[Callable] = None) -> QPushButton:
-    b = QPushButton(text)
+def button(text: str, kind: str = "", slot: Optional[Callable] = None, icon: str = "") -> QPushButton:
+    b = QPushButton(("  " + text) if icon and text else text)
     b.setCursor(Qt.CursorShape.PointingHandCursor)
     if kind:
         b.setProperty("kind", kind)
+    if icon:
+        b.setIcon(icons.icon(icon, 18))
+        b.setIconSize(QSize(18, 18))
     if slot:
         b.clicked.connect(slot)
     return b
@@ -32,14 +36,15 @@ def label(text: str = "", name: str = "", wrap: bool = False, align=None) -> QLa
     return l
 
 
-def glow(widget: QWidget, color: str = T.LINE, radius: int = 26):
-    eff = QGraphicsDropShadowEffect(widget)
-    c = QColor(color)
-    c.setAlpha(150)
-    eff.setColor(c)
-    eff.setBlurRadius(radius)
-    eff.setOffset(0, 0)
-    widget.setGraphicsEffect(eff)
+def icon_label(name: str, size: int = 20, color: str = icons.WHITE) -> QLabel:
+    l = QLabel()
+    l.setPixmap(icons.pixmap(name, size, color))
+    l.setFixedSize(size + 2, size + 2)
+    return l
+
+
+def glow(widget, color=None, radius=None):  # compatibilidad: el brillo ahora se dibuja a mano
+    return None
 
 
 def restyle(w: QWidget):
@@ -51,41 +56,45 @@ def restyle(w: QWidget):
 
 
 class Panel(QFrame):
-    """Panel con borde brillante, esquinas marcadas y título centrado."""
+    """Ventana holográfica con borde de neón y encabezado [ícono][TÍTULO]."""
 
-    def __init__(self, title: str = "", parent=None):
+    _seed = 1
+
+    def __init__(self, title: str = "", icon: str = "circle-alert", parent=None, compact: bool = False):
         super().__init__(parent)
-        self.setObjectName("panel")
+        Panel._seed += 1
+        self.seed = Panel._seed
+        self.tone = ""
+        self.compact = compact
         self.lay = QVBoxLayout(self)
-        self.lay.setContentsMargins(20, 18, 20, 18)
+        m = 14 if compact else 26
+        self.lay.setContentsMargins(m + 4, m, m + 4, m)
         self.lay.setSpacing(10)
         self.title = None
         if title:
-            self.title = QLabel(title)
-            self.title.setObjectName("panelTitle")
+            self.title = holo.TitleBar(title, icon)
             row = QHBoxLayout()
             row.addStretch()
             row.addWidget(self.title)
             row.addStretch()
             self.lay.addLayout(row)
-            self.lay.addSpacing(4)
-        glow(self)
+            self.lay.addSpacing(6)
+
+    def set_title(self, text: str):
+        if self.title:
+            self.title.set_text(text)
 
     def set_tone(self, tone: str = ""):
-        self.setProperty("tone", tone)
-        restyle(self)
-        glow(self, {"red": T.RED, "gold": T.GOLD}.get(tone, T.LINE))
+        self.tone = tone
+        if self.title:
+            self.title.set_tone(tone)
+        self.update()
 
     def paintEvent(self, e):
-        super().paintEvent(e)
         p = QPainter(self)
-        tone = self.property("tone")
-        p.setPen(QPen(QColor({"red": T.RED, "gold": T.GOLD}.get(tone, T.GLOW)), 3))
-        w, h, s = self.width() - 2, self.height() - 2, 14
-        p.drawLine(1, 1, s, 1)
-        p.drawLine(1, 1, 1, s)
-        p.drawLine(w, h, w - s, h)
-        p.drawLine(w, h, w, h - s)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        holo.holo_frame(p, QRectF(self.rect()).adjusted(6, 6, -6, -6), self.tone, self.seed,
+                        cut=8 if self.compact else 12, brackets=not self.compact)
 
 
 class RankBadge(QWidget):
@@ -104,51 +113,56 @@ class RankBadge(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         w, h = self.width(), self.height()
-        poly = QPolygonF([QPointF(w / 2, 3), QPointF(w - 3, h * .25), QPointF(w - 3, h * .75),
-                          QPointF(w / 2, h - 3), QPointF(3, h * .75), QPointF(3, h * .25)])
-        col = QColor(self.COLORS.get(self.rank, T.GLOW))
-        fill = QColor(T.LINE)
-        fill.setAlpha(70)
-        p.setBrush(fill)
-        p.setPen(QPen(col, 2.5))
-        p.drawPolygon(poly)
-        f = QFont(T.FONT, int(h * 0.42))
+        m = 10
+        poly = QPolygonF([QPointF(w / 2, m), QPointF(w - m, h * .27), QPointF(w - m, h * .73),
+                          QPointF(w / 2, h - m), QPointF(m, h * .73), QPointF(m, h * .27)])
+        path = QPainterPath()
+        path.addPolygon(poly)
+        path.closeSubpath()
+        col = self.COLORS.get(self.rank, T.GLOW)
+        holo.glass(p, path, col, seed=4, scratches=8)
+        holo.neon_path(p, path, col, T.CORE, width=1.6, halo=5, alpha=34)
+        f = QFont(T.FONT, int(h * 0.36))
         f.setBold(True)
         p.setFont(f)
-        glowc = QColor(col)
-        glowc.setAlpha(90)
-        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2)):
-            p.setPen(glowc)
+        p.setPen(holo.qc(col, 70))
+        for dx, dy in ((-2, 0), (2, 0), (0, -2), (0, 2), (-3, -3), (3, 3)):
             p.drawText(QRectF(dx, dy, w, h), Qt.AlignmentFlag.AlignCenter, self.rank)
-        p.setPen(QColor("white") if self.rank not in self.COLORS else col)
+        p.setPen(QColor(T.CORE if self.rank not in self.COLORS else col))
         p.drawText(QRectF(0, 0, w, h), Qt.AlignmentFlag.AlignCenter, self.rank)
 
 
-class SystemDialog(QDialog):
-    """Ventana de notificación del Sistema."""
-
-    def __init__(self, parent, title, body, buttons, tone="", with_input=False, placeholder=""):
+class _HoloBody(QWidget):
+    def __init__(self, tone, parent=None):
         super().__init__(parent)
-        self.setObjectName("sysDialog")
+        self.tone = tone
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        holo.holo_frame(p, QRectF(self.rect()).adjusted(44, 40, -44, -40), self.tone, seed=11, cut=6,
+                        beams=True, strong=True, brackets=False)
+
+
+class SystemDialog(QDialog):
+    """Ventana de notificación del Sistema: barras de luz arriba/abajo, [!][TÍTULO] y texto centrado."""
+
+    def __init__(self, parent, title, body, buttons, tone="", with_input=False, placeholder="", icon="circle-alert"):
+        super().__init__(parent)
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setModal(True)
         self.result_index = -1
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(30, 30, 30, 30)
-        box = QFrame()
-        box.setObjectName("sysBox")
-        box.setProperty("tone", tone)
-        glow(box, {"red": T.RED, "gold": T.GOLD}.get(tone, T.GLOW), 40)
-        outer.addWidget(box)
-        lay = QVBoxLayout(box)
-        lay.setContentsMargins(26, 22, 26, 22)
-        lay.setSpacing(14)
-        t = QLabel(f"(!)  {title}")
-        t.setObjectName("sysTitle")
+        outer.setContentsMargins(0, 0, 0, 0)
+        body_w = _HoloBody(tone)
+        outer.addWidget(body_w)
+        lay = QVBoxLayout(body_w)
+        lay.setContentsMargins(84, 70, 84, 70)
+        lay.setSpacing(18)
         row = QHBoxLayout()
         row.addStretch()
-        row.addWidget(t)
+        row.addWidget(holo.TitleBar(title, icon, tone, 16))
         row.addStretch()
         lay.addLayout(row)
         b = QLabel(body)
@@ -156,8 +170,9 @@ class SystemDialog(QDialog):
         b.setWordWrap(True)
         b.setTextFormat(Qt.TextFormat.RichText)
         b.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        b.setMinimumWidth(380)
-        lay.addWidget(b)
+        b.setMinimumWidth(420)
+        b.setMaximumWidth(560)
+        lay.addWidget(b, 0, Qt.AlignmentFlag.AlignHCenter)
         self.input = None
         if with_input:
             self.input = QLineEdit()
@@ -170,6 +185,7 @@ class SystemDialog(QDialog):
         for i, spec in enumerate(buttons):
             text, kind = spec if isinstance(spec, tuple) else (spec, "primary" if i == 0 else "")
             btn = button(text, kind)
+            btn.setMinimumWidth(120)
             btn.clicked.connect(lambda _=False, i=i: self._choose(i))
             brow.addWidget(btn)
         brow.addStretch()
@@ -177,6 +193,19 @@ class SystemDialog(QDialog):
         if self.input:
             self.input.returnPressed.connect(lambda: self._choose(0))
             QTimer.singleShot(50, self.input.setFocus)
+
+    def open_animated(self):
+        self.adjustSize()
+        final = self.geometry()
+        self.open()
+        start = QRect(final.x(), final.center().y() - 2, final.width(), 4)
+        self.setGeometry(start)
+        self._anim = QPropertyAnimation(self, b"geometry", self)
+        self._anim.setDuration(260)
+        self._anim.setStartValue(start)
+        self._anim.setEndValue(final)
+        self._anim.setEasingCurve(QEasingCurve.Type.OutBack)
+        self._anim.start()
 
     def _choose(self, i):
         self.result_index = i
@@ -191,26 +220,38 @@ class SystemDialog(QDialog):
         return self.input.text() if self.input else ""
 
 
+class _Dimmer(QWidget):
+    def paintEvent(self, e):
+        QPainter(self).fillRect(self.rect(), QColor(0, 3, 12, 170))
+
+
 class Dialogs:
     """Cola de ventanas del Sistema: se muestran de a una, sin bloquear la cámara."""
+
+    ICONS = {"red": "triangle-alert", "gold": "sparkles"}
 
     def __init__(self, parent: QWidget, sounds=None):
         self.parent = parent
         self.sounds = sounds
         self.queue: deque = deque()
         self.current: Optional[SystemDialog] = None
+        self.dimmer = _Dimmer(parent)
+        self.dimmer.hide()
 
     def show(self, title, body, buttons=("Aceptar",), tone="", sound="open",
-             callback: Optional[Callable[[int, str], None]] = None, with_input=False, placeholder=""):
-        self.queue.append((title, body, buttons, tone, sound, callback, with_input, placeholder))
+             callback: Optional[Callable[[int, str], None]] = None, with_input=False, placeholder="", icon=""):
+        self.queue.append((title, body, buttons, tone, sound, callback, with_input, placeholder, icon))
         if self.current is None:
             QTimer.singleShot(0, self._next)
 
     def _next(self):
         if self.current is not None or not self.queue:
+            if self.current is None:
+                self.dimmer.hide()
             return
-        title, body, buttons, tone, sound, cb, with_input, ph = self.queue.popleft()
-        d = SystemDialog(self.parent, title, body, list(buttons), tone, with_input, ph)
+        title, body, buttons, tone, sound, cb, with_input, ph, icon = self.queue.popleft()
+        d = SystemDialog(self.parent, title, body, list(buttons), tone, with_input, ph,
+                         icon or self.ICONS.get(tone, "circle-alert"))
         self.current = d
 
         def done(_):
@@ -224,26 +265,47 @@ class Dialogs:
         if self.sounds:
             self.sounds.play(sound)
         if self.parent.isVisible():
+            self.dimmer.setGeometry(self.parent.rect())
+            self.dimmer.show()
+            self.dimmer.raise_()
             d.adjustSize()
             g = self.parent.frameGeometry()
             d.move(g.center() - d.rect().center())
-        d.open()
+        d.open_animated()
 
     @property
     def busy(self) -> bool:
         return self.current is not None or bool(self.queue)
 
 
+class _Toast(QWidget):
+    def __init__(self, parent, text, icon_name, gold):
+        super().__init__(parent)
+        self.gold = gold
+        lay = QHBoxLayout(self)
+        lay.setContentsMargins(20, 12, 22, 12)
+        lay.setSpacing(10)
+        col = T.GOLD if gold else T.CORE
+        lay.addWidget(icon_label(icon_name, 18, col))
+        l = QLabel(text)
+        l.setStyleSheet(f"color:{col};font-weight:600;font-size:14px;")
+        lay.addWidget(l)
+        self.adjustSize()
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        holo.holo_frame(p, QRectF(self.rect()).adjusted(4, 4, -4, -4), "gold" if self.gold else "", 5, cut=6,
+                        strong=True, brackets=False)
+
+
 class Toaster:
     def __init__(self, parent: QWidget):
         self.parent = parent
-        self.items: list[QLabel] = []
+        self.items: list[QWidget] = []
 
-    def show(self, text: str, gold: bool = False):
-        t = QLabel(text, self.parent)
-        t.setObjectName("toast")
-        t.setProperty("gold", gold)
-        t.adjustSize()
+    def show(self, text: str, gold: bool = False, icon: str = ""):
+        t = _Toast(self.parent, text, icon or ("sparkles" if gold else "bell-ring"), gold)
         t.show()
         t.raise_()
         self.items.append(t)
@@ -264,7 +326,7 @@ class Toaster:
         self._layout()
 
     def _layout(self):
-        y = 16
+        y = 12
         for t in self.items:
-            t.move(self.parent.width() - t.width() - 20, y)
-            y += t.height() + 8
+            t.move(self.parent.width() - t.width() - 16, y)
+            y += t.height() + 4

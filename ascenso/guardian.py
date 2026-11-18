@@ -3,14 +3,17 @@ from __future__ import annotations
 
 import time
 
-from PySide6.QtCore import QObject, Qt, QTimer
-from PySide6.QtGui import QGuiApplication
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidget
+from html import escape
+
+from PySide6.QtCore import QObject, QRectF, Qt, QTimer
+from PySide6.QtGui import QColor, QGuiApplication, QPainter
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidget
 
 from .exercises import EXERCISES
 from .game import fmt
 from .ui import theme as T
-from .ui.widgets import button, glow
+from .ui import holo, icons
+from .ui.widgets import button
 
 SURRENDER_PHRASE = "ME RINDO"
 CHECK_MS = 10_000
@@ -26,67 +29,79 @@ class NagWindow(QWidget):
         self.hard = hard
         self.allow_close = False
         self.setWindowTitle("ALERTA DEL SISTEMA")
-        self.setObjectName("nagWindow")
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet(f"QWidget#nagWindow {{ background:{T.BG}; }}")
+        if not hard:
+            self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         geo = screen.geometry()
         if hard:
             self.setGeometry(geo)
         else:
-            w, h = 680, 520
+            w, h = 820, 640
             self.setGeometry(geo.x() + (geo.width() - w) // 2, geo.y() + (geo.height() - h) // 3, w, h)
-        outer = QVBoxLayout(self)
-        outer.setContentsMargins(0, 0, 0, 0)
-        frame = QFrame()
-        frame.setStyleSheet(f"QFrame#nagFrame {{ border: 3px solid {T.RED}; background: {T.BG}; }}")
-        frame.setObjectName("nagFrame")
-        outer.addWidget(frame)
-        lay = QVBoxLayout(frame)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(90, 80, 90, 80)
         lay.setAlignment(Qt.AlignmentFlag.AlignCenter)
         if primary:
             self._build(lay)
         else:
-            t = QLabel("⚠  ALERTA DEL SISTEMA  ⚠\n\nMisión diaria incompleta.")
-            t.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            t.setStyleSheet(f"color:{T.RED};font-size:40px;font-weight:700;")
-            lay.addWidget(t)
+            row = QHBoxLayout()
+            row.addStretch()
+            row.addWidget(holo.TitleBar("ALERTA DEL SISTEMA", "triangle-alert", "red", 28))
+            row.addStretch()
+            lay.addLayout(row)
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = QRectF(self.rect())
+        if self.hard:
+            holo.backdrop(p, r, 21)
+            p.fillRect(r, QColor(60, 0, 12, 60))
+            w, h = min(980, r.width() - 160), min(700, r.height() - 160)
+            box = QRectF((r.width() - w) / 2, (r.height() - h) / 2, w, h)
+        else:
+            box = r.adjusted(44, 40, -44, -40)
+        holo.holo_frame(p, box, "red", 31, cut=8, beams=True, strong=True, brackets=False)
 
     def _build(self, lay):
         game = self.g.game
-        big = 46 if self.hard else 26
+        size = 22 if self.hard else 17
         box = QWidget()
-        box.setMaximumWidth(900)
+        box.setMaximumWidth(760)
         bl = QVBoxLayout(box)
         bl.setSpacing(14)
-        title = QLabel("⚠  ALERTA DEL SISTEMA  ⚠")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setStyleSheet(f"color:{T.RED};font-size:{big}px;font-weight:700;letter-spacing:4px;")
-        bl.addWidget(title)
+        row = QHBoxLayout()
+        row.addStretch()
+        row.addWidget(holo.TitleBar("ALERTA DEL SISTEMA", "triangle-alert", "red", size))
+        row.addStretch()
+        bl.addLayout(row)
         q = game.quest or {}
-        name = game.player["name"] or "Jugador"
-        kind = "MISIÓN DE PENALIZACIÓN" if q.get("penalty") else "misión diaria"
-        msg = QLabel(f"{name}, tu {kind} sigue incompleta.\n"
-                     "Si no la completás antes de medianoche recibirás una penalización.")
+        name = escape(game.player["name"] or "Jugador")
+        kind = "<b>MISIÓN DE PENALIZACIÓN</b>" if q.get("penalty") else "misión diaria"
+        msg = QLabel(f"{name}, tu {kind} sigue incompleta.<br>"
+                     "Si no la completás antes de medianoche recibirás una <b style='color:#ff3b5c'>penalización</b>.")
+        msg.setTextFormat(Qt.TextFormat.RichText)
         msg.setAlignment(Qt.AlignmentFlag.AlignCenter)
         msg.setWordWrap(True)
-        msg.setStyleSheet(f"color:{T.TEXT};font-size:{18 if self.hard else 15}px;")
+        msg.setStyleSheet(f"color:{T.CORE};font-size:{18 if self.hard else 15}px;")
         bl.addWidget(msg)
         rem = game.remaining()
-        lines = [f"{EXERCISES[k].icon}  {EXERCISES[k].name}: faltan {fmt(v)}{' s' if EXERCISES[k].timed else ''}"
-                 for k, v in rem] or ["Abrí el Sistema para recibir la misión de hoy"]
-        pend = QLabel("\n".join(lines))
+        fs = 19 if self.hard else 15
+        lines = [f"{icons.img(EXERCISES[k].icon, fs + 2, T.GLOW)}&nbsp;&nbsp;{EXERCISES[k].name}: faltan <b>{fmt(v)}</b>"
+                 f"{' s' if EXERCISES[k].timed else ''}" for k, v in rem] or ["Abrí el Sistema para recibir la misión de hoy"]
+        pend = QLabel("<br>".join(lines))
+        pend.setTextFormat(Qt.TextFormat.RichText)
         pend.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        pend.setStyleSheet(f"color:{T.GLOW};font-size:{20 if self.hard else 16}px;font-weight:600;padding:10px;")
+        pend.setStyleSheet(f"color:{T.GLOW};font-size:{fs}px;padding:8px;line-height:150%;")
         bl.addWidget(pend)
 
-        train = button("⚔   ENTRENAR AHORA", "primary", self.g.train_now)
-        train.setMinimumHeight(56)
-        train.setStyleSheet("font-size:20px;")
+        train = button("ENTRENAR AHORA", "primary", self.g.train_now, icon="swords")
+        train.setMinimumHeight(54)
+        train.setStyleSheet("font-size:19px;letter-spacing:4px;")
         bl.addWidget(train)
         left = game.snoozes_left()
         if left > 0:
-            sn = button(f"Posponer 15 minutos  (te quedan {left})", "", self.g.snooze)
-            sn.setMinimumHeight(44)
+            sn = button(f"Posponer 15 minutos  (te quedan {left})", "", self.g.snooze, icon="hourglass")
+            sn.setMinimumHeight(42)
             bl.addWidget(sn)
         if not self.hard:
             bl.addWidget(button("Cerrar (vuelvo en un rato)", "ghost", self.g.dismiss))
@@ -103,7 +118,6 @@ class NagWindow(QWidget):
         self.surr_box.hide()
         surr_btn = button("Me rindo por hoy… (igual te comés la penalización)", "ghost",
                           lambda: (self.surr_box.show(), self.surr.setFocus()))
-        bl.addSpacing(10)
         bl.addWidget(surr_btn)
         bl.addWidget(self.surr_box)
         lay.addWidget(box, 0, Qt.AlignmentFlag.AlignCenter)
@@ -177,7 +191,7 @@ class Guardian(QObject):
             w.activateWindow()
         self.win.sounds.play("alarm")
         self.win.voice.say("Alerta del Sistema. Misión diaria incompleta.", True)
-        self.win.tray_message("⚠ ALERTA DEL SISTEMA", "Tu misión diaria sigue incompleta.")
+        self.win.tray_message("ALERTA DEL SISTEMA", "Tu misión diaria sigue incompleta.")
         self.raise_timer.start(1500)
 
     def _keep_on_top(self):

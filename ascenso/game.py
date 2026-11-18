@@ -297,7 +297,7 @@ class Game:
             q["progress"][ex] = before + n
             if before < q["targets"][ex] <= q["progress"][ex]:
                 name = EXERCISES[ex].name
-                self.emit("toast", text=f"✔ {name}: objetivo cumplido", gold=True)
+                self.emit("toast", text=f"{name}: objetivo cumplido", gold=True, icon="circle-check")
                 self.emit("say", text=f"Objetivo de {name} cumplido", force=True)
         xp = n * EXERCISES[ex].xp * (0.7 if manual else 1.0)
         self.gain_xp(xp)
