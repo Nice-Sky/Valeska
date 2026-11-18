@@ -1,0 +1,6 @@
+Archivos incluidos para que la detección de pose funcione sin depender de internet:
+
+- vision_bundle.mjs y wasm/  -> @mediapipe/tasks-vision 0.10.14 (Google, licencia Apache 2.0)
+- models/pose_landmarker_lite.task -> modelo MediaPipe Pose Landmarker (Google, licencia Apache 2.0)
+
+Si alguno falta, la app los descarga automáticamente desde internet.

@@ -1,0 +1,3 @@
+*.bat text eol=crlf
+*.task binary
+*.wasm binary
