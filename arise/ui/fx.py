@@ -83,7 +83,7 @@ def glow_text_image(text: str, font: QFont, color: str, core: str, dpr: float, g
     if spacing:
         f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, spacing)
     fm = QFontMetricsF(f)
-    pad = int(14 + 18 * glow)
+    pad = int(18 + 30 * glow)
     w = int(fm.horizontalAdvance(text) + pad * 2 + spacing)
     h = int(fm.height() + pad * 2)
     sharp = new_image(w, h, dpr)
@@ -103,7 +103,8 @@ def glow_text_image(text: str, font: QFont, color: str, core: str, dpr: float, g
     p.setPen(QPen(c, 1.2))
     p.drawPath(path)
     p.end()
-    halo = bloom(src, ((2, 1.0), (6, 0.9), (16, 0.7)), gain=glow)
+    halo = bloom(src, ((2, 1.0), (5, 0.9), (11, 0.6)), gain=glow)
+    edge_fade(halo, pad * 0.9)
     res = (sharp, halo, QSize(w, h))
     if len(_text_cache) > 400:
         _text_cache.clear()
@@ -116,10 +117,11 @@ def draw_glow_text(p: QPainter, rect: QRectF, text: str, font: QFont, color: str
     dpr = p.device().devicePixelRatioF() if p.device() else 1.0
     sharp, halo, sz = glow_text_image(text, font, color, core, dpr, glow, spacing)
     w, h = sz.width(), sz.height()
+    pad = int(18 + 30 * glow)
     if align & Qt.AlignmentFlag.AlignLeft:
-        x = rect.left() - (14 + 18 * glow)
+        x = rect.left() - pad
     elif align & Qt.AlignmentFlag.AlignRight:
-        x = rect.right() - w + (14 + 18 * glow)
+        x = rect.right() - w + pad
     else:
         x = rect.center().x() - w / 2
     y = rect.center().y() - h / 2

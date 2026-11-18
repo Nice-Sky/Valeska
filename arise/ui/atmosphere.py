@@ -124,9 +124,10 @@ def build_frame(w: int, h: int, dpr: float):
     path.addRect(plate)
     # vidrio casi negro
     g = QLinearGradient(plate.topLeft(), plate.bottomLeft())
-    g.setColorAt(0, QColor(4, 12, 30, 236))
-    g.setColorAt(0.5, QColor(1, 4, 12, 240))
-    g.setColorAt(1, QColor(4, 12, 30, 236))
+    # opaca: así el brillo aditivo de los elementos nunca cambia la transparencia (evita "recuadros" raros)
+    g.setColorAt(0, QColor(4, 12, 30, 255))
+    g.setColorAt(0.5, QColor(1, 4, 12, 255))
+    g.setColorAt(1, QColor(4, 12, 30, 255))
     pb.fillPath(path, g)
     pb.save()
     pb.setClipPath(path)
@@ -159,7 +160,9 @@ def build_frame(w: int, h: int, dpr: float):
     pn.drawRect(plate)
     pn.end()
 
-    glow = fx.bloom(neon, ((2.5, 1.4), (8, 1.25), (22, 1.1)), gain=1.0)
+    glow = fx.bloom(neon, ((2.5, 1.4), (8, 1.15), (16, 0.9)), gain=1.0)
+    # el resplandor no se derrama sobre el escritorio: se apaga antes del borde de la ventana
+    fx.edge_fade(glow, 12)
     pb.drawImage(0, 0, neon)
     pb.end()
     return QPixmap.fromImage(base), QPixmap.fromImage(glow), plate
@@ -241,7 +244,7 @@ class Atmosphere(QWidget):
         self._ensure()
         p = QPainter(self)
         t = fx.Clock.get().now() if self.quality != "bajo" else 0.0
-        p.fillRect(self.rect(), QColor(0, 0, 0, 4))  # alfa mínimo: la ventana recibe clics en todo su área
+        p.fillRect(self.rect(), QColor(0, 0, 0, 1))  # alfa mínimo invisible: la ventana recibe clics en todo su área
         p.drawPixmap(0, 0, self._base)
         pl = self._plate
         p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)

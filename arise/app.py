@@ -19,7 +19,7 @@ from .ui.pages import AjustesPage, EntrenarPage, EstadoPage, MisionPage, Registr
 from .ui import icons
 from .ui.atmosphere import Atmosphere
 from .ui.notify import Notifier
-from .ui.widgets import Dialogs, GlowLabel, Toaster, button, label
+from .ui.widgets import Dialogs, GlowLabel, NavIndicator, ScanReveal, Toaster, button, label
 from .voice import Sounds, Voice
 
 PAGES = [("estado", "ESTADO", "user-round"), ("mision", "HOY", "target"), ("entrenar", "ENTRENAR", "dumbbell"),
@@ -51,7 +51,7 @@ class NavRail(QWidget):
         from .ui import holo
         self._holo = holo
         self._sf = type("NavSurface", (QWidget, holo.Surface), {
-            "surface_spec": lambda w: holo.SurfaceSpec(QRectF(w.rect()).adjusted(8, 8, -8, -8), "", cut=12,
+            "surface_spec": lambda w: holo.SurfaceSpec(QRectF(w.rect()).adjusted(18, 18, -18, -18), "", cut=12,
                                                        brackets=True, seed=77, glass_alpha=150, density=0.8),
             "paintEvent": lambda w, e: w.paint_surface(_aa(QPainter(w))),
         })(self)
@@ -106,9 +106,9 @@ class MainWindow(QMainWindow):
 
         nav = NavRail()
         nav.setObjectName("nav")
-        nav.setFixedWidth(220)
+        nav.setFixedWidth(240)
         nl = QVBoxLayout(nav)
-        nl.setContentsMargins(12, 26, 12, 24)
+        nl.setContentsMargins(22, 34, 22, 32)
         nl.setSpacing(2)
         brand = GlowLabel("ARISE", 26, QFont.Weight.Bold, align=Qt.AlignmentFlag.AlignCenter, spacing=9, glow=1.2)
         nl.addWidget(brand)
@@ -127,11 +127,15 @@ class MainWindow(QMainWindow):
             self.nav_buttons[key] = b
             nl.addWidget(b)
         nl.addStretch()
+        self.nav_ind = NavIndicator(nav)
+        self.nav_ind.lower()
+        nav._sf.lower()
         self.nav_player = label("", "navPlayer", align=Qt.AlignmentFlag.AlignCenter)
         nl.addWidget(self.nav_player)
         h.addWidget(nav)
 
         content = QWidget()
+        self.content = content
         cl = QVBoxLayout(content)
         cl.setContentsMargins(24, 20, 10, 10)
         self.stack = QStackedWidget()
@@ -158,7 +162,7 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------ barra superior y bordes
     def _build_titlebar(self) -> QWidget:
         bar = QWidget()
-        bar.setFixedHeight(40)
+        bar.setFixedHeight(50)
         hl = QHBoxLayout(bar)
         hl.setContentsMargins(14, 4, 4, 0)
         hl.setSpacing(4)
@@ -169,7 +173,7 @@ class MainWindow(QMainWindow):
         for ic, slot, kind in (("minus", self.showMinimized, ""), ("square", self._toggle_max, ""),
                                ("x", self.close, "danger")):
             b = button("", kind, slot, icon=ic)
-            b.setFixedSize(46, 36)
+            b.setFixedSize(58, 48)
             hl.addWidget(b)
         bar.mouseDoubleClickEvent = lambda e: self._toggle_max()
         bar._titlebar = True
@@ -313,9 +317,17 @@ class MainWindow(QMainWindow):
             self.tray.setToolTip(f"Arise Trainer — {p['name']} · Nivel {p['level']}\n{state}")
 
     def show_page(self, key: str):
+        changed = self.stack.currentWidget() is not self.pages[key]
         self.stack.setCurrentWidget(self.pages[key])
         self.nav_buttons[key].setChecked(True)
         self.pages[key].refresh()
+        b = self.nav_buttons[key]
+        QTimer.singleShot(0, lambda b=b: self.nav_ind.move_to(b.geometry(), True))
+        if changed and self.isVisible():
+            if not hasattr(self, "_reveal"):
+                self._reveal = ScanReveal(self.content)
+            self._reveal.play(self.pages[key])
+            self.sounds.play("hover")
         self.bring_to_front()
 
     def go(self, key):

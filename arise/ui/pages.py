@@ -25,8 +25,8 @@ def scroll_page(*widgets) -> QScrollArea:
     inner = QWidget()
     inner.setObjectName("page")
     lay = QVBoxLayout(inner)
-    lay.setContentsMargins(4, 4, 14, 20)
-    lay.setSpacing(16)
+    lay.setContentsMargins(6, 14, 16, 26)
+    lay.setSpacing(14)
     for w in widgets:
         lay.addWidget(w)
     lay.addStretch()
@@ -115,52 +115,63 @@ class ThinBar(QWidget):
             p.fillRect(QRectF(fr.left(), fr.center().y() - 0.5, fr.width(), 1), QColor(T.CORE))
 
 
-class ExCard(QPushButton, holo.Surface):
-    """Tarjeta de ejercicio holográfica con ícono grande."""
+class ExCard(QPushButton, holo.Surface, holo.HoverFade):
+    """Tarjeta de ejercicio holográfica con ícono grande; se ilumina y "levanta" suave al pasar el mouse."""
+
+    PAD = 18
 
     def __init__(self, icon_name, title, sub, done=False):
         QPushButton.__init__(self)
         self.icon_name, self.title_text, self.sub, self.done = icon_name, title, sub, done
         self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setMinimumHeight(160)
+        self.setMinimumHeight(176)
         self.setStyleSheet("QPushButton { background: transparent; border: none; }")
-        self.hover = False
         self.sweep = False
         self.surface_init()
+        self.hover_init(220)
+
+    def _spec(self, hovered: bool):
+        return holo.SurfaceSpec(QRectF(self.rect()).adjusted(self.PAD, self.PAD, -self.PAD, -self.PAD),
+                                "gold" if self.done else "", cut=10, brackets=hovered, strong=hovered,
+                                seed=sum(map(ord, self.title_text)), density=0.7)
 
     def surface_spec(self):
-        return holo.SurfaceSpec(QRectF(self.rect()).adjusted(10, 10, -10, -10), "gold" if self.done else "", cut=10,
-                                brackets=self.hover, strong=self.hover, seed=sum(map(ord, self.title_text)),
-                                density=0.7)
+        return self._spec(self.hover_k > 0.5)
 
     def enterEvent(self, e):
-        self.hover = True
-        self.update()
+        self.hover_to(1.0)
+        from .. import voice as _v
+        if _v.SOUNDS_REF:
+            _v.SOUNDS_REF.play("hover")
 
     def leaveEvent(self, e):
-        self.hover = False
-        self.update()
+        self.hover_to(0.0)
 
     def paintEvent(self, e):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        self.paint_surface(p)
+        k = self.hover_k
+        p.translate(0, -4 * k)  # se "levanta"
+        if k < 0.999:
+            self.paint_surface(p, self._spec(False))
+        if k > 0.001:
+            self.paint_surface(p, self._spec(True), opacity=k)
         color, core = holo.palette("gold" if self.done else "")
-        s = 40
-        r = QRectF((self.width() - s) / 2, 30, s, s)
-        p.setOpacity(0.6 if self.hover else 0.35)
+        s = 40 + 4 * k
+        r = QRectF((self.width() - s) / 2, 40 - 2 * k, s, s)
+        p.setOpacity(0.35 + 0.3 * k)
         icons.paint(p, self.icon_name, r, color, 5.0)
         p.setOpacity(1)
         icons.paint(p, self.icon_name, r, core, 1.7)
         f = QFont(T.FONT, 13)
         f.setWeight(QFont.Weight.DemiBold)
         from . import fx
-        fx.draw_glow_text(p, QRectF(0, 78, self.width(), 26), self.title_text.upper(), f, color, core,
-                          glow=0.7 if self.hover else 0.45, spacing=2.5)
+        fx.draw_glow_text(p, QRectF(0, 90, self.width(), 26), self.title_text.upper(), f, color, core,
+                          glow=0.45, spacing=2.5, intensity=0.6 + 0.4 * k)
         sf = QFont(T.FONT, 10)
         p.setFont(sf)
         p.setPen(QColor(T.GOLD if self.done else T.MUTED))
-        p.drawText(QRectF(0, 106, self.width(), 22), Qt.AlignmentFlag.AlignCenter, self.sub)
+        p.drawText(QRectF(0, 118, self.width(), 22), Qt.AlignmentFlag.AlignCenter, self.sub)
 
 
 # =================================================================== ESTADO

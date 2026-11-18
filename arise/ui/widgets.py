@@ -13,21 +13,27 @@ from . import fx, holo, icons
 from . import theme as T
 
 
-class HoloButton(QPushButton, holo.Surface):
-    """Botón holográfico: vidrio + borde de neón con bloom; los principales tienen relleno azul."""
+class HoloButton(QPushButton, holo.Surface, holo.HoverFade):
+    """Botón holográfico: vidrio + borde de neón con bloom. Al pasar el mouse se ilumina con una transición suave
+    (dos versiones precalculadas que se funden, sin recalcular el brillo)."""
 
     sweep = False
-    M = 7
+    M = 11
 
     def __init__(self, text: str, kind: str = "", icon: str = ""):
         QPushButton.__init__(self, text)
         self.kind = kind
         self.icon_name = icon
-        self.hover = False
+        self.press_k = 0.0
         self.setProperty("kind", kind)
         self.setStyleSheet("QPushButton { background: transparent; border: none; padding: 16px 28px; }")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.surface_init()
+        self.hover_init(170)
+
+    @property
+    def hover(self):
+        return self.hover_k > 0.5
 
     def setIcon(self, ic):  # compatibilidad: se usa set_icon_name
         pass
@@ -42,54 +48,66 @@ class HoloButton(QPushButton, holo.Surface):
             self.update()
         return super().setProperty(name, value)
 
-    def sizeHint(self):
+    def _font(self):
         f = QFont(T.FONT, 11)
         f.setWeight(QFont.Weight.DemiBold)
         f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.6)
+        return f
+
+    def sizeHint(self):
         from PySide6.QtGui import QFontMetricsF
-        w = QFontMetricsF(f).horizontalAdvance(self.text()) + 52 + (26 if self.icon_name else 0)
-        return QSize(int(max(w, 90)), 50)
+        w = QFontMetricsF(self._font()).horizontalAdvance(self.text()) + 60 + (26 if self.icon_name else 0)
+        return QSize(int(max(w, 96)), 56)
 
     def minimumSizeHint(self):
-        return QSize(min(self.sizeHint().width(), 140), 50)
+        return QSize(min(self.sizeHint().width(), 150), 56)
 
     def enterEvent(self, e):
-        self.hover = True
-        self.update()
+        self.hover_to(1.0)
+        from .. import voice as _v
+        if _v.SOUNDS_REF and self.isEnabled():
+            _v.SOUNDS_REF.play("hover")
 
     def leaveEvent(self, e):
-        self.hover = False
-        self.update()
+        self.hover_to(0.0)
 
     def mousePressEvent(self, e):
         from .. import voice as _v
         if _v.SOUNDS_REF and self.isEnabled():
             _v.SOUNDS_REF.play("click")
+        self.press_k = 1.0
         super().mousePressEvent(e)
 
-    def surface_spec(self):
+    def _spec(self, hovered: bool):
         tone = "red" if self.kind == "danger" else ""
         fill = None
         if self.kind == "primary":
-            fill = "#2f86ff" if not self.hover else "#4aa0ff"
-        elif self.kind == "danger" and self.hover:
-            fill = T.RED
-        elif self.hover:
-            fill = "#1d4fa8"
+            fill = "#4aa0ff" if hovered else "#2f86ff"
+        elif hovered:
+            fill = T.RED if self.kind == "danger" else "#1d4fa8"
         return holo.SurfaceSpec(QRectF(self.rect()).adjusted(self.M, self.M, -self.M, -self.M), tone, cut=5,
                                 brackets=False, strong=True, seed=3, glass_alpha=225, density=0.25, small=True,
                                 fill=fill)
+
+    def surface_spec(self):
+        return self._spec(self.hover)
 
     def paintEvent(self, e):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         if not self.isEnabled():
             p.setOpacity(0.35)
-        self.paint_surface(p)
+        k = self.hover_k
+        if k < 0.999:
+            self.paint_surface(p, self._spec(False))
+        if k > 0.001:
+            self.paint_surface(p, self._spec(True), opacity=k)
+        if self.press_k > 0.01:  # destello al hacer clic
+            r = QRectF(self.rect()).adjusted(self.M, self.M, -self.M, -self.M)
+            p.fillPath(holo.chamfer(r, 5), holo.qc(T.CORE, int(110 * self.press_k)))
+            self.press_k *= 0.82
         color, core = holo.palette("red" if self.kind == "danger" else "")
-        f = QFont(T.FONT, 11)
-        f.setWeight(QFont.Weight.DemiBold)
-        f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 1.6)
+        f = self._font()
         from PySide6.QtGui import QFontMetricsF
         fm = QFontMetricsF(f)
         tw = fm.horizontalAdvance(self.text())
@@ -98,7 +116,13 @@ class HoloButton(QPushButton, holo.Surface):
         if self.icon_name:
             icons.paint(p, self.icon_name, QRectF(x, (self.height() - 18) / 2, 18, 18), core, 1.9)
         p.setFont(f)
-        p.setPen(QColor("white" if self.kind in ("primary",) or self.hover else core))
+        txt = QColor(core)
+        if self.kind == "primary" or k > 0:
+            white = QColor("white")
+            t = 1.0 if self.kind == "primary" else k
+            txt = QColor(int(txt.red() + (white.red() - txt.red()) * t), int(txt.green() + (white.green() - txt.green()) * t),
+                         int(txt.blue() + (white.blue() - txt.blue()) * t))
+        p.setPen(txt)
         p.drawText(QRectF(x + iw, 0, tw + 4, self.height()), Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
                    self.text())
 
@@ -148,7 +172,7 @@ class Panel(QFrame, holo.Surface):
     """Ventana holográfica con borde de neón, bloom y encabezado [ícono][TÍTULO]."""
 
     _seed = 1
-    INSET = 16
+    INSET = 20
 
     def __init__(self, title: str = "", icon: str = "circle-alert", parent=None, compact: bool = False):
         QFrame.__init__(self, parent)
@@ -589,7 +613,23 @@ class GlowLabel(QWidget):
         self.updateGeometry()
 
     def setText(self, text: str):
-        self.text_ = str(text)
+        text = str(text)
+        old = self.text_
+        if old.isdigit() and text.isdigit() and old != text and self.isVisible():
+            from PySide6.QtCore import QVariantAnimation
+            a = QVariantAnimation(self)
+            a.setDuration(700)
+            a.setStartValue(int(old))
+            a.setEndValue(int(text))
+            a.setEasingCurve(QEasingCurve.Type.OutCubic)
+            a.valueChanged.connect(lambda v: (setattr(self, "text_", str(int(v))), self.update()))
+            a.start()
+            self._anim = a
+            self.text_ = text
+            self._fit()
+            self.text_ = old
+            return
+        self.text_ = text
         self._fit()
         self.update()
 
@@ -612,16 +652,28 @@ class NeonBar(QWidget):
 
     def __init__(self, height: int = 30):
         super().__init__()
-        self.value, self.maximum, self.text_ = 0, 100, ""
+        self.value, self.maximum, self.text_ = 0.0, 100, ""
+        self.target = 0.0
         self.setFixedHeight(height)
+        self._anim = None
 
     def setRange(self, a, b):
         self.maximum = max(1, b)
         self.update()
 
     def setValue(self, v):
-        self.value = v
-        self.update()
+        from PySide6.QtCore import QVariantAnimation
+        if abs(v - self.target) < 1e-6:
+            return
+        self.target = float(v)
+        a = QVariantAnimation(self)
+        a.setDuration(900)
+        a.setStartValue(float(self.value))
+        a.setEndValue(float(v))
+        a.setEasingCurve(QEasingCurve.Type.OutCubic)
+        a.valueChanged.connect(lambda x: (setattr(self, "value", float(x)), self.update()))
+        a.start()
+        self._anim = a
 
     def setFormat(self, t):
         self.text_ = t
@@ -647,6 +699,13 @@ class NeonBar(QWidget):
                 c.setAlpha(int(22 * pulse))
                 p.fillRect(fr.adjusted(-i * 1.5, -i * 1.2, i * 1.5, i * 1.2), c)
             p.fillRect(fr, g)
+            # punta brillante
+            tip = QRectF(fr.right() - 3, fr.top() - 3, 6, fr.height() + 6)
+            from PySide6.QtGui import QRadialGradient
+            rg = QRadialGradient(tip.center(), 16)
+            rg.setColorAt(0, QColor(255, 255, 255, 230))
+            rg.setColorAt(1, QColor(120, 200, 255, 0))
+            p.fillRect(tip.adjusted(-14, -8, 14, 8), rg)
         holo.neon_path(p, path, T.GLOW, T.CORE, 1.0, 3, 2.0, 26)
         f = QFont(T.FONT, 9)
         f.setWeight(QFont.Weight.DemiBold)
@@ -656,3 +715,103 @@ class NeonBar(QWidget):
         p.drawText(r.translated(1, 1), Qt.AlignmentFlag.AlignCenter, self.text_)
         p.setPen(QColor("white"))
         p.drawText(r, Qt.AlignmentFlag.AlignCenter, self.text_)
+
+
+class ScanReveal(QWidget):
+    """Al cambiar de pantalla: barrido de escaneo luminoso + aparición con leve parpadeo."""
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self.k = 1.0
+        self.hide()
+        self._target = None
+
+    def play(self, target: QWidget):
+        from PySide6.QtCore import QVariantAnimation
+        self._target = target
+        self.setGeometry(self.parent().rect())
+        self.raise_()
+        self.show()
+        eff = QGraphicsOpacityEffect(target)
+        eff.setOpacity(0.0)
+        target.setGraphicsEffect(eff)
+        a = QVariantAnimation(self)
+        a.setDuration(420)
+        a.setStartValue(0.0)
+        a.setEndValue(1.0)
+        a.setEasingCurve(QEasingCurve.Type.OutCubic)
+        a.valueChanged.connect(lambda v, eff=eff: self._step(v, eff))
+        a.finished.connect(self._done)
+        a.start()
+        self._anim = a
+
+    def _step(self, v, eff):
+        import math as _m
+        self.k = v
+        flick = 1.0 if v > 0.75 else 0.75 + 0.25 * abs(_m.sin(v * 60))
+        try:
+            eff.setOpacity(min(1.0, v * 1.4) * flick)
+        except RuntimeError:
+            pass
+        self.update()
+
+    def _done(self):
+        if self._target is not None:
+            try:
+                self._target.setGraphicsEffect(None)
+            except RuntimeError:
+                pass
+        self.hide()
+
+    def paintEvent(self, e):
+        if self.k >= 1:
+            return
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = QRectF(self.rect())
+        y = r.top() + r.height() * self.k
+        from PySide6.QtGui import QLinearGradient
+        g = QLinearGradient(QPointF(0, y - 90), QPointF(0, y))
+        g.setColorAt(0, holo.qc(T.GLOW, 0))
+        g.setColorAt(1, holo.qc(T.GLOW, int(60 * (1 - self.k))))
+        p.fillRect(QRectF(r.left(), y - 90, r.width(), 90), g)
+        p.setOpacity(1 - self.k * 0.6)
+        holo.neon_line(p, r.left() + 10, y, r.right() - 10, y, T.GLOW, T.CORE, 1.6, 5, 2.6, 36)
+
+
+class NavIndicator(QWidget):
+    """Resaltado de la opción elegida en el menú: se desliza suavemente entre opciones."""
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self._anim = None
+
+    def move_to(self, rect: QRect, animate: bool = True):
+        if not animate or not self.isVisible() or self.geometry().isEmpty():
+            self.setGeometry(rect)
+            self.show()
+            return
+        a = QPropertyAnimation(self, b"geometry", self)
+        a.setDuration(320)
+        a.setStartValue(self.geometry())
+        a.setEndValue(rect)
+        a.setEasingCurve(QEasingCurve.Type.OutBack)
+        a.start()
+        self._anim = a
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = QRectF(self.rect())
+        from PySide6.QtGui import QLinearGradient
+        g = QLinearGradient(r.topLeft(), r.topRight())
+        g.setColorAt(0, holo.qc(T.GLOW, 95))
+        g.setColorAt(0.6, holo.qc(T.GLOW, 25))
+        g.setColorAt(1, holo.qc(T.GLOW, 0))
+        p.fillRect(r, g)
+        holo.neon_line(p, r.left() + 2, r.top() + 4, r.left() + 2, r.bottom() - 4, T.GLOW, T.CORE, 2.2, 4, 2.2, 45)
+        p.setPen(QPen(holo.qc(T.GLOW, 70), 1))
+        p.drawLine(QPointF(r.left(), r.top()), QPointF(r.right() - 30, r.top()))
+        p.drawLine(QPointF(r.left(), r.bottom()), QPointF(r.right() - 30, r.bottom()))

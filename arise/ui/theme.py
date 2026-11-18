@@ -29,7 +29,7 @@ QToolTip {{ background: {PANEL}; border: 1px solid {GLOW}; color: {TEXT}; }}
   background: transparent; border: none; border-left: 3px solid transparent;
 }}
 #nav QPushButton:hover {{ color: white; background: rgba(42,127,255,0.12); }}
-#nav QPushButton:checked {{ color: white; border-left: 3px solid {CORE}; background: qlineargradient(x1:0,y1:0,x2:1,y2:0, stop:0 rgba(79,216,255,0.30), stop:1 rgba(79,216,255,0.0)); }}
+#nav QPushButton:checked {{ color: white; border-left: 3px solid transparent; background: transparent; }}
 #navPlayer {{ color: {MUTED}; font-size: 13px; }}
 
 QLabel {{ background: transparent; }}

@@ -303,24 +303,37 @@ class Surface:
         if self.isVisible():
             self.update()
 
-    def paint_surface(self, p: QPainter):
-        spec = self.surface_spec()
+    def surface_images(self, spec: SurfaceSpec):
+        """Vidrio+neón y bloom precalculados. Guarda varias versiones (ej. normal y hover) para no recalcular."""
         dpr = self.devicePixelRatioF()
         key = (self.width(), self.height(), round(dpr, 2), spec.key())
-        if key != self._skey:
-            self._sbase, self._sglow = build_surface(self.width(), self.height(), dpr, spec)
-            self._skey = key
-        base_op = p.opacity()
-        p.drawImage(0, 0, self._sbase)
+        cache = self.__dict__.setdefault("_scache", {})
+        hit = cache.get(key)
+        if hit is None:
+            if len(cache) >= 4:
+                cache.pop(next(iter(cache)))
+            hit = cache[key] = build_surface(self.width(), self.height(), dpr, spec)
+        return hit
+
+    def paint_surface(self, p: QPainter, spec: SurfaceSpec | None = None, opacity: float = 1.0,
+                      sweep: bool | None = None):
+        spec = spec or self.surface_spec()
+        base, glow = self.surface_images(spec)
+        base_op = p.opacity() * opacity
+        if base_op <= 0.003:
+            return
+        p.setOpacity(base_op)
+        p.drawImage(0, 0, base)
         clock = fx.Clock.get()
         inten = clock.pulse(5.0, 0.86, 1.0, self._phase) if self.animated else 0.95
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
         p.setOpacity(inten * base_op)
-        p.drawImage(0, 0, self._sglow)
+        p.drawImage(0, 0, glow)
         p.setOpacity(base_op)
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
-        if self.animated and self.sweep:
+        if self.animated and (self.sweep if sweep is None else sweep):
             self._paint_sweep(p, spec, clock.now() + self._phase)
+        p.setOpacity(base_op / opacity if opacity else 1.0)
 
     def _paint_sweep(self, p: QPainter, spec: SurfaceSpec, t: float):
         period, active = 11.0, 1.6
@@ -338,6 +351,27 @@ class Surface:
         p.setClipPath(chamfer(r, spec.cut))
         p.fillRect(r, g)
         p.restore()
+
+
+class HoverFade:
+    """Mezcla para animar suavemente un valor 0..1 al pasar el mouse (sin recalcular el brillo)."""
+
+    def hover_init(self, ms: int = 180):
+        from PySide6.QtCore import QVariantAnimation
+        self.hover_k = 0.0
+        self._hanim = QVariantAnimation(self)
+        self._hanim.setDuration(ms)
+        self._hanim.valueChanged.connect(self._hover_val)
+
+    def _hover_val(self, v):
+        self.hover_k = float(v)
+        self.update()
+
+    def hover_to(self, target: float):
+        self._hanim.stop()
+        self._hanim.setStartValue(self.hover_k)
+        self._hanim.setEndValue(float(target))
+        self._hanim.start()
 
 
 # ================================================================== fondo

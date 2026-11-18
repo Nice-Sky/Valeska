@@ -65,7 +65,7 @@ class NotificationCard(QWidget, holo.Surface):
             from .widgets import button
             for i, (label, cb) in enumerate(actions):
                 b = button(label, "primary" if i == 0 else "", lambda _=False, cb=cb: (cb(), self.dismiss()))
-                b.setFixedHeight(44)
+                b.setFixedHeight(52)
                 row.addWidget(b)
             row.addStretch()
             col.addLayout(row)
