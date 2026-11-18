@@ -18,6 +18,7 @@ from . import holo, icons
 from . import theme as T
 from .pages import clear_layout, scroll_page
 from .video import VideoView
+from .charts import SERIES_AMBER, SERIES_BLUE, LineChart, Series, moving_average, weekly_trend
 from .widgets import Panel, button, icon_label, label, restyle
 
 VIEWS = [
@@ -54,73 +55,103 @@ def stat_box(value: str, name: str, delta: str = "", good: bool | None = None) -
     return box
 
 
-# =================================================================== gráfico de peso
-class WeightChart(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setFixedHeight(240)
-        self.points: list[tuple[date, float]] = []
-
-    def set_data(self, weights: dict):
-        self.points = sorted((date.fromisoformat(k), v) for k, v in weights.items())[-90:]
-        self.update()
-
-    def paintEvent(self, e):
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        W, H = self.width(), self.height()
-        if len(self.points) < 2:
-            p.setPen(QColor(T.MUTED))
-            p.drawText(self.rect(), Qt.AlignmentFlag.AlignCenter, "Registrá tu peso al menos 2 días para ver la curva.")
-            return
-        top, bottom, left, right = 16, 26, 44, 10
-        vals = [v for _, v in self.points]
-        lo, hi = min(vals) - 0.5, max(vals) + 0.5
-        d0, d1 = self.points[0][0], self.points[-1][0]
-        span = max(1, (d1 - d0).days)
-        X = lambda d: left + (W - left - right) * (d - d0).days / span
-        Y = lambda v: top + (H - top - bottom) * (1 - (v - lo) / (hi - lo))
-        p.setFont(QFont(T.FONT, 8))
-        for k in range(4):
-            v = lo + (hi - lo) * k / 3
-            y = Y(v)
-            p.setPen(QColor(79, 216, 255, 28))
-            p.drawLine(QPointF(left, y), QPointF(W - right, y))
-            p.setPen(QColor(T.MUTED))
-            p.drawText(QRectF(0, y - 8, left - 6, 16), Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter, f"{v:.1f}")
-        p.drawText(QRectF(left, H - bottom + 6, 80, 16), Qt.AlignmentFlag.AlignLeft, f"{d0.day}/{d0.month}")
-        p.drawText(QRectF(W - right - 80, H - bottom + 6, 80, 16), Qt.AlignmentFlag.AlignRight, f"{d1.day}/{d1.month}")
-        # media móvil de 7 días
-        avg = []
-        for d, _ in self.points:
-            w = [v for dd, v in self.points if 0 <= (d - dd).days < 7]
-            avg.append((d, sum(w) / len(w)))
-        path = QPainterPath(QPointF(X(avg[0][0]), Y(avg[0][1])))
-        for d, v in avg[1:]:
-            path.lineTo(QPointF(X(d), Y(v)))
-        holo.neon_path(p, path, T.GLOW, T.CORE, 1.8, 5, 2.4, 26)
-        p.setPen(Qt.PenStyle.NoPen)
-        for d, v in self.points:
-            p.setBrush(QColor(T.GOLD))
-            p.drawEllipse(QPointF(X(d), Y(v)), 3, 3)
-        p.setPen(QColor(T.MUTED))
-        p.drawText(QRectF(left, 0, W, 14), Qt.AlignmentFlag.AlignLeft,
-                   "●  peso del día      ━  promedio de 7 días")
-
-
 # =================================================================== comparador de fotos
+def _read_rgb(name):
+    import cv2
+    if not name:
+        return None
+    img = cv2.imread(str(photos_dir() / name))
+    return None if img is None else cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+
+def _read_mask(name):
+    import cv2
+    if not name:
+        return None
+    m = cv2.imread(str(photos_dir() / name.replace(".jpg", "_mask.png")), cv2.IMREAD_GRAYSCALE)
+    return None if m is None else (m > 127).astype(np.float32)
+
+
+def _qimg(rgb: np.ndarray) -> QImage:
+    rgb = np.ascontiguousarray(rgb)
+    h, w = rgb.shape[:2]
+    return QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
+
+
+def _contour_path(mask, x0, y0) -> QPainterPath:
+    import cv2
+    path = QPainterPath()
+    if mask is None:
+        return path
+    cs, _ = cv2.findContours((body.largest_component(mask) * 255).astype(np.uint8), cv2.RETR_EXTERNAL,
+                             cv2.CHAIN_APPROX_SIMPLE)
+    for c in cs:
+        pts = c[:, 0, :]
+        if len(pts) < 3:
+            continue
+        path.moveTo(QPointF(pts[0][0] - x0, pts[0][1] - y0))
+        for x, y in pts[1:]:
+            path.lineTo(QPointF(x - x0, y - y0))
+        path.closeSubpath()
+    return path
+
+
 class PhotoCompare(QWidget):
+    """Foto actual vs. anterior, con la anterior alineada automáticamente sobre el cuerpo actual."""
+
+    MODES = ["Superponer", "Deslizar (antes / después)", "Lado a lado", "Siluetas"]
+
     def __init__(self):
         super().__init__()
-        self.setFixedHeight(460)
-        self.cur: QImage | None = None
-        self.prev: QImage | None = None
+        self.setFixedHeight(520)
+        self.setMouseTracking(True)
+        self.mode = 0
+        self.value = 0.45          # opacidad (superponer) o posición del corte (deslizar)
+        self.cur = self.prev = None
+        self.cur_path = self.prev_path = QPainterPath()
         self.cur_label = self.prev_label = ""
-        self.mode = "overlay"
-        self.opacity = 0.45
+        self.aligned = False
+        self._key = None
 
-    def set_images(self, cur, prev, cur_label, prev_label):
-        self.cur, self.prev, self.cur_label, self.prev_label = cur, prev, cur_label, prev_label
+    def set_pair(self, cur: dict | None, prev: dict | None, view: str):
+        key = (cur and cur["date"], prev and prev["date"], view)
+        if key == self._key:
+            self.update()
+            return
+        self._key = key
+        self.cur = self.prev = None
+        self.cur_path = self.prev_path = QPainterPath()
+        lab = lambda c: f"{c['date']}  ·  {c['weight']:.1f} kg" if c else ""
+        self.cur_label, self.prev_label = lab(cur), lab(prev)
+        if not cur:
+            self.update()
+            return
+        cname = cur["photos"].get(view)
+        crgb, cmask = _read_rgb(cname), _read_mask(cname)
+        if crgb is None:
+            self.update()
+            return
+        h, w = crgb.shape[:2]
+        prgb = pmask = None
+        self.aligned = False
+        if prev:
+            pname = prev["photos"].get(view)
+            prgb, pmask = _read_rgb(pname), _read_mask(pname)
+            if prgb is not None:
+                ph, pw = prgb.shape[:2]
+                M = body.alignment_matrix((pw, ph), (w, h),
+                                          (prev.get("landmarks") or {}).get(view), (cur.get("landmarks") or {}).get(view),
+                                          pmask, cmask)
+                prgb = body.warp(prgb, M, (w, h))
+                pmask = body.warp(pmask, M, (w, h)) if pmask is not None else None
+                self.aligned = True
+        crop = body.body_crop(*(m for m in (cmask, pmask) if m is not None)) if cmask is not None else None
+        x0, y0, cw, ch = crop or (0, 0, w, h)
+        self.cur = _qimg(crgb[y0:y0 + ch, x0:x0 + cw])
+        self.cur_path = _contour_path(cmask, 0, 0).translated(-x0, -y0) if cmask is not None else QPainterPath()
+        if prgb is not None:
+            self.prev = _qimg(prgb[y0:y0 + ch, x0:x0 + cw])
+            self.prev_path = _contour_path(pmask, 0, 0).translated(-x0, -y0) if pmask is not None else QPainterPath()
         self.update()
 
     def _fit(self, img: QImage, r: QRectF) -> QRectF:
@@ -128,37 +159,119 @@ class PhotoCompare(QWidget):
         return QRectF(r.center().x() - img.width() * s / 2, r.center().y() - img.height() * s / 2,
                       img.width() * s, img.height() * s)
 
+    def _caption(self, p, r: QRectF, text: str, color: str):
+        f = QFont(T.FONT, 9)
+        f.setWeight(QFont.Weight.DemiBold)
+        p.setFont(f)
+        fm = p.fontMetrics()
+        w = fm.horizontalAdvance(text) + 22
+        box = QRectF(r.center().x() - w / 2, r.top() + 8, w, 24)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(QColor(4, 12, 32, 220))
+        p.drawPath(holo.chamfer(box, 4))
+        p.setPen(QPen(QColor(color), 1))
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.drawPath(holo.chamfer(box, 4))
+        p.setPen(QColor("white"))
+        p.drawText(box, Qt.AlignmentFlag.AlignCenter, text)
+
     def paintEvent(self, e):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         r = QRectF(self.rect())
-        p.fillRect(r, QColor(0, 0, 0, 160))
+        p.fillRect(r, QColor(1, 4, 12, 230))
         if self.cur is None:
             p.setPen(QColor(T.MUTED))
             p.drawText(r, Qt.AlignmentFlag.AlignCenter, "Todavía no hay fotos. Hacé tu primer control semanal.")
+            holo.neon_path(p, holo.chamfer(r.adjusted(1, 1, -1, -1), 6), T.GLOW, T.CORE, 1.0, 3, 2, 22)
             return
-        f = QFont(T.FONT, 10)
-        f.setWeight(QFont.Weight.DemiBold)
-        p.setFont(f)
-        if self.mode == "side" and self.prev is not None:
-            half = r.width() / 2
-            for img, lab, rr in ((self.prev, self.prev_label, QRectF(r.left(), r.top(), half - 4, r.height())),
-                                 (self.cur, self.cur_label, QRectF(r.left() + half + 4, r.top(), half - 4, r.height()))):
+        inner = r.adjusted(10, 40, -10, -10)
+        mode = self.mode if self.prev is not None else 0
+        if mode == 2:  # lado a lado
+            half = inner.width() / 2
+            for img, lab, col, rr in ((self.prev, self.prev_label, T.GLOW, QRectF(inner.left(), inner.top(), half - 6, inner.height())),
+                                      (self.cur, self.cur_label, T.GOLD, QRectF(inner.left() + half + 6, inner.top(), half - 6, inner.height()))):
                 p.drawImage(self._fit(img, rr), img)
-                p.setPen(QColor(T.CORE))
-                p.drawText(rr.adjusted(10, 8, -10, -8), Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter, lab)
+                self._caption(p, QRectF(rr.left(), r.top(), rr.width(), 30), ("ANTES  " if img is self.prev else "AHORA  ") + lab, col)
         else:
-            area = self._fit(self.cur, r)
-            p.drawImage(area, self.cur)
-            if self.prev is not None:
-                p.setOpacity(self.opacity)
-                p.drawImage(area, self.prev)
+            area = self._fit(self.cur, inner)
+            sx = area.width() / self.cur.width()
+            if mode == 3:  # siluetas sobre la foto actual atenuada
+                p.setOpacity(0.35)
+                p.drawImage(area, self.cur)
                 p.setOpacity(1)
-            p.setPen(QColor(T.CORE))
-            txt = self.cur_label + (f"   ·   superpuesta: {self.prev_label} ({int(self.opacity * 100)}%)" if self.prev else "")
-            p.drawText(r.adjusted(10, 8, -10, -8), Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter, txt)
+                p.save()
+                p.translate(area.topLeft())
+                p.scale(sx, sx)
+                for path, col in ((self.prev_path, SERIES_BLUE), (self.cur_path, SERIES_AMBER)):
+                    if path.isEmpty():
+                        continue
+                    for w_, a in ((7, 40), (4, 80)):
+                        p.setPen(QPen(holo.qc(col, a), w_ / sx))
+                        p.drawPath(path)
+                    p.setPen(QPen(QColor(col), 2 / sx))
+                    p.drawPath(path)
+                p.restore()
+                self._legend(p, r)
+            elif mode == 1:  # deslizar
+                cut = area.left() + area.width() * self.value
+                p.drawImage(area, self.cur)
+                p.save()
+                p.setClipRect(QRectF(area.left(), area.top(), cut - area.left(), area.height()))
+                p.drawImage(area, self.prev)
+                p.restore()
+                holo.neon_line(p, cut, area.top(), cut, area.bottom(), T.GLOW, T.CORE, 1.5, 4, 2.2, 40)
+                p.setBrush(QColor(4, 12, 32, 230))
+                p.setPen(QPen(QColor(T.CORE), 1.5))
+                p.drawEllipse(QPointF(cut, area.center().y()), 14, 14)
+                icons_y = area.center().y()
+                p.drawText(QRectF(cut - 14, icons_y - 14, 28, 28), Qt.AlignmentFlag.AlignCenter, "⇆")
+                self._caption(p, QRectF(r.left() + 10, r.top(), r.width() / 2 - 20, 30), "◀ ANTES  " + self.prev_label, T.GLOW)
+                self._caption(p, QRectF(r.center().x() + 10, r.top(), r.width() / 2 - 20, 30), "AHORA  " + self.cur_label + " ▶", T.GOLD)
+            else:  # superponer
+                p.drawImage(area, self.cur)
+                if self.prev is not None:
+                    p.setOpacity(self.value)
+                    p.drawImage(area, self.prev)
+                    p.setOpacity(1)
+                txt = self.cur_label + (f"   +   {self.prev_label} al {int(self.value * 100)}%" if self.prev is not None else "")
+                self._caption(p, QRectF(r.left(), r.top(), r.width(), 30), txt, T.GLOW)
+        if self.prev is not None and self.aligned:
+            p.setFont(QFont(T.FONT, 8))
+            p.setPen(QColor(T.MUTED))
+            p.drawText(r.adjusted(12, 0, -12, -8), Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignRight,
+                       "Alineadas automáticamente por la posición del cuerpo")
         holo.neon_path(p, holo.chamfer(r.adjusted(1, 1, -1, -1), 6), T.GLOW, T.CORE, 1.0, 3, 2, 22)
+
+    def _legend(self, p, r):
+        f = QFont(T.FONT, 9)
+        p.setFont(f)
+        x = r.left() + 16
+        for name, col in (("Antes  " + self.prev_label, SERIES_BLUE), ("Ahora  " + self.cur_label, SERIES_AMBER)):
+            p.setPen(QPen(QColor(col), 3))
+            p.drawLine(QPointF(x, r.top() + 20), QPointF(x + 20, r.top() + 20))
+            p.setPen(QColor(T.TEXT))
+            tw = p.fontMetrics().horizontalAdvance(name)
+            p.drawText(QRectF(x + 26, r.top() + 11, tw + 4, 18), Qt.AlignmentFlag.AlignVCenter, name)
+            x += tw + 60
+
+    def mousePressEvent(self, e):
+        self._drag(e)
+
+    def mouseMoveEvent(self, e):
+        if e.buttons() & Qt.MouseButton.LeftButton:
+            self._drag(e)
+
+    def _drag(self, e):
+        if self.mode == 1 and self.cur is not None:
+            area = self._fit(self.cur, QRectF(self.rect()).adjusted(10, 40, -10, -10))
+            self.value = max(0.0, min(1.0, (e.position().x() - area.left()) / max(1, area.width())))
+            self.changed_by_drag(self.value)
+            self.update()
+
+    def changed_by_drag(self, v):  # lo reemplaza la página para mover el slider
+        pass
 
 
 # =================================================================== página
@@ -200,13 +313,37 @@ class CuerpoPage(QWidget):
         self.wstats = QGridLayout()
         self.wstats.setSpacing(8)
         peso.lay.addLayout(self.wstats)
-        self.wchart = WeightChart()
+        rrow = QHBoxLayout()
+        self.range_btns = {}
+        for days, txt in ((30, "30 días"), (90, "90 días"), (0, "Todo")):
+            b = button(txt, "", lambda _=False, d=days: self.set_range(d))
+            self.range_btns[days] = b
+            rrow.addWidget(b)
+        rrow.addStretch()
+        self.trend_lbl = label("", align=Qt.AlignmentFlag.AlignRight)
+        self.trend_lbl.setTextFormat(Qt.TextFormat.RichText)
+        rrow.addWidget(self.trend_lbl)
+        peso.lay.addLayout(rrow)
+        self.range_days = 30
+        self.wchart = LineChart(" kg", 1, 300, "Registrá tu peso al menos 2 días para ver la curva.")
         peso.lay.addWidget(self.wchart)
 
         comp = Panel("COMPOSICIÓN ESTIMADA", "activity")
         self.cgrid = QGridLayout()
         self.cgrid.setSpacing(8)
         comp.lay.addLayout(self.cgrid)
+        mrow = QHBoxLayout()
+        mcol1, mcol2 = QVBoxLayout(), QVBoxLayout()
+        self.waist_chart = LineChart(" cm", 1, 210, "Con 2 controles vas a ver la evolución.")
+        self.bf_chart = LineChart("%", 1, 210, "Con 2 controles vas a ver la evolución.")
+        mcol1.addWidget(label("CINTURA (cm)", "lbl"))
+        mcol1.addWidget(self.waist_chart)
+        mcol2.addWidget(label("% DE GRASA ESTIMADO", "lbl"))
+        mcol2.addWidget(self.bf_chart)
+        mrow.addLayout(mcol1, 1)
+        mrow.addSpacing(16)
+        mrow.addLayout(mcol2, 1)
+        comp.lay.addLayout(mrow)
         self.findings = label("", wrap=True)
         self.findings.setTextFormat(Qt.TextFormat.RichText)
         comp.lay.addWidget(self.findings)
@@ -218,22 +355,29 @@ class CuerpoPage(QWidget):
             "muted", wrap=True))
 
         fotos = Panel("FOTOS", "images")
-        frow = QHBoxLayout()
+        frow = QGridLayout()
+        frow.setHorizontalSpacing(10)
+        frow.setVerticalSpacing(8)
         self.view_sel = QComboBox()
         for k, n, *_ in VIEWS:
             self.view_sel.addItem(n.capitalize(), k)
         self.cur_sel = QComboBox()
         self.prev_sel = QComboBox()
         self.mode_sel = QComboBox()
-        self.mode_sel.addItems(["Superponer", "Lado a lado"])
-        for w, t in ((self.view_sel, "Vista"), (self.cur_sel, "Fecha"), (self.prev_sel, "Comparar con"), (self.mode_sel, "")):
-            if t:
-                frow.addWidget(label(t, "lbl"))
-            frow.addWidget(w, 1)
+        self.mode_sel.addItems(PhotoCompare.MODES)
+        for i, (w, t) in enumerate(((self.view_sel, "Vista"), (self.mode_sel, "Modo"), (self.cur_sel, "Fecha"),
+                                    (self.prev_sel, "Comparar con"))):
+            w.setMinimumContentsLength(10)
+            w.setSizeAdjustPolicy(QComboBox.SizeAdjustPolicy.AdjustToMinimumContentsLengthWithIcon)
+            frow.addWidget(label(t, "lbl"), i // 2, (i % 2) * 2)
+            frow.addWidget(w, i // 2, (i % 2) * 2 + 1)
             w.currentIndexChanged.connect(self.update_compare)
+        frow.setColumnStretch(1, 1)
+        frow.setColumnStretch(3, 1)
         fotos.lay.addLayout(frow)
         orow = QHBoxLayout()
-        orow.addWidget(label("Opacidad de la foto anterior", "lbl"))
+        self.op_lbl = label("Opacidad de la foto anterior", "lbl")
+        orow.addWidget(self.op_lbl)
         self.op = QSlider(Qt.Orientation.Horizontal)
         self.op.setRange(0, 100)
         self.op.setValue(45)
@@ -241,6 +385,8 @@ class CuerpoPage(QWidget):
         orow.addWidget(self.op, 1)
         fotos.lay.addLayout(orow)
         self.compare = PhotoCompare()
+        self.compare.changed_by_drag = lambda v: (self.op.blockSignals(True), self.op.setValue(int(v * 100)),
+                                                  self.op.blockSignals(False))
         fotos.lay.addWidget(self.compare)
 
         self.stack.addWidget(scroll_page(self.ctrl, peso, comp, fotos))
@@ -309,7 +455,12 @@ class CuerpoPage(QWidget):
                 self.wstats.addWidget(stat_box(v, n), 0, i)
             if st["last"]:
                 self.weight_in.setValue(st["last"])
-        self.wchart.set_data(g.s["weights"])
+        self._refresh_weight_chart()
+        cks_ok = [c for c in g.s["checkins"] if (c.get("metrics") or {}).get("reliable")]
+        wpts = [(date.fromisoformat(c["date"]), c["metrics"]["waist_cm"]) for c in cks_ok]
+        bpts = [(date.fromisoformat(c["date"]), c["metrics"]["body_fat"]) for c in cks_ok if c["metrics"].get("body_fat")]
+        self.waist_chart.set_series([Series("Cintura", SERIES_BLUE, wpts, area=True)], pad_y=1.0)
+        self.bf_chart.set_series([Series("% de grasa", SERIES_BLUE, bpts, area=True)], pad_y=0.5)
 
         clear_layout(self.cgrid)
         cks = g.s["checkins"]
@@ -331,7 +482,7 @@ class CuerpoPage(QWidget):
                 (f"{m.get('neck_cm', 0):.1f} cm", "Cuello", *delta("neck_cm", " cm", False)),
                 (f"{m.get('hip_cm', 0):.1f} cm", "Cadera", *delta("hip_cm", " cm")),
                 (f"{m.get('shoulder_waist', 0):.2f}", "Hombros / cintura", *delta("shoulder_waist", "", False)),
-                (f"{m.get('waist_height', 0):.2f}", "Cintura / altura (ideal < 0,50)", *delta("waist_height", "")),
+                (f"{m.get('waist_height', 0):.2f}", "Cintura / altura", *delta("waist_height", "")),
             ]
             for i, (v, n, d, good) in enumerate(items):
                 self.cgrid.addWidget(stat_box(v, n, d, good), i // 4, i % 4)
@@ -360,17 +511,50 @@ class CuerpoPage(QWidget):
             self.prev_sel.setCurrentIndex(2 if len(dates) > 1 else 0)
         self.update_compare()
 
+    def set_range(self, days: int):
+        self.range_days = days
+        self._refresh_weight_chart()
+
+    def _refresh_weight_chart(self):
+        g = self.win.game
+        for d, b in self.range_btns.items():
+            b.setProperty("kind", "primary" if d == self.range_days else "")
+        pts = sorted((date.fromisoformat(k), v) for k, v in g.s["weights"].items())
+        if self.range_days:
+            start = g._today() - timedelta(days=self.range_days - 1)
+            d0 = start
+        else:
+            d0 = pts[0][0] if pts else None
+        avg = [x for x in moving_average(pts) if d0 is None or x[0] >= d0]
+        daily = [x for x in pts if d0 is None or x[0] >= d0]
+        if len(daily) < 2:
+            self.wchart.set_series([])
+            self.trend_lbl.setText("")
+            return
+        self.wchart.set_series([Series("Promedio 7 días", SERIES_BLUE, avg, area=True),
+                                Series("Peso del día", SERIES_AMBER, daily, kind="dots", glow=False)],
+                               d0=min(d0 or daily[0][0], daily[0][0]) if self.range_days else None,
+                               d1=g._today() if self.range_days else None, pad_y=0.3)
+        t = weekly_trend(avg)
+        if t is None:
+            self.trend_lbl.setText("")
+        else:
+            col = T.MUTED if abs(t) < 0.1 else T.CORE
+            self.trend_lbl.setText(f"<span style='color:{T.MUTED}'>Tendencia del período:</span> "
+                                   f"<b style='color:{col}'>{t:+.2f} kg/semana</b>".replace(".", ","))
+
     def update_compare(self):
         g = self.win.game
         by_date = {c["date"]: c for c in g.s["checkins"]}
         view = self.view_sel.currentData() or "front"
         cur = by_date.get(self.cur_sel.currentText())
         prev = by_date.get(self.prev_sel.currentText())
-        self.compare.mode = "side" if self.mode_sel.currentIndex() == 1 else "overlay"
-        self.compare.opacity = self.op.value() / 100
-        lab = lambda c: f"{c['date']} · {c['weight']:.1f} kg" if c else ""
-        self.compare.set_images(load_qimage(cur and cur["photos"].get(view)), load_qimage(prev and prev["photos"].get(view)),
-                                lab(cur), lab(prev))
+        self.compare.mode = self.mode_sel.currentIndex()
+        self.compare.value = self.op.value() / 100
+        self.op_lbl.setText({0: "Opacidad de la foto anterior", 1: "Corte antes / después (también podés arrastrar)"}
+                            .get(self.compare.mode, "—"))
+        self.op.setEnabled(self.compare.mode in (0, 1))
+        self.compare.set_pair(cur, prev, view)
 
     def save_weight(self):
         try:
@@ -553,12 +737,13 @@ class CuerpoPage(QWidget):
         g = self.win.game
         prof = g.profile
         today = g.today()
-        photos = {}
+        photos, landmarks = {}, {}
         for key, (rgb, mask, lm) in self.shots.items():
             name = f"{today}_{key}.jpg"
             cv2.imwrite(str(photos_dir() / name), cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR), [cv2.IMWRITE_JPEG_QUALITY, 90])
             cv2.imwrite(str(photos_dir() / f"{today}_{key}_mask.png"), (mask > 0.5).astype(np.uint8) * 255)
             photos[key] = name
+            landmarks[key] = body.lm_to_list(lm)
         s = self.shots
         try:
             m = body.analyze(s["front"][1], s["front"][2], s["left"][1], s["left"][2], s["right"][1], s["right"][2],
@@ -567,7 +752,7 @@ class CuerpoPage(QWidget):
             m = {"reliable": False, "warnings": [f"No se pudo analizar: {e}"]}
         prev = g.last_checkin()
         findings = body.compare(prev["metrics"], m, prev["weight"], self.weight_today) if prev and prev["date"] != today else []
-        g.add_checkin(self.weight_today, photos, m, findings)
+        g.add_checkin(self.weight_today, photos, m, findings, landmarks)
         self.stack.setCurrentIndex(0)
         self.refresh()
         bf = m.get("body_fat")

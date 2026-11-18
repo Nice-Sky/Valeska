@@ -32,6 +32,7 @@ def scroll_page(*widgets) -> QScrollArea:
     lay.addStretch()
     sa = QScrollArea()
     sa.setWidgetResizable(True)
+    sa.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
     sa.setWidget(inner)
     return sa
 
@@ -40,6 +41,7 @@ def clear_layout(lay):
     while lay.count():
         it = lay.takeAt(0)
         if it.widget():
+            it.widget().hide()
             it.widget().deleteLater()
         elif it.layout():
             clear_layout(it.layout())

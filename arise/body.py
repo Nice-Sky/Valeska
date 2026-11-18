@@ -245,3 +245,77 @@ def compare(prev: dict, cur: dict, prev_weight: Optional[float], cur_weight: Opt
             out.append(f"Relación hombros/cintura {cur['shoulder_waist']:.2f} ({d:+.2f}): "
                        + ("más forma en V." if d > 0 else "menos forma en V."))
     return out
+
+
+# ------------------------------------------------------------------ alineación de fotos entre semanas
+ALIGN_POINTS = (0, 11, 12, 23, 24, 25, 26, 27, 28)
+
+
+def lm_to_list(lm) -> list:
+    """Landmarks de MediaPipe -> lista serializable [[x, y, visibilidad], ...]."""
+    return [[round(p.x, 5), round(p.y, 5), round(p.visibility or 0, 3)] for p in lm]
+
+
+def _bbox_points(mask: np.ndarray):
+    m = largest_component(mask)
+    top, bottom = vertical_extent(m)
+    if bottom <= top:
+        return None
+    cols = np.where(m[top:bottom + 1].any(axis=0))[0]
+    cx = float(cols.mean()) if len(cols) else m.shape[1] / 2
+    return np.float32([[cx, top], [cx, bottom]])
+
+
+def alignment_matrix(prev_size, cur_size, prev_lm=None, cur_lm=None, prev_mask=None, cur_mask=None):
+    """Matriz 2x3 (escala uniforme + rotación + traslación) que lleva la foto anterior sobre la actual.
+
+    Usa los puntos del cuerpo (nariz, hombros, caderas, rodillas, tobillos) y, si no hay, el contorno de la silueta.
+    """
+    (pw, ph), (cw, chh) = prev_size, cur_size
+    if cv2 is not None and prev_lm and cur_lm:
+        src, dst = [], []
+        for i in ALIGN_POINTS:
+            a, b = prev_lm[i], cur_lm[i]
+            if a[2] > 0.5 and b[2] > 0.5:
+                src.append([a[0] * pw, a[1] * ph])
+                dst.append([b[0] * cw, b[1] * chh])
+        if len(src) >= 4:
+            M, _ = cv2.estimateAffinePartial2D(np.float32(src), np.float32(dst), method=cv2.RANSAC,
+                                               ransacReprojThreshold=max(cw, chh) * 0.03)
+            if M is not None:
+                return M
+    if prev_mask is not None and cur_mask is not None:
+        a, b = _bbox_points(prev_mask), _bbox_points(cur_mask)
+        if a is not None and b is not None:
+            s = (b[1, 1] - b[0, 1]) / max(1.0, a[1, 1] - a[0, 1])
+            tx = b[0, 0] - a[0, 0] * s
+            ty = b[0, 1] - a[0, 1] * s
+            return np.float32([[s, 0, tx], [0, s, ty]])
+    return np.float32([[cw / pw, 0, 0], [0, chh / ph, 0]])
+
+
+def warp(img: np.ndarray, M: np.ndarray, size) -> np.ndarray:
+    w, h = size
+    interp = cv2.INTER_LINEAR if img.ndim == 3 else cv2.INTER_NEAREST
+    return cv2.warpAffine(img, M, (w, h), flags=interp, borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+
+
+def body_crop(*masks, pad: float = 0.08):
+    """Rectángulo (x, y, w, h) que encierra a la persona en todas las máscaras, con margen."""
+    boxes = []
+    for m in masks:
+        if m is None:
+            continue
+        c = largest_component(m)
+        ys, xs = np.where(c > 0)
+        if len(ys):
+            boxes.append((xs.min(), ys.min(), xs.max(), ys.max()))
+    if not boxes:
+        return None
+    h, w = masks[0].shape[:2]
+    x0, y0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
+    x1, y1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
+    py, px = (y1 - y0) * pad, (y1 - y0) * pad
+    x0, y0 = max(0, int(x0 - px)), max(0, int(y0 - py))
+    x1, y1 = min(w - 1, int(x1 + px)), min(h - 1, int(y1 + py))
+    return x0, y0, x1 - x0 + 1, y1 - y0 + 1

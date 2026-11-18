@@ -64,3 +64,23 @@ def test_muscle_not_counted_as_fat():
     msgs = compare(prev, cur, 78.0, 79.2)
     assert "músculo" in msgs[0]
     assert "no grasa" in msgs[0]
+
+
+def test_alignment_recovers_shift_and_scale():
+    from arise.body import alignment_matrix, warp
+    cur = figure(12, 40, 28, 34)
+    # la foto anterior: misma persona más lejos (70% del tamaño) y corrida
+    M0 = np.float32([[0.7, 0, 120], [0, 0.7, 90]])
+    prev = cv2.warpAffine(cur, M0, (W, H), flags=cv2.INTER_NEAREST)
+    lm = landmarks()
+    lm_cur = [[p.x, p.y, 0.99] for p in lm]
+    lm_prev = [[(p.x * W * 0.7 + 120) / W, (p.y * H * 0.7 + 90) / H, 0.99] for p in lm]
+    for i in (25, 26, 27, 28):  # rodillas y tobillos
+        lm_cur[i] = [0.47 if i % 2 else 0.53, 0.72 if i < 27 else 0.94, 0.99]
+        x, y = lm_cur[i][0] * W, lm_cur[i][1] * H
+        lm_prev[i] = [(x * 0.7 + 120) / W, (y * 0.7 + 90) / H, 0.99]
+    for kw in ({"prev_lm": lm_prev, "cur_lm": lm_cur}, {"prev_mask": prev, "cur_mask": cur}):
+        M = alignment_matrix((W, H), (W, H), **kw)
+        back = warp(prev, M, (W, H))
+        iou = ((back > 0.5) & (cur > 0.5)).sum() / ((back > 0.5) | (cur > 0.5)).sum()
+        assert iou > 0.9, (kw.keys(), iou)

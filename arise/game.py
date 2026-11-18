@@ -494,10 +494,11 @@ class Game:
             d += timedelta(days=1)
         return f"{WEEKDAYS[d.weekday()].lower()} {d.day}/{d.month}"
 
-    def add_checkin(self, weight: float, photos: dict, metrics: dict, findings: list) -> dict:
+    def add_checkin(self, weight: float, photos: dict, metrics: dict, findings: list, landmarks: dict | None = None) -> dict:
         today = self.today()
         self.log_weight(weight, today)
-        entry = {"date": today, "weight": round(weight, 2), "photos": photos, "metrics": metrics, "findings": findings}
+        entry = {"date": today, "weight": round(weight, 2), "photos": photos, "metrics": metrics, "findings": findings,
+                 "landmarks": landmarks or {}}
         self.s["checkins"] = [c for c in self.s["checkins"] if c["date"] != today] + [entry]
         bf = metrics.get("body_fat")
         self.log(f"Control corporal: {weight:.1f} kg" + (f", ~{bf:.1f}% grasa" if bf else "") +
