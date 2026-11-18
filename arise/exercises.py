@@ -107,10 +107,16 @@ def m_squat(lm, w, aspect):
 
 
 def m_situp(lm, w, aspect):
-    side = best_side(lm, (11, 23, 25), (12, 24, 26))
-    if not side:
+    """Ángulo torso-muslo (hombro-cadera-rodilla). Acepta visibilidad parcial: acostado se tapan cosas."""
+    l, r = min_vis(lm, (11, 23, 25)), min_vis(lm, (12, 24, 26))
+    if max(l, r) < VIS * 0.65:
         return Measure(False)
-    return Measure(True, angle3(w[side[0]], w[side[1]], w[side[2]]))
+    side = (11, 23, 25) if l >= r else (12, 24, 26)
+    hip_ang = angle3(w[side[0]], w[side[1]], w[side[2]])
+    # parado (hombros muy por encima de la cadera y piernas estiradas) no es un abdominal
+    if lm[side[0]].y < lm[side[1]].y - 0.25 and hip_ang > 150:
+        return Measure(True, hint="Acostate boca arriba con las rodillas flexionadas")
+    return Measure(True, hip_ang)
 
 
 def m_jack(lm, w, aspect):
@@ -161,6 +167,7 @@ class Exercise:
     mid: float = 0
     active: float = 0
     partial_msg: str = ""
+    adaptive: Optional[tuple] = None  # (activo, mitad, reposo): grados respecto de TU posición de reposo
 
 
 EXERCISES: dict[str, Exercise] = {e.id: e for e in [
@@ -171,8 +178,9 @@ EXERCISES: dict[str, Exercise] = {e.id: e for e in [
              "Ponete de costado (o en diagonal) a la cámara, piernas y torso a la vista.",
              m_squat, rest=155, mid=130, active=100, partial_msg="Bajá más, muslos paralelos al piso"),
     Exercise("situp", "Abdominales", "flame", "RES", 2,
-             "Acostate de costado a la cámara con las rodillas flexionadas.",
-             m_situp, rest=105, mid=88, active=72, partial_msg="Subí más el torso"),
+             "Acostate boca arriba con las rodillas flexionadas y la cámara de costado, baja (en el piso o una "
+             "silla). Valen crunches y abdominales completos: subí el torso hacia las rodillas.",
+             m_situp, rest=0, mid=0, active=0, partial_msg="Subí un poco más el torso", adaptive=(25, 12, 6)),
     Exercise("jack", "Jumping Jacks", "zap", "AGI", 1,
              "Ponete de frente a la cámara, cuerpo entero a la vista.",
              m_jack, direction="higher", rest=0.22, mid=0.45, active=0.72,
@@ -208,6 +216,7 @@ class RepCounter:
     issues: list = field(default_factory=list)
     last_rep_at: float = -10.0
     last_t: Optional[float] = None
+    base: Optional[float] = None  # posición de reposo aprendida (ejercicios adaptativos)
 
     def update(self, lm, w, aspect: float, now: float) -> Update:
         ex = self.ex
@@ -232,10 +241,16 @@ class RepCounter:
         self.ema = m.value if self.ema is None else self.ema * 0.45 + m.value * 0.55
         v = self.ema
         lower = ex.direction == "lower"
-        is_active = v < ex.active if lower else v > ex.active
-        is_rest = v > ex.rest if lower else v < ex.rest
-        past_mid = v < ex.mid if lower else v > ex.mid
-        progress = clamp01((ex.rest - v) / (ex.rest - ex.active))
+        rest_t, mid_t, active_t = ex.rest, ex.mid, ex.active
+        if ex.adaptive:
+            # aprende tu posición de reposo: el valor máximo reciente (baja muy lento si no volvés)
+            self.base = v if self.base is None else max(v, self.base - 0.03)
+            d_act, d_mid, d_rest = ex.adaptive
+            active_t, mid_t, rest_t = self.base - d_act, self.base - d_mid, self.base - d_rest
+        is_active = v < active_t if lower else v > active_t
+        is_rest = v > rest_t if lower else v < rest_t
+        past_mid = v < mid_t if lower else v > mid_t
+        progress = clamp01((rest_t - v) / max(1e-6, rest_t - active_t))
 
         event = msg = None
         if self.phase == "rest" and past_mid:

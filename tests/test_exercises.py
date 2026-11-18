@@ -112,3 +112,38 @@ def test_pushups_seen_from_front():
         return lm, w
     c, _ = run("pushup", sum((cycle(170, 70) for _ in range(5)), []), front)
     assert c.reps == 5
+
+
+def situp_pose(theta):
+    """Acostado de costado: ángulo hombro-cadera-rodilla = theta."""
+    lm, w = blank()
+    r = math.radians(theta)
+    for sh, hip, knee in ((11, 23, 25), (12, 24, 26)):
+        w[hip] = P(x=0, y=0, z=0)
+        w[knee] = P(x=0.4, y=-0.25, z=0)
+        base = math.atan2(-0.25, 0.4)
+        a = base + r
+        w[sh] = P(x=0.5 * math.cos(a), y=0.5 * math.sin(a), z=0)
+        lm[hip] = P(x=.5, y=.8, visibility=.99)
+        lm[knee] = P(x=.7, y=.7, visibility=.99)
+        lm[sh] = P(x=.3, y=.78, visibility=.99)
+    return lm, w
+
+
+def test_crunches_count():
+    """Crunch: el torso sube solo ~30° desde acostado."""
+    frames = [125] * 15 + sum((cycle(125, 92) for _ in range(6)), [])
+    c, _ = run("situp", frames, situp_pose)
+    assert c.reps == 6
+
+
+def test_full_situps_count():
+    frames = [125] * 15 + sum((cycle(125, 55) for _ in range(4)), [])
+    c, _ = run("situp", frames, situp_pose)
+    assert c.reps == 4
+
+
+def test_tiny_movements_do_not_count():
+    frames = [125] * 15 + sum((cycle(125, 117) for _ in range(5)), [])
+    c, _ = run("situp", frames, situp_pose)
+    assert c.reps == 0
