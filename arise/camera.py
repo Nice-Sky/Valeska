@@ -39,6 +39,11 @@ class CameraWorker(QThread):
         self.segmentation = segmentation
         self.latest = None  # (rgb, mask, landmarks) del último cuadro, para sacar fotos
         self._stop = False
+        self._pending = False  # hay un cuadro enviado que la interfaz todavía no procesó
+
+    def ack(self):
+        """La interfaz avisa que terminó con el cuadro anterior (evita que se acumulen cuadros y haya retraso)."""
+        self._pending = False
 
     def stop(self):
         self._stop = True
@@ -167,7 +172,14 @@ class CameraWorker(QThread):
                     g = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(4, 4)).apply(g) if w <= 1920 else g
                     gf = g.astype("float32") / 255.0
                     view = cv2.merge([(gf * 45 + 3), (gf * 110 + 8), (gf * 190 + 16)]).clip(0, 255).astype("uint8")
+                if w > 960:  # se achica para mostrar (en este hilo): dibujarla es mucho más barato
+                    view = cv2.resize(view, (960, int(h * 960 / w)), interpolation=cv2.INTER_AREA)
+                    h, w = view.shape[:2]
+                view = view.copy() if not view.flags["C_CONTIGUOUS"] else view
+                if self._pending:  # la interfaz viene atrasada: se descarta este cuadro (se manda el próximo)
+                    continue
                 img = QImage(view.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
+                self._pending = True
                 self.frame.emit(img, lm, world, w / h, now)
         finally:
             landmarker.close()

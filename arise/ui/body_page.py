@@ -629,6 +629,7 @@ class CuerpoPage(QWidget):
         self._prepare_view()
         idx = self.win.game.s["settings"].get("camera", 0)
         self.worker = CameraWorker(idx, self.win.game.s["settings"].get("mirror", True), self, segmentation=True)
+        self.win.atmo.paused = True
         self.worker.frame.connect(self.on_frame)
         self.worker.status.connect(lambda m: (setattr(self.video, "center_small", m), self.video.update()))
         self.worker.failed.connect(lambda m: (self.win.dialogs.show("ERROR", f"No pude iniciar la cámara.<br><small>{escape(m)}</small>",
@@ -665,6 +666,8 @@ class CuerpoPage(QWidget):
         return True, "Quedate quieto…"
 
     def on_frame(self, img, lm, world, aspect, t):
+        if self.worker:
+            QTimer.singleShot(0, self.worker.ack)
         v = self.video
         if self.stack.currentIndex() != 1:
             return
@@ -722,6 +725,7 @@ class CuerpoPage(QWidget):
             QTimer.singleShot(300, self.finish_checkin)
 
     def _stop_camera(self):
+        self.win.atmo.paused = False
         if self.worker:
             self.worker.stop()
             self.worker = None

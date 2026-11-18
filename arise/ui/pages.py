@@ -492,7 +492,7 @@ class EntrenarPage(QWidget):
         self.video.center_small = "Iniciando cámara y modelo de visión…"
         self.video.update()
         self.worker = CameraWorker(idx, self.win.game.s["settings"].get("mirror", True), self,
-                                   holo_view=self.win.game.s["settings"].get("holoCam", True))
+                                   holo_view=False)
         self.worker.ready.connect(self.on_ready)
         self.worker.status.connect(lambda m: (setattr(self.video, "center_small", m), self.video.update()))
         self.worker.failed.connect(self.on_failed)
@@ -501,6 +501,7 @@ class EntrenarPage(QWidget):
         self.worker.start()
 
     def on_ready(self):
+        self.win.atmo.paused = True  # el fondo animado se pausa: el procesador queda para la IA
         self.btn_cam.setEnabled(True)
         self.btn_cam.setText("Apagar cámara")
         self.btn_cam.set_icon_name("camera-off")
@@ -516,6 +517,7 @@ class EntrenarPage(QWidget):
 
     def on_worker_finished(self):
         self.worker = None
+        self.win.atmo.paused = False
         if self.state not in ("rest", "paused"):
             self.state = "idle"
         self.btn_cam.setEnabled(True)
@@ -537,6 +539,8 @@ class EntrenarPage(QWidget):
         self.video.set_feedback("Ponete en posición")
 
     def on_frame(self, img, lm, world, aspect, t):
+        if self.worker:
+            QTimer.singleShot(0, self.worker.ack)
         color = T.GLOW
         if self.ex is None:
             self.video.set_frame(img, lm, color, world)
@@ -981,8 +985,7 @@ class AjustesPage(QWidget):
         self.voice = QCheckBox("Voz que cuenta las repeticiones y te corrige")
         self.sound = QCheckBox("Efectos de sonido")
         self.mirror = QCheckBox("Cámara en modo espejo")
-        self.holocam = QCheckBox("Cámara holográfica (filtro azul + rig del esqueleto) al entrenar")
-        for cb, key in ((self.voice, "voice"), (self.sound, "sound"), (self.mirror, "mirror"), (self.holocam, "holoCam")):
+        for cb, key in ((self.voice, "voice"), (self.sound, "sound"), (self.mirror, "mirror")):
             cb.toggled.connect(lambda on, key=key: self.set_setting(key, on))
             jug.lay.addWidget(cb)
 
@@ -1081,7 +1084,6 @@ class AjustesPage(QWidget):
         self.voice.setChecked(st["voice"])
         self.sound.setChecked(st["sound"])
         self.mirror.setChecked(st.get("mirror", True))
-        self.holocam.setChecked(st.get("holoCam", True))
         n = st["nag"]
         self.nag.setChecked(n["enabled"])
         self.hour.setValue(int(n["startHour"]))

@@ -55,6 +55,36 @@ class VideoView(QWidget):
     def bump(self):
         self.pop = 8
 
+    def _scanlines(self, w: int, h: int):
+        key = ("scan", w, h)
+        if getattr(self, "_scan_key", None) != key:
+            from PySide6.QtGui import QPixmap
+            pm = QPixmap(max(1, w), max(1, h))
+            pm.fill(Qt.GlobalColor.transparent)
+            q = QPainter(pm)
+            q.setPen(QPen(QColor(120, 190, 255, 12), 1))
+            for y in range(0, h, 3):
+                q.drawLine(0, y, w, y)
+            q.end()
+            self._scan_key, self._scan_pm = key, pm
+        return self._scan_pm
+
+    def _badge_bg(self, w: int, h: int, tone: str):
+        key = (w, h, tone)
+        cache = self.__dict__.setdefault("_badge_cache", {})
+        if key not in cache:
+            from PySide6.QtGui import QPixmap
+            if len(cache) > 12:
+                cache.clear()
+            pm = QPixmap(max(1, w), max(1, h))
+            pm.fill(Qt.GlobalColor.transparent)
+            q = QPainter(pm)
+            q.setRenderHint(QPainter.RenderHint.Antialiasing)
+            holo.holo_frame(q, QRectF(1, 1, w - 2, h - 2), tone, 7, cut=5, strong=True, brackets=False)
+            q.end()
+            cache[key] = pm
+        return cache[key]
+
     def paintEvent(self, e):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -67,12 +97,7 @@ class VideoView(QWidget):
             s = min(W / iw, H / ih)
             area = QRectF((W - iw * s) / 2, (H - ih * s) / 2, iw * s, ih * s)
             p.drawImage(area, self.image)
-            # líneas de escaneo sobre la imagen
-            p.setPen(QPen(QColor(120, 190, 255, 14), 1))
-            y = area.top()
-            while y < area.bottom():
-                p.drawLine(QPointF(area.left(), y), QPointF(area.right(), y))
-                y += 3
+            p.drawPixmap(area.topLeft(), self._scanlines(int(area.width()), int(area.height())))
             if self.ghost is not None and not self.ghost.isNull():
                 p.setOpacity(self.ghost_opacity)
                 p.drawImage(area, self.ghost)
@@ -114,8 +139,8 @@ class VideoView(QWidget):
             tw = min(W - 40, fm.horizontalAdvance(self.feedback) + 36)
             r = QRectF((W - tw) / 2, H - fm.height() - 28, tw, fm.height() + 14)
             col = TONES.get(self.tone, T.GLOW)
-            holo.holo_frame(p, r.adjusted(-6, -4, 6, 4), {T.GREEN: "", T.GOLD: "gold", T.RED: "red"}.get(col, ""),
-                            7, cut=5, strong=True, brackets=False)
+            p.drawPixmap(r.adjusted(-6, -4, 6, 4).topLeft(), self._badge_bg(int(r.width() + 12), int(r.height() + 8),
+                         {T.GREEN: "", T.GOLD: "gold", T.RED: "red"}.get(col, "")))
             p.setPen(QColor(col if self.tone else T.CORE))
             p.drawText(r, Qt.AlignmentFlag.AlignCenter, fm.elidedText(self.feedback, Qt.TextElideMode.ElideRight, int(tw - 20)))
 
@@ -182,25 +207,26 @@ class VideoView(QWidget):
             pelvis = (pt(23) + pt(24)) / 2
             spine = (neck, pelvis)
 
-        # 1) halo exterior (resplandor)
-        p.setPen(Qt.PenStyle.NoPen)
-        for grow, alpha in ((3.2, 26), (2.2, 40), (1.5, 60)):
-            p.setBrush(a_(col, alpha))
-            for a, b, k in bones:
-                p.drawPath(capsule(pt(a), pt(b), width_for(a, k) * grow, width_for(b, k) * grow))
-            if spine:
-                p.drawPath(capsule(spine[0], spine[1], base_w * 1.1 * grow, base_w * 1.1 * grow))
-        # 2) cuerpo del hueso: vidrio translúcido del color de estado
-        from PySide6.QtGui import QLinearGradient
-        for a, b, k in bones:
-            pa, pb = pt(a), pt(b)
-            g = QLinearGradient(pa, pb)
-            g.setColorAt(0, a_(col, 150))
-            g.setColorAt(0.5, a_(col, 95))
-            g.setColorAt(1, a_(col, 150))
-            p.setBrush(g)
-            p.setPen(QPen(a_(core, 200), 1.1))
-            p.drawPath(capsule(pa, pb, width_for(a, k), width_for(b, k)))
+        # 1) halo exterior y 2) cuerpo del hueso: trazos con punta redonda (barato y se ve igual)
+        segs = [(pt(a), pt(b), (width_for(a, k) + width_for(b, k)) / 2) for a, b, k in bones]
+        if spine:
+            segs.append((spine[0], spine[1], base_w * 1.1))
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, False)  # el halo es difuso: sin suavizado es mucho más rápido
+        for pa, pb, wd in segs:
+            pen = QPen(a_(col, 55), wd * 2.2)
+            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            p.setPen(pen)
+            p.drawLine(pa, pb)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+        for pa, pb, wd in segs:
+            pen = QPen(a_(col, 170), wd)
+            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            p.setPen(pen)
+            p.drawLine(pa, pb)
+            pen = QPen(a_(core, 210), max(1.2, wd * 0.18))
+            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            p.setPen(pen)
+            p.drawLine(pa, pb)
         # 3) columna con vértebras
         if spine:
             n0, p0 = spine
@@ -230,20 +256,17 @@ class VideoView(QWidget):
                 c2 = pa + QPointF(dx * 0.66 - nx * wv * side * 0.6, dy * 0.66 - ny * wv * side * 0.6)
                 path.cubicTo(c1, c2, pb)
                 p.setBrush(Qt.BrushStyle.NoBrush)
-                p.setPen(QPen(a_(core, 120), 1.0))
+                p.setPen(QPen(a_(core, 110), 1.0))
                 p.drawPath(path)
                 # pulso que recorre la vena
                 u = (t * 0.9 + ph + (a or 0) * 0.13) % 1.0
                 q = path.pointAtPercent(u)
-                rg = max(3.0, base_w * 0.55)
-                from PySide6.QtGui import QRadialGradient
-                gr = QRadialGradient(q, rg * 2.2)
-                gr.setColorAt(0, QColor(255, 255, 255, 230))
-                gr.setColorAt(0.4, a_(col, 150))
-                gr.setColorAt(1, a_(col, 0))
+                rg = max(2.5, base_w * 0.45)
                 p.setPen(Qt.PenStyle.NoPen)
-                p.setBrush(gr)
-                p.drawEllipse(q, rg * 2.2, rg * 2.2)
+                p.setBrush(a_(col, 110))
+                p.drawEllipse(q, rg * 1.8, rg * 1.8)
+                p.setBrush(QColor(255, 255, 255, 235))
+                p.drawEllipse(q, rg * 0.7, rg * 0.7)
         # 5) articulaciones: anillos dobles con marcas tipo mira
         for i in (11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28):
             if not vis(i):
@@ -260,7 +283,7 @@ class VideoView(QWidget):
             rr = r * 1.7
             rot = t * 40 + i * 20
             p.setBrush(Qt.BrushStyle.NoBrush)
-            for ang in (0, 90, 180, 270):
+            for ang in (0, 180):
                 p.drawArc(QRectF(c.x() - rr, c.y() - rr, rr * 2, rr * 2), int((rot + ang) * 16), int(45 * 16))
         # 6) cabeza
         if vis(0) and vis(7) and vis(8):

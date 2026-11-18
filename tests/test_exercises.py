@@ -74,7 +74,11 @@ def test_pushups():
 def test_pushups_need_horizontal_body():
     def standing(theta):
         lm, w = pushup(theta)
-        lm[27] = P(x=.32, y=.95, visibility=.99)  # parado: tobillo debajo del hombro
+        lm[11] = P(x=.45, y=.3, visibility=.99)   # parado: hombros arriba,
+        lm[12] = P(x=.55, y=.3, visibility=.99)
+        lm[23] = P(x=.47, y=.6, visibility=.99)   # caderas bien abajo
+        lm[24] = P(x=.53, y=.6, visibility=.99)
+        lm[27] = P(x=.47, y=.95, visibility=.99)
         return lm, w
     c, _ = run("pushup", sum((cycle(170, 70) for _ in range(3)), []), standing)
     assert c.reps == 0
@@ -91,3 +95,20 @@ def test_hidden_body():
         p.visibility = 0.1
     r = RepCounter(EXERCISES["squat"]).update(lm, w, 1.7, 0)
     assert r.status == "hidden"
+
+
+def test_pushups_seen_from_front():
+    """Cámara de frente (en el piso): hombros y caderas casi a la misma altura en la imagen."""
+    def front(theta):
+        lm, w = pushup(theta)
+        v = lambda x, y: P(x=x, y=y, z=0, visibility=.99)
+        lm[11], lm[12] = v(.40, .45), v(.60, .45)
+        lm[13], lm[14] = v(.35, .55), v(.65, .55)
+        lm[15], lm[16] = v(.36, .68), v(.64, .68)
+        lm[23], lm[24] = v(.45, .40), v(.55, .40)
+        lm[27].visibility = lm[28].visibility = 0.1
+        w[12], w[14] = w[11], w[13]
+        w[16] = w[15]
+        return lm, w
+    c, _ = run("pushup", sum((cycle(170, 70) for _ in range(5)), []), front)
+    assert c.reps == 5

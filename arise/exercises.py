@@ -61,20 +61,35 @@ class Measure:
 
 # ---------------------------------------------------------------- mediciones
 def m_pushup(lm, w, aspect):
-    arm = best_side(lm, (11, 13, 15), (12, 14, 16))
-    if not arm:
+    """Flexiones vistas de costado, de frente o en diagonal.
+
+    En vez de exigir que el cuerpo se vea horizontal (solo funciona de costado), se decide por la postura:
+    torso no vertical (no estás parado) + manos apoyadas más abajo que los hombros.
+    """
+    arms = [a for a in ((11, 13, 15), (12, 14, 16)) if min_vis(lm, a) > VIS * 0.8]
+    if not arms:
         return Measure(False)
-    s = arm[0]
-    hip = 23 if s == 11 else 24
-    ankle, knee = (27, 25) if s == 11 else (28, 26)
-    foot = ankle if min_vis(lm, (ankle,)) > VIS else knee
-    if min_vis(lm, (hip,)) < VIS:
-        return Measure(False)
-    if not is_horizontal(lm, s, foot, aspect):
-        return Measure(True, hint="Ponete en posición de flexión")
-    elbow = angle3(w[arm[0]], w[arm[1]], w[arm[2]])
-    line = angle3(w[s], w[hip], w[foot])
-    return Measure(True, elbow, "Mantené la cadera alineada" if line < 145 else None)
+    shoulders = [i for i in (11, 12) if _v(lm[i]) > 0.4]
+    hips = [i for i in (23, 24) if _v(lm[i]) > 0.4]
+    sh_y = sum(lm[i].y for i in shoulders) / len(shoulders)
+    if hips:
+        hip_y = sum(lm[i].y for i in hips) / len(hips)
+        torso_v = hip_y - sh_y                       # cuánto más abajo están las caderas que los hombros
+        sh_w = abs(lm[11].x - lm[12].x) * aspect    # ancho de hombros en las mismas unidades
+        if torso_v > 0.16 and torso_v > 1.15 * sh_w:
+            return Measure(True, hint="Ponete en posición de flexión")
+    # manos apoyadas: las muñecas tienen que estar más abajo que los hombros
+    if not any(lm[a[2]].y > lm[a[0]].y + 0.02 for a in arms):
+        return Measure(True, hint="Apoyá las manos en el piso, debajo de los hombros")
+    elbow = sum(angle3(w[a], w[b], w[c]) for a, b, c in arms) / len(arms)
+    issue = None
+    # cadera caída: solo se puede juzgar si se ve el cuerpo de costado
+    s = arms[0][0]
+    hip, ankle = (23, 27) if s == 11 else (24, 28)
+    if min_vis(lm, (hip, ankle)) > VIS and is_horizontal(lm, s, ankle, aspect):
+        if angle3(w[s], w[hip], w[ankle]) < 145:
+            issue = "Mantené la cadera alineada"
+    return Measure(True, elbow, issue)
 
 
 def m_squat(lm, w, aspect):
@@ -150,8 +165,8 @@ class Exercise:
 
 EXERCISES: dict[str, Exercise] = {e.id: e for e in [
     Exercise("pushup", "Flexiones", "biceps-flexed", "FUE", 3,
-             "Cámara de costado, a la altura del piso. Que se vea todo tu cuerpo.",
-             m_pushup, rest=150, mid=125, active=95, partial_msg="Bajá más el pecho"),
+             "Cámara a la altura del piso, de costado o en diagonal. Que se vean tus brazos y el torso.",
+             m_pushup, rest=145, mid=122, active=102, partial_msg="Bajá más el pecho"),
     Exercise("squat", "Sentadillas", "person-standing", "FUE", 2,
              "Ponete de costado (o en diagonal) a la cámara, piernas y torso a la vista.",
              m_squat, rest=155, mid=130, active=100, partial_msg="Bajá más, muslos paralelos al piso"),

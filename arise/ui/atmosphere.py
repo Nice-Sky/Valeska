@@ -180,6 +180,7 @@ class Atmosphere(QWidget):
         self._base = self._glow = None
         self._plate = QRectF()
         self._buf = None
+        self.paused = False  # durante la cámara el fondo se congela para no competir con la IA
         clock = fx.Clock.get()
         clock.tick.connect(self._tick)
         self._last = clock.now()
@@ -190,7 +191,7 @@ class Atmosphere(QWidget):
         self.update()
 
     def _tick(self):
-        if not self.isVisible() or self.quality == "bajo":
+        if not self.isVisible() or self.quality == "bajo" or self.paused:
             return
         now = fx.Clock.get().now()
         dt = min(0.1, now - self._last)
@@ -244,6 +245,10 @@ class Atmosphere(QWidget):
         self._ensure()
         p = QPainter(self)
         t = fx.Clock.get().now() if self.quality != "bajo" else 0.0
+        if self.paused:
+            t = getattr(self, "_frozen_t", t)
+        else:
+            self._frozen_t = t
         p.fillRect(self.rect(), QColor(0, 0, 0, 1))  # alfa mínimo invisible: la ventana recibe clics en todo su área
         p.drawPixmap(0, 0, self._base)
         pl = self._plate
