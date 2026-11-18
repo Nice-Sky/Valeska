@@ -35,6 +35,7 @@ class VideoView(QWidget):
         self.ghost: QImage | None = None   # foto anterior superpuesta (control semanal)
         self.ghost_opacity = 0.35
         self.flash = 0
+        self.rest = None   # (segundos restantes, total, título, detalle) durante el descanso
 
     def set_frame(self, img: QImage, lm, color: str, world=None):
         self.image, self.landmarks, self.skeleton = img, lm, color
@@ -112,6 +113,10 @@ class VideoView(QWidget):
         p.setBrush(Qt.BrushStyle.NoBrush)
         p.drawRect(self.rect().adjusted(0, 0, -1, -1))
 
+        if self.rest is not None:
+            self._rest_overlay(p, area if self.image is not None else QRectF(0, 0, W, H))
+            return
+
         # contador
         size = max(36, int(H * 0.16)) + (6 if self.pop else 0)
         f = QFont(T.FONT, size)
@@ -153,6 +158,47 @@ class VideoView(QWidget):
             p.setFont(QFont(T.FONT, max(12, int(H * 0.035))))
             p.setPen(QColor("white"))
             p.drawText(QRectF(20, 0, W - 40, H), Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self.center_small)
+
+    def _rest_overlay(self, p: QPainter, area: QRectF):
+        """Descanso: video atenuado, anillo de tiempo, segundos grandes y qué viene después."""
+        left, total, title, sub = self.rest
+        p.fillRect(area, QColor(2, 6, 15, 185))
+        W, H = self.width(), self.height()
+        c = QPointF(W / 2, H / 2 - 10)
+        R = min(W, H) * 0.24
+        k = max(0.0, min(1.0, left / max(1e-6, total)))
+        ring = QRectF(c.x() - R, c.y() - R, 2 * R, 2 * R)
+        p.setBrush(Qt.BrushStyle.NoBrush)
+        p.setPen(QPen(QColor(40, 80, 150, 120), 6))
+        p.drawEllipse(ring)
+        col = QColor(T.GOLD if left <= 3.5 else T.GLOW)
+        for wd, a in ((16, 40), (10, 70), (5, 255)):
+            cc = QColor(col)
+            cc.setAlpha(a)
+            pen = QPen(cc, wd)
+            pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+            p.setPen(pen)
+            p.drawArc(ring, 90 * 16, int(-360 * 16 * k))
+        f = QFont(T.FONT, max(30, int(R * 0.62)))
+        f.setBold(True)
+        secs = int(left) + 1 if left > 0 else 0
+        txt = f"{secs // 60}:{secs % 60:02d}" if secs >= 60 else str(secs)
+        fx.draw_glow_text(p, QRectF(c.x() - R, c.y() - R * 0.6, 2 * R, R * 1.2), txt, f, col.name(), T.CORE, glow=1.0)
+        cap = QFont(T.FONT, 10)
+        cap.setWeight(QFont.Weight.DemiBold)
+        cap.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 3)
+        p.setFont(cap)
+        p.setPen(QColor(T.MUTED))
+        p.drawText(QRectF(0, c.y() - R - 44, W, 24), Qt.AlignmentFlag.AlignCenter, title)
+        sf = QFont(T.FONT, max(11, int(H * 0.026)))
+        sf.setWeight(QFont.Weight.DemiBold)
+        p.setFont(sf)
+        p.setPen(QColor(T.CORE))
+        p.drawText(QRectF(20, c.y() + R + 18, W - 40, 30), Qt.AlignmentFlag.AlignCenter, sub)
+        if self.feedback:
+            p.setFont(QFont(T.FONT, max(11, int(H * 0.022))))
+            p.setPen(QColor(TONES.get(self.tone, T.GLOW)))
+            p.drawText(QRectF(20, c.y() + R + 50, W - 40, 26), Qt.AlignmentFlag.AlignCenter, self.feedback)
 
     # ------------------------------------------------------------------ rig holográfico
     BONES = [  # (a, b, grosor relativo)

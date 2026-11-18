@@ -132,6 +132,6 @@ class Sounds:
     def play(self, name: str):
         if self.enabled and name in self._effects:
             fx = self._effects[name]
-            if fx.isPlaying() and name in ("rep", "tick", "hover", "click"):
+            if fx.isPlaying() and name in ("rep", "tick", "hover", "click", "beep", "second"):
                 fx.stop()
             fx.play()

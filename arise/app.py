@@ -15,7 +15,8 @@ from .game import PLAN_ORDER, PLANS, Game, rank_of
 from .guardian import Guardian
 from .ui import theme as T
 from .ui.body_page import CuerpoPage
-from .ui.pages import AjustesPage, EntrenarPage, EstadoPage, MisionPage, RegistroPage
+from .ui.pages import AjustesPage, EstadoPage, MisionPage, RegistroPage
+from .ui.train_page import EntrenarPage
 from .ui import icons
 from .ui.atmosphere import Atmosphere
 from .ui.notify import Notifier

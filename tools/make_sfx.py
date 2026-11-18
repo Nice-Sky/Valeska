@@ -161,6 +161,38 @@ def build():
     save("click", reverb(mix((highpass(noise(0.015), 2500) * env(int(0.015 * SR), 0.0005, 0.006, 5), 0),
                              (bell(1760, 0.15, decay=0.2) * 0.3, 0.004)), 0.4, 0.15), 0.55)
 
+    # Temporizadores: pitido corto (cuenta regresiva), pitido final, segundero suave y fin de serie
+    x = t(0.12)
+    pip = np.sin(2 * np.pi * 1760 * x) * env(len(x), 0.002, 0.08, 3) + 0.3 * np.sin(2 * np.pi * 3520 * x) * env(len(x), 0.001, 0.04, 4)
+    save("beep", reverb(pip * 0.8, 0.35, 0.12), 0.75)
+    x = t(0.5)
+    pip2 = (np.sin(2 * np.pi * 2093 * x) + 0.4 * np.sin(2 * np.pi * 4186 * x)) * env(len(x), 0.002, 0.4, 2)
+    save("beep_go", reverb(pip2 * 0.8, 0.6, 0.18), 0.8)
+    x = t(0.05)
+    save("second", highpass(noise(0.05), 3000) * env(len(x), 0.0005, 0.015, 6) * 0.4 + bell(2637, 0.05, decay=0.05) * 0.2, 0.32)
+    save("set", reverb(mix((bell(1175, 0.9, decay=0.8) * 0.5, 0), (bell(1568, 0.9, decay=0.8) * 0.45, 0.11),
+                           (bell(2349, 0.9, decay=0.8) * 0.35, 0.22)), 1.2, 0.3))
+    # Agua: gota (seno con caída de frecuencia) y sueño: campana grave suave
+    x = t(0.25)
+    drop = np.sin(2 * np.pi * np.cumsum(np.geomspace(1800, 600, len(x))) / SR) * env(len(x), 0.002, 0.12, 3)
+    save("water", reverb(mix((drop * 0.7, 0), (bell(1400, 0.3, decay=0.3) * 0.2, 0.08)), 0.8, 0.3), 0.7)
+    save("sleep", reverb(mix((bell(392, 2.0, decay=2.0) * 0.5, 0), (bell(587, 2.0, decay=2.0) * 0.3, 0.25)), 2.2, 0.45), 0.6)
+
+
+def build_new(names):
+    """Genera solo algunos sonidos (sin tocar los demás)."""
+    global save
+    real = save
+    save = lambda name, *a, **k: real(name, *a, **k) if name in names else None
+    try:
+        build()
+    finally:
+        save = real
+
 
 if __name__ == "__main__":
-    build()
+    import sys
+    if len(sys.argv) > 1:
+        build_new(set(sys.argv[1:]))
+    else:
+        build()

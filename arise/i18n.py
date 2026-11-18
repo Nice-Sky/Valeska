@@ -41,7 +41,7 @@ def lang() -> str:
     return _lang
 
 
-def t(s: str, **kw) -> str:
+def t(s: str, /, **kw) -> str:
     out = _table.get(s, s) if s else s
     if kw:
         try:
@@ -51,6 +51,6 @@ def t(s: str, **kw) -> str:
     return out
 
 
-def plural(n, one: str, many: str, **kw) -> str:
+def plural(n, one: str, many: str, /, **kw) -> str:
     """t() con singular/plural: plural(3, "{n} serie", "{n} series")."""
     return t(one if n == 1 else many, n=n, **kw)

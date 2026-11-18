@@ -272,6 +272,35 @@ def _body_line(lm, w, side):
     return line, (y_line - w[h].y)  # >0: cadera más alta que la línea
 
 
+def knees_on_floor(lm, view: str) -> Optional[bool]:
+    """¿Rodillas apoyadas? Altura de la rodilla sobre la línea "piso" (manos/codos → tobillos), relativa a la cadera.
+
+    Las distancias verticales en la imagen no dependen del ángulo de la cámara (de costado o en diagonal).
+    De frente no se puede saber bien (None).
+    """
+    if view == "front":
+        return None
+    best = None
+    for s_, e, wr, h, k, a in ((11, 13, 15, 23, 25, 27), (12, 14, 16, 24, 26, 28)):
+        v = min_vis(lm, (h, k, a)) + max(_v(lm[wr]), _v(lm[e]))
+        if min_vis(lm, (h, k, a)) > VIS * 0.6 and (best is None or v > best[0]):
+            hand = lm[wr] if lm[wr].y >= lm[e].y else lm[e]  # el punto apoyado (el más bajo)
+            best = (v, hand, lm[h], lm[k], lm[a])
+    if best is None:
+        return None
+    _, hand, hip, knee, ank = best
+
+    def height(p):
+        dx = ank.x - hand.x
+        t = 0.5 if abs(dx) < 1e-6 else (p.x - hand.x) / dx
+        return hand.y + (ank.y - hand.y) * t - p.y   # >0: por encima de la línea del piso
+
+    hh = height(hip)
+    if hh < 0.02:
+        return None
+    return height(knee) / hh < 0.22
+
+
 # ---------------------------------------------------------------- mediciones (lm, w, aspect, ctx)
 def m_pushup(lm, w, aspect, ctx):
     arms = visible_sets(lm, ARMS, 0.8)
@@ -297,7 +326,8 @@ def m_pushup(lm, w, aspect, ctx):
     knees = visible_sets(lm, LEGS, 0.7)
     kang = (lambda h, k, a: profile_angle(lm, h, k, a, aspect)) if view != "front" else \
         (lambda h, k, a: angle3(w[h], w[k], w[a]))
-    if knees and mean(kang(h, k, a) for h, k, a in knees) < 140:
+    kd = knees_on_floor(lm, view)
+    if knees and (kd or mean(kang(h, k, a) for h, k, a in knees) < 140):
         m.check("knees", "Rodillas", "bad", "Estirá las piernas: rodillas sin apoyar")
     elif knees:
         m.check("knees", "Rodillas", "ok")
@@ -337,7 +367,8 @@ def m_squat(lm, w, aspect, ctx):
     # rodillas hacia adentro: solo se ve de frente o en diagonal
     if len(legs) == 2 and view in ("front", "diag"):
         kd, ad = abs(lm[25].x - lm[26].x), abs(lm[27].x - lm[28].x)
-        if deep and ad > 0.02 and kd < 0.7 * ad:
+        lim = 0.7 if view == "front" else 0.6
+        if deep and ad > 0.02 and kd < lim * ad:
             m.check("knees", "Rodillas", "bad", "Rodillas hacia afuera, no las juntes")
         else:
             m.check("knees", "Rodillas", "ok")
@@ -453,7 +484,7 @@ def m_plank(lm, w, aspect, ctx):
     lim = 162
     was_bad = ctx.get("bad", False)
     bad_line = line < (lim + 5 if was_bad else lim)
-    if knee is not None and knee < 145:
+    if knee is not None and (knee < 145 or knees_on_floor(lm, view)):
         m.check("knees", "Rodillas", "bad", "Levantá las rodillas del piso")
     elif knee is not None:
         m.check("knees", "Rodillas", "ok")
@@ -873,6 +904,9 @@ class RepCounter:
     unverified: set = field(default_factory=set)
     warns: list = field(default_factory=list)
     reached: dict = field(default_factory=dict)
+    bad_frames: dict = field(default_factory=dict)  # un error tiene que verse en varios cuadros para contar
+    unknown_frames: dict = field(default_factory=dict)
+    rep_frames: int = 0
     view: str = ""
     _views: list = field(default_factory=list)
     bad_since: Optional[float] = None
@@ -938,6 +972,7 @@ class RepCounter:
                 status = "warn"
             return Update(status, msg, "second" if gained else None, 1.0, gained, checks=m.checks, view=view)
 
+        self.last_t = now
         if m.value is None:
             return Update("hint", m.hint, checks=m.checks, view=view)
 
@@ -968,11 +1003,14 @@ class RepCounter:
         if self.phase != "rest":
             for c in m.checks:
                 if c.state == "bad" and c.msg not in self.issues:
-                    self.issues.append(c.msg)
+                    self.bad_frames[c.msg] = self.bad_frames.get(c.msg, 0) + 1
+                    if self.bad_frames[c.msg] >= 3:
+                        self.issues.append(c.msg)
                 elif c.state == "unknown":
-                    self.unverified.add(c.msg)
+                    self.unknown_frames[c.msg] = self.unknown_frames.get(c.msg, 0) + 1
                 elif c.state == "warn" and c.msg not in self.warns:
                     self.warns.append(c.msg)
+            self.rep_frames += 1
             for key, ok, msg in m.reach:
                 prev = self.reached.get(key, (False, msg))[0]
                 self.reached[key] = (prev or ok, msg)
@@ -1013,7 +1051,7 @@ class RepCounter:
         for ok, msg in self.reached.values():
             if not ok and msg not in self.issues:
                 self.issues.append(msg)
-        verified = not self.unverified
+        verified = not self.unverified and all(n < 0.5 * max(1, self.rep_frames) for n in self.unknown_frames.values())
         self.last_rep_at = now
         self.last_activity = now
         if not self.issues:
@@ -1034,6 +1072,9 @@ class RepCounter:
         self.unverified = set()
         self.warns = []
         self.reached = {}
+        self.bad_frames = {}
+        self.unknown_frames = {}
+        self.rep_frames = 0
         self.rep_start = None
 
     # ---- resumen para la progresión

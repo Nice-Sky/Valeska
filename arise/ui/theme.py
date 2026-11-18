@@ -54,6 +54,10 @@ QPushButton[kind="danger"] {{ border-color: {RED}; background: rgba(255,59,92,0.
 QPushButton[kind="danger"]:hover {{ background: rgba(255,59,92,0.32); }}
 QPushButton[kind="ghost"] {{ border: none; background: transparent; color: {MUTED}; font-size: 13px; }}
 QPushButton[kind="ghost"]:hover {{ color: white; }}
+QPushButton[kind="seg"] {{ background: rgba(4,14,34,0.6); border: 1px solid rgba(63,164,255,0.35); padding: 10px 8px;
+  font-size: 13px; letter-spacing: 1px; color: {MUTED}; font-weight: 600; }}
+QPushButton[kind="seg"]:hover {{ border-color: {GLOW}; color: white; }}
+QPushButton[kind="seg"]:checked {{ background: rgba(47,125,255,0.28); border-color: {GLOW}; color: white; }}
 QPushButton#exCard {{ padding: 16px 8px; font-size: 15px; }}
 
 QProgressBar {{ background: rgba(0,0,0,0.45); border: 1px solid {LINE}; height: 20px; text-align: center; color: white; font-weight: 600; }}
