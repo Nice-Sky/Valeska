@@ -26,6 +26,10 @@ jobs:
       - name: Tests
         run: python -m pytest -q tests
 
+      - name: Fijar versión
+        shell: pwsh
+        run: Set-Content -Path arise/_version.py -Value 'VERSION = "1.1.${{ github.run_number }}"'
+
       - name: Compilar con PyInstaller
         run: pyinstaller arise.spec --noconfirm
 

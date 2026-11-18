@@ -102,7 +102,8 @@ def new_state() -> dict:
         "player": {"name": "", "level": 1, "xp": 0.0, "createdAt": time.time()},
         "settings": {
             "plan": "principiante", "autoProgress": True, "restDays": [6], "checkinDay": 0,
-            "voice": True, "sound": True, "camera": 0, "mirror": True,
+            "voice": True, "sound": True, "camera": 0, "mirror": True, "volume": 70, "quality": "alto",
+            "autoUpdate": True,
             "nag": {"enabled": True, "startHour": 18, "intervalMin": 20, "snoozesPerDay": 2, "hard": False},
         },
         "progression": 1.0, "progressCount": 0,
@@ -338,7 +339,7 @@ class Game:
             self.modal("PENALIZACIÓN",
                        f"{dias}.<br><br>"
                        f"<span style='color:#ff3b5c'><b>-{fmt(lost)} XP</b></span>  ·  Racha reiniciada (era {prev} días)<br><br>"
-                       f"{penal}", "red", "alarm", "triangle-alert")
+                       f"{penal}", "red", "penalty", "triangle-alert")
         else:
             self.new_quest(today, False)
         self.save()
@@ -380,7 +381,7 @@ class Game:
         self.modal("OBJETIVO CUMPLIDO",
                    f"<span style='font-size:26px;color:#ffd166'><b>+{fmt(total)} XP</b></span><br>"
                    f"Racha: <b>{s['streak']}</b> día{'s' if s['streak'] != 1 else ''} (+{bonus} por racha){prog}",
-                   "gold", "level", "circle-check")
+                   "gold", "quest", "circle-check")
         self.gain_xp(total)
 
     def add_reps(self, ex: str, n: float, manual: bool = False) -> float:
@@ -435,7 +436,7 @@ class Game:
                 self.log(f"Logro: {title}.")
                 self.modal("LOGRO",
                            f"<span style='font-size:22px;color:#ffd166'><b>{escape(title)}</b></span>"
-                           f"<br><small>{escape(desc)}</small>", "gold", "open", "award")
+                           f"<br><small>{escape(desc)}</small>", "gold", "achievement", "award")
 
     # ------------------------------------------------------------ cuerpo: peso y controles semanales
     @property

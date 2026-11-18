@@ -3,21 +3,23 @@ from __future__ import annotations
 
 import sys
 
-from PySide6.QtCore import QSize, Qt, QTimer
+from PySide6.QtCore import QRectF, QSize, Qt, QTimer
 from PySide6.QtGui import QAction, QColor, QFont, QIcon, QPainter, QPixmap
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
-from PySide6.QtWidgets import (QApplication, QButtonGroup, QHBoxLayout, QMainWindow, QMenu, QPushButton,
+from PySide6.QtWidgets import (QApplication, QLabel, QButtonGroup, QHBoxLayout, QMainWindow, QMenu, QPushButton,
                                QStackedWidget, QSystemTrayIcon, QVBoxLayout, QWidget)
 
 from . import storage
+from .exercises import EXERCISES as EX
 from .game import PLAN_ORDER, PLANS, Game, rank_of
 from .guardian import Guardian
 from .ui import theme as T
 from .ui.body_page import CuerpoPage
 from .ui.pages import AjustesPage, EntrenarPage, EstadoPage, MisionPage, RegistroPage
 from .ui import icons
-from .ui.holo import Backdrop
-from .ui.widgets import Dialogs, GlowLabel, Toaster, label
+from .ui.atmosphere import Atmosphere
+from .ui.notify import Notifier
+from .ui.widgets import Dialogs, GlowLabel, Toaster, button, label
 from .voice import Sounds, Voice
 
 PAGES = [("estado", "ESTADO", "user-round"), ("mision", "HOY", "target"), ("entrenar", "ENTRENAR", "dumbbell"),
@@ -42,24 +44,27 @@ def app_icon() -> QIcon:
 
 
 class NavRail(QWidget):
-    """Barra lateral: vidrio oscuro con un riel de neón a la derecha."""
+    """Barra lateral: otra ventana holográfica flotante."""
 
-    def paintEvent(self, e):
-        from PySide6.QtCore import QRectF
-        from PySide6.QtGui import QLinearGradient
+    def __init__(self):
+        super().__init__()
         from .ui import holo
-        p = QPainter(self)
-        p.setRenderHint(QPainter.RenderHint.Antialiasing)
-        r = QRectF(self.rect())
-        g = QLinearGradient(r.topLeft(), r.topRight())
-        g.setColorAt(0, QColor(2, 7, 18, 235))
-        g.setColorAt(1, QColor(5, 16, 40, 215))
-        p.fillRect(r, g)
-        x = r.right() - 2
-        holo.neon_line(p, x, 18, x, r.bottom() - 18, T.GLOW, T.CORE, 1.0, 5, 2.2, 22)
-        for y in (r.height() * 0.22, r.height() * 0.62):
-            p.fillRect(QRectF(x - 3, y, 6, 34), QColor(T.GLOW))
-            p.fillRect(QRectF(x - 1, y + 3, 2, 28), QColor(T.CORE))
+        self._holo = holo
+        self._sf = type("NavSurface", (QWidget, holo.Surface), {
+            "surface_spec": lambda w: holo.SurfaceSpec(QRectF(w.rect()).adjusted(8, 8, -8, -8), "", cut=12,
+                                                       brackets=True, seed=77, glass_alpha=150, density=0.8),
+            "paintEvent": lambda w, e: w.paint_surface(_aa(QPainter(w))),
+        })(self)
+        self._sf.surface_init()
+        self._sf.lower()
+
+    def resizeEvent(self, e):
+        self._sf.setGeometry(self.rect())
+
+
+def _aa(p):
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    return p
 
 
 class MainWindow(QMainWindow):
@@ -73,24 +78,37 @@ class MainWindow(QMainWindow):
         self.tray_hint_shown = False
 
         self.sounds = Sounds()
+        import arise.voice as _voice
+        _voice.SOUNDS_REF = self.sounds
         self.voice = Voice()
         self.dialogs = Dialogs(self, self.sounds)
-        self.toaster = Toaster(self)
+        self.notifier = Notifier(self.sounds)
+        self.toaster = Toaster(self, self.notifier)
         self.game = Game(on_event=self.on_game_event)
         self.apply_settings()
 
-        root = Backdrop()
+        # ventana sin marco y translúcida: solo se ven las ventanas holográficas y el humo
+        self.setWindowFlags(Qt.WindowType.Window | Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        root = Atmosphere()
         root.setObjectName("root")
+        root.setMouseTracking(True)
+        self.atmo = root
         self.setCentralWidget(root)
-        h = QHBoxLayout(root)
+        outer = QVBoxLayout(root)
+        outer.setContentsMargins(34, 40, 34, 36)
+        outer.setSpacing(0)
+        outer.addWidget(self._build_titlebar())
+        h = QHBoxLayout()
         h.setContentsMargins(0, 0, 0, 0)
         h.setSpacing(0)
+        outer.addLayout(h, 1)
 
         nav = NavRail()
         nav.setObjectName("nav")
         nav.setFixedWidth(220)
         nl = QVBoxLayout(nav)
-        nl.setContentsMargins(0, 22, 0, 18)
+        nl.setContentsMargins(12, 26, 12, 24)
         nl.setSpacing(2)
         brand = GlowLabel("ARISE", 26, QFont.Weight.Bold, align=Qt.AlignmentFlag.AlignCenter, spacing=9, glow=1.2)
         nl.addWidget(brand)
@@ -134,7 +152,73 @@ class MainWindow(QMainWindow):
         self.day_timer.timeout.connect(self.game.rollover)
         self.day_timer.start(60_000)
 
+        self.atmo.installEventFilter(self)
         self.show_page("estado")
+
+    # ------------------------------------------------------------ barra superior y bordes
+    def _build_titlebar(self) -> QWidget:
+        bar = QWidget()
+        bar.setFixedHeight(40)
+        hl = QHBoxLayout(bar)
+        hl.setContentsMargins(14, 4, 4, 0)
+        hl.setSpacing(4)
+        t = label("ARISE TRAINER  ·  SISTEMA ACTIVO", "lbl")
+        t.setStyleSheet(f"color:{T.GLOW};font-size:11px;letter-spacing:3px;")
+        hl.addWidget(t)
+        hl.addStretch()
+        for ic, slot, kind in (("minus", self.showMinimized, ""), ("square", self._toggle_max, ""),
+                               ("x", self.close, "danger")):
+            b = button("", kind, slot, icon=ic)
+            b.setFixedSize(46, 36)
+            hl.addWidget(b)
+        bar.mouseDoubleClickEvent = lambda e: self._toggle_max()
+        bar._titlebar = True
+        bar.installEventFilter(self)
+        return bar
+
+    def _toggle_max(self):
+        self.showNormal() if self.isMaximized() else self.showMaximized()
+
+    def _edges(self, pos) -> Qt.Edge:
+        m = 8
+        r = self.rect()
+        e = Qt.Edge(0)
+        if pos.x() <= m:
+            e |= Qt.Edge.LeftEdge
+        if pos.x() >= r.width() - m:
+            e |= Qt.Edge.RightEdge
+        if pos.y() <= m:
+            e |= Qt.Edge.TopEdge
+        if pos.y() >= r.height() - m:
+            e |= Qt.Edge.BottomEdge
+        return e
+
+    def eventFilter(self, obj, ev):
+        from PySide6.QtCore import QEvent
+        if obj is self.atmo or getattr(obj, "_titlebar", False):
+            if ev.type() == QEvent.Type.MouseButtonPress and ev.button() == Qt.MouseButton.LeftButton:
+                pos = obj.mapTo(self, ev.position().toPoint())
+                edges = self._edges(pos)
+                wh = self.windowHandle()
+                if wh is not None:
+                    if edges and not self.isMaximized():
+                        wh.startSystemResize(edges)
+                        return True
+                    if pos.y() < 48:
+                        wh.startSystemMove()
+                        return True
+            elif ev.type() == QEvent.Type.MouseMove and obj is self.atmo:
+                e = self._edges(obj.mapTo(self, ev.position().toPoint()))
+                cursors = {Qt.Edge.LeftEdge: Qt.CursorShape.SizeHorCursor, Qt.Edge.RightEdge: Qt.CursorShape.SizeHorCursor,
+                           Qt.Edge.TopEdge: Qt.CursorShape.SizeVerCursor, Qt.Edge.BottomEdge: Qt.CursorShape.SizeVerCursor}
+                if e in cursors:
+                    obj.setCursor(cursors[e])
+                elif e:
+                    tl_br = (Qt.Edge.TopEdge | Qt.Edge.LeftEdge, Qt.Edge.BottomEdge | Qt.Edge.RightEdge)
+                    obj.setCursor(Qt.CursorShape.SizeFDiagCursor if e in tl_br else Qt.CursorShape.SizeBDiagCursor)
+                else:
+                    obj.unsetCursor()
+        return super().eventFilter(obj, ev)
 
     # ------------------------------------------------------------ eventos del juego
     def on_game_event(self, kind, data):
@@ -162,6 +246,57 @@ class MainWindow(QMainWindow):
         st = self.game.s["settings"]
         self.voice.enabled = st["voice"]
         self.sounds.enabled = st["sound"]
+        self.sounds.set_volume(st.get("volume", 70) / 100)
+        if hasattr(self, "atmo"):
+            self.atmo.set_quality(st.get("quality", "alto"))
+
+    # ------------------------------------------------------------ actualizaciones
+    def check_updates(self, manual: bool = False):
+        from . import updater
+
+        def done(info, err):
+            QTimer.singleShot(0, lambda: self._update_result(info, err, manual))
+        updater.check_async(done)
+
+    def _update_result(self, info, err, manual):
+        from . import updater
+        if err or not info:
+            if manual:
+                self.notifier.show("SIN CONEXIÓN", "No pude consultar si hay versión nueva. Probá más tarde.",
+                                   "circle-alert", "", timeout=6)
+            return
+        if updater.is_newer(info["version"]):
+            self.notifier.show("ACTUALIZACIÓN DISPONIBLE",
+                               f"Hay una versión nueva: <b>{info['version']}</b> (tenés {updater.VERSION}).",
+                               "download", "gold", timeout=30, sound="notify",
+                               actions=[("Actualizar ahora", lambda i=info: self.install_update(i)), ("Después", lambda: None)])
+        elif manual:
+            self.notifier.show("ESTÁS AL DÍA", f"Tenés la última versión ({updater.VERSION}).", "circle-check", "", timeout=5)
+
+    def install_update(self, info):
+        from . import updater
+        import sys as _sys
+        if not info.get("url") or _sys.platform != "win32" or not getattr(_sys, "frozen", False):
+            import webbrowser
+            webbrowser.open(updater.RELEASES_PAGE)
+            return
+        card = self.notifier.show("DESCARGANDO ACTUALIZACIÓN", "0%", "download", "", timeout=0)
+        body = card.findChildren(QLabel)[-1]
+
+        def prog(k):
+            QTimer.singleShot(0, lambda: body.setText(f"{int(k * 100)}%"))
+
+        def done(path, err):
+            def ui():
+                card.dismiss()
+                if err or not path:
+                    self.notifier.show("ERROR", f"No se pudo descargar: {err}", "circle-alert", "red", timeout=8)
+                    return
+                self.notifier.show("INSTALANDO", "Arise Trainer se va a cerrar, actualizar y volver a abrir.",
+                                   "download", "gold", timeout=4)
+                QTimer.singleShot(1500, lambda: (updater.run_installer(path), self._really_quit()))
+            QTimer.singleShot(0, ui)
+        updater.download_async(info["url"], prog, done)
 
     def refresh(self):
         if not hasattr(self, "pages"):
@@ -218,9 +353,8 @@ class MainWindow(QMainWindow):
         self.tray.show()
         self._tray_menu = menu
 
-    def tray_message(self, title, text):
-        if self.tray:
-            self.tray.showMessage(title, text, QSystemTrayIcon.MessageIcon.Warning, 6000)
+    def tray_message(self, title, text, tone="red", icon="triangle-alert"):
+        self.notifier.show(title.upper(), text, icon, tone, timeout=8, sound="alarm" if tone == "red" else "notify")
 
     def closeEvent(self, e):
         if self.quitting or not self.tray:
@@ -232,9 +366,8 @@ class MainWindow(QMainWindow):
         self.hide()
         if not self.tray_hint_shown:
             self.tray_hint_shown = True
-            self.tray.showMessage("Arise Trainer sigue activo",
-                                  "Sigue funcionando acá, al lado del reloj, para recordarte el objetivo del día.",
-                                  QSystemTrayIcon.MessageIcon.Information, 5000)
+            self.notifier.show("SIGO ACTIVO", "Arise Trainer queda funcionando al lado del reloj para recordarte "
+                                              "el objetivo del día.", "eye", "", timeout=6)
 
     def quit_app(self):
         q = self.game.quest
@@ -307,6 +440,20 @@ class MainWindow(QMainWindow):
                "Fallarlo tiene penalización.<br><br>La cámara cuenta tus repeticiones: solo valen las bien hechas.",
                ("Empezar",), callback=ask_name)
 
+    def _welcome(self):
+        g = self.game
+        q = g.quest
+        if q and q.get("rest"):
+            txt = "Hoy es día de descanso."
+        elif q and q["completed"]:
+            txt = "El objetivo de hoy ya está cumplido."
+        else:
+            rem = g.remaining()
+            txt = "Objetivo de hoy: " + " · ".join(f"{EX[k].name} {int(v)}" for k, v in rem[:3]) if rem else ""
+        self.notifier.show(f"SISTEMA ACTIVO · NIVEL {g.player['level']}",
+                           f"Bienvenido de vuelta, <b>{g.player['name']}</b>.<br>{txt}", "power", "",
+                           timeout=6, sound="open", on_click=lambda: self.show_page("mision"))
+
     def _quest_lines(self):
         from .exercises import EXERCISES
         q = self.game.quest
@@ -314,6 +461,9 @@ class MainWindow(QMainWindow):
 
     def startup(self, minimized: bool):
         storage.migrate_autostart()
+        self.apply_settings()
+        if self.game.s["settings"].get("autoUpdate", True):
+            QTimer.singleShot(8000, self.check_updates)
         if not minimized:
             self.show()
         if not self.game.registered:
@@ -323,8 +473,12 @@ class MainWindow(QMainWindow):
             self.game.rollover()
             self.game.check_achievements()
             self.refresh()
+            QTimer.singleShot(1200, self._welcome)
             if self.game.checkin_due():
-                QTimer.singleShot(2500, lambda: self.toaster.show("Hoy te toca el control corporal semanal", True, "scan-line"))
+                QTimer.singleShot(4000, lambda: self.notifier.show(
+                    "CONTROL SEMANAL", "Hoy te toca el control corporal: 3 fotos y tu peso.", "scan-line", "gold",
+                    actions=[("Hacer ahora", lambda: (self.show_page("cuerpo"), self.pages["cuerpo"].start_checkin()))],
+                    timeout=15))
         QTimer.singleShot(5000, self.guardian.check)
 
 
@@ -333,6 +487,13 @@ def main():
         try:  # ícono propio en la barra de tareas
             import ctypes
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("arise.trainer")
+        except Exception:
+            pass
+    if sys.platform == "win32":
+        try:  # lo usa el instalador para saber si la app está abierta y cerrarla al actualizar
+            import ctypes
+            global _MUTEX
+            _MUTEX = ctypes.windll.kernel32.CreateMutexW(None, False, "AriseTrainerAppMutex")
         except Exception:
             pass
     app = QApplication(sys.argv)

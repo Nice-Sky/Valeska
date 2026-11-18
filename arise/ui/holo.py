@@ -297,8 +297,7 @@ class Surface:
         self._skey = None
         self._sbase = self._sglow = None
         self._phase = random.random() * 10
-        if self.animated:
-            fx.Clock.get().tick.connect(self._on_tick)
+        # el repintado lo dispara la atmósfera de la ventana (un solo update por cuadro)
 
     def _on_tick(self):
         if self.isVisible():
@@ -314,7 +313,7 @@ class Surface:
         base_op = p.opacity()
         p.drawImage(0, 0, self._sbase)
         clock = fx.Clock.get()
-        inten = clock.pulse(3.8, 0.72, 1.0, self._phase) if self.animated else 0.9
+        inten = clock.pulse(5.0, 0.86, 1.0, self._phase) if self.animated else 0.95
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
         p.setOpacity(inten * base_op)
         p.drawImage(0, 0, self._sglow)
@@ -324,7 +323,7 @@ class Surface:
             self._paint_sweep(p, spec, clock.now() + self._phase)
 
     def _paint_sweep(self, p: QPainter, spec: SurfaceSpec, t: float):
-        period, active = 7.0, 2.2
+        period, active = 11.0, 1.6
         k = (t % period) / active
         if k > 1:
             return
@@ -333,7 +332,7 @@ class Surface:
         g = QLinearGradient(QPointF(x - 80, r.top()), QPointF(x + 80, r.top() + 60))
         color = palette(spec.tone)[0]
         g.setColorAt(0, qc(color, 0))
-        g.setColorAt(0.5, qc(color, 26))
+        g.setColorAt(0.5, qc(color, 18))
         g.setColorAt(1, qc(color, 0))
         p.save()
         p.setClipPath(chamfer(r, spec.cut))
@@ -458,6 +457,7 @@ class IconBox(_Box):  # noqa: E302
 class TextBox(_Box):
     def __init__(self, text, tone="", size=15, parent=None):
         super().__init__(tone, parent)
+        self.reveal = 1.0  # 0..1: el título se escribe letra por letra al abrir
         self.text = text
         self.size = size
         self.font = title_font(size)
@@ -481,8 +481,13 @@ class TextBox(_Box):
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         self.paint_surface(p)
         color, core = palette(self.tone)
-        fx.draw_glow_text(p, QRectF(self.rect()), self.text, self.font, color, core,
-                          glow=0.9, spacing=self.size * 0.3, intensity=fx.Clock.get().pulse(3.8, 0.75, 1.0, self._phase))
+        txt = self.text
+        if self.reveal < 1:
+            n = int(len(txt) * self.reveal)
+            txt = txt[:n] + ("▌" if n < len(txt) else "")
+            txt = txt + " " * (len(self.text) - len(txt))
+        fx.draw_glow_text(p, QRectF(self.rect()), txt, self.font, color, core,
+                          glow=0.9, spacing=self.size * 0.3, intensity=fx.Clock.get().pulse(5.0, 0.85, 1.0, self._phase))
 
 
 class TitleBar(QWidget):

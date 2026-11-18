@@ -41,6 +41,20 @@ terminar el ejercicio. Cada serie queda registrada y si superás tu mejor marca 
 crece con la racha. Rangos: E (nivel 1), D (10), C (20), B (35), A (50), S (75). Los atributos
 (Fuerza, Resistencia, Agilidad) se calculan con tus récords y volumen. Disciplina es tu % de constancia.
 
+## Interfaz, notificaciones y actualizaciones
+
+- La ventana es translúcida y sin marco: una gran ventana del Sistema con barras de luz, vidrio oscuro
+  rayado y humo azul animado. Se arrastra desde la parte de arriba y se agranda desde los bordes.
+- Los avisos salen como **notificaciones de escritorio** (abajo a la derecha), aunque la app esté
+  minimizada. El recordatorio de entrenar llega primero como notificación con botones; si lo
+  ignorás, a los 3 minutos aparece la alerta grande.
+- **Calidad de efectos** (Ajustes → Sistema): Alto / Medio / Bajo, por si tu compu se traba.
+- **Actualizaciones:** la app avisa cuando hay versión nueva y se actualiza sola con un clic. Si
+  bajás el instalador a mano y ya la tenés instalada, el instalador te ofrece **actualizar** en el
+  mismo lugar (tu progreso, fotos y ajustes se conservan).
+- **Sonidos:** `tools/make_sfx.py` los sintetiza; `tools/generate_sfx_elevenlabs.py` los genera con
+  la API de efectos de ElevenLabs (necesita `ELEVENLABS_API_KEY` y ffmpeg) y los reemplaza.
+
 ## Control corporal semanal (pantalla CUERPO)
 
 Una vez por semana (elegís el día en Ajustes) la app te guía para sacar **3 fotos: frente, perfil

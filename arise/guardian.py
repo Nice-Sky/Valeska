@@ -12,7 +12,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidg
 from .exercises import EXERCISES
 from .game import fmt
 from .ui import theme as T
-from .ui import holo, icons
+from .ui import fx, holo, icons
 from .ui.widgets import button
 
 SURRENDER_PHRASE = "ME RINDO"
@@ -26,6 +26,7 @@ class NagWindow(QWidget, holo.Surface):
         flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool
         QWidget.__init__(self, None, flags)
         self.surface_init()
+        fx.Clock.get().tick.connect(self.update)
         self._bg_key = None
         self._bg = None
         self.g = guardian
@@ -161,6 +162,7 @@ class Guardian(QObject):
         self.game = win.game
         self.windows: list[NagWindow] = []
         self.next_nag = 0.0
+        self.soft_sent = False
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.check)
         self.timer.start(CHECK_MS)
@@ -182,12 +184,30 @@ class Guardian(QObject):
             if time.time() < self.next_nag:
                 return
             if self.game.should_nag():
-                self.show()
+                # 1º aviso: notificación con botones; si se ignora, a los 3 minutos la alerta grande
+                if not self.game.nag_settings()["hard"] and not self.soft_sent:
+                    self.soft_notice()
+                else:
+                    self.show()
         except Exception as e:  # el guardián nunca debe romper la app
             print("Guardián:", e)
 
+    def soft_notice(self):
+        self.soft_sent = True
+        self.next_nag = time.time() + 180
+        rem = self.game.remaining()
+        txt = "Todavía no cumpliste el entrenamiento de hoy."
+        if rem:
+            txt += "<br><span style='color:#7f95bf'>" + " · ".join(
+                f"{EXERCISES[k].name} {fmt(v)}" for k, v in rem[:3]) + "</span>"
+        self.win.notifier.show("OBJETIVO PENDIENTE", txt, "triangle-alert", "red",
+                               actions=[("Entrenar", self.train_now), ("15 min", self.snooze)],
+                               timeout=25, sound="alarm", on_click=self.train_now)
+        self.win.voice.say("Objetivo del día pendiente.", True)
+
     def show(self, test: bool = False):
         self.close()
+        self.soft_sent = False
         hard = bool(self.game.nag_settings()["hard"])
         app = QGuiApplication.instance()
         primary = QGuiApplication.primaryScreen()
@@ -200,7 +220,6 @@ class Guardian(QObject):
             w.activateWindow()
         self.win.sounds.play("alarm")
         self.win.voice.say("Objetivo del día pendiente.", True)
-        self.win.tray_message("Objetivo pendiente", "Todavía no cumpliste el entrenamiento de hoy.")
         self.raise_timer.start(1500)
 
     def _keep_on_top(self):
@@ -219,16 +238,19 @@ class Guardian(QObject):
 
     # ---- acciones
     def train_now(self):
+        self.soft_sent = False
         self.next_nag = time.time() + self.interval * 60
         self.close()
         self.win.show_page("mision")
 
     def snooze(self):
+        self.soft_sent = False
         self.game.snooze()
         self.next_nag = time.time() + 15 * 60
         self.close()
 
     def dismiss(self):
+        self.soft_sent = False
         self.next_nag = time.time() + self.interval * 60
         self.close()
 

@@ -85,15 +85,34 @@ class QuestList(QWidget):
             if self.with_buttons and not done:
                 row.addWidget(button("Entrenar", "", lambda _=False, k=k: self.win.open_training(k), icon="swords"))
             self.lay.addLayout(row)
-            bar = QProgressBar()
-            bar.setObjectName("thin")
-            bar.setFixedHeight(6)
-            bar.setTextVisible(False)
-            bar.setRange(0, t)
-            bar.setValue(int(v))
-            bar.setProperty("done", done)
-            self.lay.addWidget(bar)
+            self.lay.addWidget(ThinBar(v / t if t else 0, done))
             self.lay.addSpacing(6)
+
+
+class ThinBar(QWidget):
+    """Barra fina de progreso con tubo de luz."""
+
+    def __init__(self, k: float, done: bool):
+        super().__init__()
+        self.k, self.done = max(0.0, min(1.0, k)), done
+        self.setFixedHeight(12)
+
+    def paintEvent(self, e):
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = QRectF(self.rect()).adjusted(1, 4, -1, -4)
+        p.fillRect(r, QColor(2, 8, 22, 200))
+        p.setPen(QColor(45, 110, 220, 90))
+        p.drawRect(r)
+        if self.k > 0:
+            col = T.GREEN if self.done else T.GLOW
+            fr = QRectF(r.left(), r.top(), r.width() * self.k, r.height())
+            for i, a in ((3, 30), (2, 55), (1, 90)):
+                c = QColor(col)
+                c.setAlpha(a)
+                p.fillRect(fr.adjusted(0, -i, 0, i), c)
+            p.fillRect(fr, QColor(col))
+            p.fillRect(QRectF(fr.left(), fr.center().y() - 0.5, fr.width(), 1), QColor(T.CORE))
 
 
 class ExCard(QPushButton, holo.Surface):
@@ -984,6 +1003,36 @@ class AjustesPage(QWidget):
         guard.lay.addWidget(self.auto)
         guard.lay.addWidget(button("Probar alerta ahora", "", lambda: self.win.guardian.show(test=True), icon="bell-ring"))
 
+        sist = Panel("SISTEMA", "settings")
+        sf = QFormLayout()
+        sf.setVerticalSpacing(12)
+        sf.setHorizontalSpacing(24)
+        self.quality = QComboBox()
+        self.quality.addItems(["Alto (todos los efectos, 40 fps)", "Medio (menos humo y partículas)",
+                               "Bajo (sin animaciones, para compus lentas)"])
+        self.quality.currentIndexChanged.connect(lambda i: self.set_setting("quality", ["alto", "medio", "bajo"][i]))
+        sf.addRow("Calidad de efectos", self.quality)
+        from PySide6.QtWidgets import QSlider
+        self.volume = QSlider(Qt.Orientation.Horizontal)
+        self.volume.setRange(0, 100)
+        self.volume.valueChanged.connect(lambda v: self.set_setting("volume", v))
+        self.volume.sliderReleased.connect(lambda: self.win.sounds.play("notify"))
+        sf.addRow("Volumen de efectos", self.volume)
+        sist.lay.addLayout(sf)
+        from .._version import VERSION
+        self.version_lbl = label(f"Versión instalada: {VERSION}", "muted")
+        sist.lay.addWidget(self.version_lbl)
+        self.auto_upd = QCheckBox("Buscar actualizaciones automáticamente al abrir")
+        self.auto_upd.toggled.connect(lambda on: self.set_setting("autoUpdate", on))
+        sist.lay.addWidget(self.auto_upd)
+        urow = QHBoxLayout()
+        urow.addWidget(button("Buscar actualizaciones", "primary", lambda: self.win.check_updates(True), icon="download"))
+        urow.addWidget(button("Probar notificación", "", lambda: self.win.notifier.show(
+            "NOTIFICACIÓN", "Así se ven los avisos del Sistema en tu escritorio.", "bell-ring", "",
+            actions=[("Genial", lambda: None)]), icon="bell-ring"))
+        urow.addStretch()
+        sist.lay.addLayout(urow)
+
         datos = Panel("DATOS", "download")
         row = QHBoxLayout()
         row.addWidget(button("Exportar progreso", "", self.export, icon="download"))
@@ -996,7 +1045,7 @@ class AjustesPage(QWidget):
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.addWidget(scroll_page(plan, cuerpo, jug, guard, datos))
+        lay.addWidget(scroll_page(plan, cuerpo, jug, guard, sist, datos))
 
     def refresh(self):
         self._loading = True
@@ -1012,6 +1061,9 @@ class AjustesPage(QWidget):
         self.height_cm.setValue(int(prof.get("heightCm") or 0))
         self.sex.setCurrentIndex({"m": 1, "f": 2}.get(prof.get("sex"), 0))
         self.ck_day.setCurrentIndex(st.get("checkinDay", 0))
+        self.quality.setCurrentIndex(["alto", "medio", "bajo"].index(st.get("quality", "alto")))
+        self.volume.setValue(int(st.get("volume", 70)))
+        self.auto_upd.setChecked(st.get("autoUpdate", True))
         self.voice.setChecked(st["voice"])
         self.sound.setChecked(st["sound"])
         self.mirror.setChecked(st.get("mirror", True))

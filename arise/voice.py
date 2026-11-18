@@ -87,30 +87,51 @@ def _synth(notes, kind, vol, rate=22050) -> bytes:
     return bytes(frames)
 
 
+SOUNDS_REF = None  # instancia global, para que los botones puedan sonar
+
+
 class Sounds:
+    """Efectos de sonido. Usa los WAV de assets/sfx (si existen); si no, sintetiza unos básicos."""
+
     def __init__(self):
         self.enabled = True
+        self.volume = 0.7
         self._effects = {}
         try:
             from PySide6.QtCore import QUrl
             from PySide6.QtMultimedia import QSoundEffect
+            from .storage import resource
             d = Path(tempfile.gettempdir()) / "arise_sfx"
             d.mkdir(exist_ok=True)
-            for name, (notes, kind, vol) in SOUNDS.items():
-                p = d / f"{name}.wav"
+            names = set(SOUNDS) | {p.stem for p in resource("sfx").glob("*.wav")}
+            for name in names:
+                p = resource("sfx", f"{name}.wav")
                 if not p.exists():
-                    with wave.open(str(p), "wb") as w:
-                        w.setnchannels(1)
-                        w.setsampwidth(2)
-                        w.setframerate(22050)
-                        w.writeframes(_synth(notes, kind, vol))
+                    if name not in SOUNDS:
+                        continue
+                    p = d / f"{name}.wav"
+                    if not p.exists():
+                        notes, kind, vol = SOUNDS[name]
+                        with wave.open(str(p), "wb") as w:
+                            w.setnchannels(1)
+                            w.setsampwidth(2)
+                            w.setframerate(22050)
+                            w.writeframes(_synth(notes, kind, vol))
                 fx = QSoundEffect()
                 fx.setSource(QUrl.fromLocalFile(str(p)))
-                fx.setVolume(0.6)
+                fx.setVolume(self.volume)
                 self._effects[name] = fx
         except Exception:
             self._effects = {}
 
+    def set_volume(self, v: float):
+        self.volume = max(0.0, min(1.0, v))
+        for fx in self._effects.values():
+            fx.setVolume(self.volume)
+
     def play(self, name: str):
         if self.enabled and name in self._effects:
-            self._effects[name].play()
+            fx = self._effects[name]
+            if fx.isPlaying() and name in ("rep", "tick", "hover", "click"):
+                fx.stop()
+            fx.play()

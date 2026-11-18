@@ -61,6 +61,12 @@ class HoloButton(QPushButton, holo.Surface):
         self.hover = False
         self.update()
 
+    def mousePressEvent(self, e):
+        from .. import voice as _v
+        if _v.SOUNDS_REF and self.isEnabled():
+            _v.SOUNDS_REF.play("click")
+        super().mousePressEvent(e)
+
     def surface_spec(self):
         tone = "red" if self.kind == "danger" else ""
         fill = None
@@ -169,7 +175,7 @@ class Panel(QFrame, holo.Surface):
     def surface_spec(self):
         r = QRectF(self.rect()).adjusted(self.INSET, self.INSET, -self.INSET, -self.INSET)
         return holo.SurfaceSpec(r, self.tone, cut=8 if self.compact else 14, brackets=not self.compact,
-                                seed=self.seed, density=0.6 if self.compact else 1.0)
+                                seed=self.seed, density=0.6 if self.compact else 1.0, glass_alpha=165)
 
     def set_title(self, text: str):
         if self.title:
@@ -197,12 +203,6 @@ class RankBadge(QWidget):
         self._key = None
         self._img = None
         self._glow = None
-        fx.Clock.get().tick.connect(self._tick)
-
-    def _tick(self):
-        if self.isVisible():
-            self.update()
-
     def set_rank(self, r: str):
         self.rank = r
         self.update()
@@ -244,7 +244,7 @@ class RankBadge(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         p.drawImage(0, 0, self._img)
-        k = fx.Clock.get().pulse(3.2, 0.7, 1.0)
+        k = fx.Clock.get().pulse(5.0, 0.85, 1.0)
         p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Plus)
         p.setOpacity(k)
         p.drawImage(0, 0, self._glow)
@@ -275,6 +275,50 @@ class _HoloBody(QWidget, holo.Surface):
         self.paint_surface(p)
 
 
+class _Reveal(QWidget):
+    """Capa encima del diálogo que anima su "materialización": línea de luz -> despliegue vertical -> parpadeo."""
+
+    def __init__(self, dlg):
+        super().__init__(dlg)
+        self.dlg = dlg
+        self.k = 0.0
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+
+    def paintEvent(self, e):
+        k = self.k
+        if k >= 1:
+            return
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        r = QRectF(self.rect())
+        cy = r.center().y()
+        ease = lambda x: 1 - (1 - max(0.0, min(1.0, x))) ** 3
+        tone = self.dlg.tone
+        color, core = holo.palette(tone)
+        if k < 0.22:  # solo una línea de luz que se estira desde el centro
+            p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+            p.fillRect(r, Qt.GlobalColor.transparent)
+            p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+            w = (r.width() - 120) * ease(k / 0.22)
+            holo.neon_line(p, r.center().x() - w / 2, cy, r.center().x() + w / 2, cy, color, core, 2.4, 6, 3, 40)
+            return
+        if k < 0.55:  # se despliega hacia arriba y abajo
+            half = (r.height() / 2) * ease((k - 0.22) / 0.33)
+            p.setCompositionMode(QPainter.CompositionMode.CompositionMode_Clear)
+            p.fillRect(QRectF(r.left(), r.top(), r.width(), cy - half - r.top()), Qt.GlobalColor.transparent)
+            p.fillRect(QRectF(r.left(), cy + half, r.width(), r.bottom() - cy - half), Qt.GlobalColor.transparent)
+            p.setCompositionMode(QPainter.CompositionMode.CompositionMode_SourceOver)
+            for y in (cy - half, cy + half):
+                holo.neon_line(p, r.left() + 60, y, r.right() - 60, y, color, core, 1.6, 4, 2.4, 34)
+            return
+        # parpadeo holográfico
+        import math as _m
+        jitter = 0.5 * (1 - (k - 0.55) / 0.45) * abs(_m.sin(k * 90))
+        if jitter > 0.02:
+            p.setCompositionMode(QPainter.CompositionMode.CompositionMode_DestinationOut)
+            p.fillRect(r, QColor(0, 0, 0, int(255 * jitter)))
+
+
 class SystemDialog(QDialog):
     """Ventana de notificación del Sistema: barras de luz arriba/abajo, [!][TÍTULO] y texto centrado."""
 
@@ -294,9 +338,12 @@ class SystemDialog(QDialog):
         lay.setSpacing(20)
         row = QHBoxLayout()
         row.addStretch()
-        row.addWidget(holo.TitleBar(title, icon, tone, 17))
+        self.title_bar = holo.TitleBar(title, icon, tone, 17)
+        row.addWidget(self.title_bar)
         row.addStretch()
         lay.addLayout(row)
+        self.tone = tone
+        self.body_w = body_w
         b = QLabel(body)
         b.setObjectName("sysBody")
         b.setWordWrap(True)
@@ -328,17 +375,50 @@ class SystemDialog(QDialog):
             QTimer.singleShot(50, self.input.setFocus)
 
     def open_animated(self):
-        self.setWindowOpacity(0.0)
+        from PySide6.QtCore import QVariantAnimation
+        self._reveal = _Reveal(self)
+        self._reveal.setGeometry(self.rect())
+        self._reveal.raise_()
+        self.title_bar.box.reveal = 0.0
+        fx.Clock.get().tick.connect(self.update)
         self.open()
-        self._anim = QPropertyAnimation(self, b"windowOpacity", self)
-        self._anim.setDuration(220)
-        self._anim.setStartValue(0.0)
-        self._anim.setEndValue(1.0)
-        self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-        self._anim.start()
+        self._reveal.setGeometry(self.rect())
+        a = QVariantAnimation(self)
+        a.setDuration(760)
+        a.setStartValue(0.0)
+        a.setEndValue(1.0)
+        a.valueChanged.connect(self._on_k)
+        a.start()
+        self._anim = a
+
+    def _on_k(self, k):
+        self._reveal.k = k
+        self.title_bar.box.reveal = max(0.0, min(1.0, (k - 0.5) / 0.4))
+        self.update()
 
     def _choose(self, i):
+        if getattr(self, "_closing", False):
+            return
+        self._closing = True
         self.result_index = i
+        from PySide6.QtCore import QVariantAnimation
+        a = QVariantAnimation(self)
+        a.setDuration(240)
+        a.setStartValue(0.54)
+        a.setEndValue(0.0)
+        a.valueChanged.connect(lambda k: (setattr(self._reveal, "k", k), self.update()) if hasattr(self, "_reveal") else None)
+        a.finished.connect(self._finish_close)
+        a.start()
+        self._anim = a
+        from .. import voice as _v
+        if _v.SOUNDS_REF:
+            _v.SOUNDS_REF.play("close")
+
+    def _finish_close(self):
+        try:
+            fx.Clock.get().tick.disconnect(self.update)
+        except (RuntimeError, TypeError):
+            pass
         self.accept()
 
     def keyPressEvent(self, e):
@@ -444,11 +524,21 @@ class _Toast(QWidget, holo.Surface):
 
 
 class Toaster:
-    def __init__(self, parent: QWidget):
+    """Avisos breves: ahora salen como notificaciones de escritorio holográficas (ver notify.py)."""
+
+    def __init__(self, parent: QWidget, notifier=None):
         self.parent = parent
+        self.notifier = notifier
         self.items: list[QWidget] = []
 
     def show(self, text: str, gold: bool = False, icon: str = ""):
+        if self.notifier is not None:
+            self.notifier.show("SISTEMA" if not gold else "LOGRO", text, icon or ("sparkles" if gold else "bell-ring"),
+                               "gold" if gold else "", timeout=4.5, sound="notify")
+            return
+        self._show_inline(text, gold, icon)
+
+    def _show_inline(self, text: str, gold: bool = False, icon: str = ""):
         t = _Toast(self.parent, text, icon or ("sparkles" if gold else "bell-ring"), gold)
         t.show()
         t.raise_()
@@ -487,12 +577,7 @@ class GlowLabel(QWidget):
         self.font_.setWeight(weight)
         self.color, self.core, self.align, self.spacing, self.glow = color, core, align, spacing, glow
         self._phase = 0.0
-        fx.Clock.get().tick.connect(self._tick)
         self._fit()
-
-    def _tick(self):
-        if self.isVisible():
-            self.update()
 
     def _fit(self):
         f = QFont(self.font_)
@@ -519,7 +604,7 @@ class GlowLabel(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         fx.draw_glow_text(p, QRectF(self.rect()), self.text_, self.font_, self.color, self.core, self.align,
-                          glow=self.glow, spacing=self.spacing, intensity=fx.Clock.get().pulse(3.8, 0.7, 1.0))
+                          glow=self.glow, spacing=self.spacing, intensity=fx.Clock.get().pulse(5.0, 0.85, 1.0))
 
 
 class NeonBar(QWidget):

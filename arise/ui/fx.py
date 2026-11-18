@@ -141,8 +141,15 @@ class Clock(QObject):
         super().__init__()
         self.t0 = time.monotonic()
         self.timer = QTimer(self)
+        self.timer.setTimerType(Qt.TimerType.PreciseTimer)
         self.timer.timeout.connect(self.tick.emit)
-        self.timer.start(50)
+        self.timer.start(25)
+
+    def set_fps(self, fps: int):
+        if fps <= 0:
+            self.timer.stop()
+        else:
+            self.timer.start(int(1000 / fps))
 
     @classmethod
     def get(cls) -> "Clock":
