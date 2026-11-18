@@ -45,11 +45,24 @@ class CameraWorker(QThread):
         self.wait(3000)
 
     @staticmethod
-    def _warmup(cap, cv2, max_s: float = 2.0):
-        """Descarta los primeros cuadros hasta que el brillo se estabiliza (evita el "flash" blanco al arrancar)."""
+    def _configure(cap, cv2):
+        # MJPG: muchas webcams en Windows (DirectShow) van lentas/parpadean a 720p sin comprimir
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+        cap.set(cv2.CAP_PROP_FPS, 30)
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # siempre el cuadro más nuevo (sin retraso acumulado)
+        cap.set(cv2.CAP_PROP_AUTO_EXPOSURE, 0.75)  # exposición automática (DirectShow: 0.75 = auto)
+        cap.set(cv2.CAP_PROP_AUTO_WB, 1)
+
+    @staticmethod
+    def _warmup(cap, cv2, max_s: float = 2.5) -> float:
+        """Descarta los primeros cuadros hasta que el brillo se estabiliza (evita el "flash" blanco al arrancar).
+        Devuelve el brillo medio final (0-255)."""
         start = time.monotonic()
         prev = None
         stable = 0
+        m = 128.0
         while time.monotonic() - start < max_s:
             ok, f = cap.read()
             if not ok or f is None:
@@ -59,10 +72,11 @@ class CameraWorker(QThread):
             if prev is not None and abs(m - prev) < 4 and 15 < m < 235:
                 stable += 1
                 if stable >= 4:
-                    return
+                    return m
             else:
                 stable = 0
             prev = m
+        return m
 
     def run(self):
         try:
@@ -81,14 +95,17 @@ class CameraWorker(QThread):
         if not cap.isOpened():
             self.failed.emit("No pude abrir la cámara. ¿Está conectada o la está usando otro programa?")
             return
-        # MJPG: muchas webcams en Windows (DirectShow) van lentas/parpadean a 720p sin comprimir
-        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-        cap.set(cv2.CAP_PROP_FPS, 30)
-        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # siempre el cuadro más nuevo (sin retraso acumulado)
         self.status.emit("Ajustando cámara…")
-        self._warmup(cap, cv2)
+        self._configure(cap, cv2)
+        if self._warmup(cap, cv2) > 230 and sys.platform == "win32":
+            # la imagen sigue quemada en blanco: probamos con el otro sistema de video de Windows
+            self.status.emit("Probando otro modo de cámara…")
+            cap.release()
+            cap = cv2.VideoCapture(self.index, cv2.CAP_MSMF)
+            if not cap.isOpened():
+                cap = cv2.VideoCapture(self.index, backend)
+            self._configure(cap, cv2)
+            self._warmup(cap, cv2)
 
         try:
             options = vision.PoseLandmarkerOptions(
