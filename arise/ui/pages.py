@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (QCheckBox, QComboBox, QFileDialog, QFormLayout, Q
 from .. import storage
 from ..camera import CameraWorker, list_cameras
 from ..exercises import EXERCISE_ORDER, EXERCISES, RepCounter
+from ..i18n import plural, t
 from ..game import ACHIEVEMENTS, PLAN_ORDER, PLANS, STATS, WEEKDAYS, fmt, next_rank, rank_of, xp_needed
 from . import theme as T
 from . import holo, icons
@@ -282,6 +283,14 @@ class MisionPage(QWidget):
         self.panel.lay.addWidget(self.warning)
         self.count = label("", "countdown", align=Qt.AlignmentFlag.AlignCenter)
         self.panel.lay.addWidget(self.count)
+        self.water = WaterCard(win)
+        self.sleep = SleepCard(win)
+        well = QWidget()
+        wl = QHBoxLayout(well)
+        wl.setContentsMargins(0, 0, 0, 0)
+        wl.setSpacing(4)
+        wl.addWidget(self.water, 1)
+        wl.addWidget(self.sleep, 1)
         self.checkin = Panel("CONTROL SEMANAL", "scan-line")
         self.checkin.set_tone("gold")
         self.checkin.lay.addWidget(label("Hoy te toca: 3 fotos (frente, perfil izquierdo y derecho) y tu peso.",
@@ -294,7 +303,7 @@ class MisionPage(QWidget):
         self.checkin.lay.addLayout(crow)
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.addWidget(scroll_page(self.panel, self.checkin))
+        lay.addWidget(scroll_page(self.panel, well, self.checkin))
         t = QTimer(self)
         t.timeout.connect(self.tick)
         t.start(1000)
@@ -310,12 +319,13 @@ class MisionPage(QWidget):
         self.panel.title.set_icon("moon" if rest else "triangle-alert" if q["penalty"] else "target")
         self.panel.set_tone("red" if q["penalty"] else "")
         plan = PLANS.get(q.get("plan"), PLANS["principiante"])["label"]
-        pct = round((g.s["progression"] - 1) * 100)
-        prog = f"  ·  Progresión +{pct}%" if pct else ""
-        left = 7 - g.s["progressCount"] % 7
-        nxt = f"  ·  Próxima subida en {left} día{'s' if left != 1 else ''} cumplido{'s' if left != 1 else ''}" if g.settings.get("autoProgress", True) else ""
-        self.sub.setText(f"Plan {plan}{prog}{nxt}")
+        fat = g.s.get("fatigue", 0.0)
+        ftxt = t("bajo") if fat < 0.35 else t("medio") if fat < 0.65 else t("alto")
+        self.sub.setText(t("Plan {plan}  ·  Sesión {n}  ·  Cansancio acumulado: {f}", plan=t(plan),
+                           n=g.s.get("sessionsDone", 0) + (0 if q["completed"] else 1), f=ftxt))
         self.list.refresh()
+        self.water.refresh()
+        self.sleep.refresh()
         if rest:
             self.warning.setObjectName("ok")
             self.warning.setText("")
@@ -337,6 +347,116 @@ class MisionPage(QWidget):
         end = datetime.combine(now.date() + timedelta(days=1), datetime.min.time())
         s = int((end - now).total_seconds())
         self.count.setText(f"TIEMPO RESTANTE  {s // 3600:02d}:{s % 3600 // 60:02d}:{s % 60:02d}")
+
+
+class WaterCard(Panel):
+    """Agua de hoy: progreso hacia la meta y botones rápidos."""
+
+    def __init__(self, win):
+        super().__init__(t("AGUA"), "droplet", compact=True)
+        self.win = win
+        self.big = label("", wrap=True, align=Qt.AlignmentFlag.AlignCenter)
+        self.big.setTextFormat(Qt.TextFormat.RichText)
+        self.lay.addWidget(self.big)
+        self.bar = ThinBar(0, False)
+        self.lay.addWidget(self.bar)
+        self.sub = label("", "muted", wrap=True, align=Qt.AlignmentFlag.AlignCenter)
+        self.lay.addWidget(self.sub)
+        row = QHBoxLayout()
+        self.b_glass = button("", "primary", lambda: self._add(1), icon="glass-water")
+        row.addWidget(self.b_glass, 2)
+        row.addWidget(button("−", "", lambda: self._add(-1)), 0)
+        self.lay.addLayout(row)
+
+    def _add(self, n):
+        ml = int(self.win.game.settings["water"].get("glassMl", 250)) * n
+        if n > 0:
+            self.win.wellness.drink(ml)
+        else:
+            self.win.game.add_water(ml)
+
+    def refresh(self):
+        g = self.win.game
+        goal, have = g.water_goal(), g.water_today()
+        k = have / goal if goal else 0
+        col = T.GREEN if k >= 1 else T.CYAN
+        self.big.setText(f"<span style='font-size:28px;font-weight:700;color:{col}'>{have / 1000:.1f}</span>"
+                         f"<span style='color:{T.MUTED}'> / {goal / 1000:.1f} L</span>")
+        self.bar.k, self.bar.done = min(1.0, k), k >= 1
+        self.bar.update()
+        should, _ = g.water_pace()
+        if k >= 1:
+            self.sub.setText(t("Meta cumplida. Bien hidratado."))
+        elif have < should:
+            self.sub.setText(t("Vas {n} ml atrasado para esta hora.", n=should - have))
+        else:
+            self.sub.setText(t("Al día con tu meta."))
+        self.b_glass.setText(t("+1 vaso ({ml} ml)", ml=g.settings["water"].get("glassMl", 250)))
+
+
+class SleepCard(Panel):
+    """Sueño: objetivo, última noche, promedio de la semana y registro rápido."""
+
+    def __init__(self, win):
+        super().__init__(t("SUEÑO"), "moon", compact=True)
+        self.win = win
+        self.big = label("", wrap=True, align=Qt.AlignmentFlag.AlignCenter)
+        self.big.setTextFormat(Qt.TextFormat.RichText)
+        self.lay.addWidget(self.big)
+        self.sub = label("", "muted", wrap=True, align=Qt.AlignmentFlag.AlignCenter)
+        self.sub.setTextFormat(Qt.TextFormat.RichText)
+        self.lay.addWidget(self.sub)
+        row = QHBoxLayout()
+        self.b_bed = button(t("Me voy a dormir"), "", self._bed, icon="bed")
+        row.addWidget(self.b_bed, 1)
+        row.addWidget(button(t("Registrar"), "", self._log, icon="moon"), 1)
+        self.lay.addLayout(row)
+
+    def _bed(self):
+        self.win.wellness.going_to_sleep()
+        self.refresh()
+
+    def _log(self):
+        g = self.win.game
+
+        def got(i, v):
+            if i != 0:
+                return
+            try:
+                h = float(v.replace(",", "."))
+                if not 0 < h <= 16:
+                    raise ValueError
+            except ValueError:
+                self.win.toaster.show(t("Escribí las horas, por ejemplo 7.5"))
+                return
+            g.log_sleep(h, "")
+        self.win.dialogs.show(t("¿CUÁNTO DORMISTE?"), t("Horas de sueño de anoche (por ejemplo 7.5)."),
+                              ((t("Guardar"), "primary"), (t("Cancelar"), "")), callback=got, with_input=True,
+                              placeholder=f"{g.sleep_target_hours():g}", icon="moon")
+
+    def refresh(self):
+        g = self.win.game
+        st = g.settings["sleep"]
+        target = g.sleep_target_hours()
+        last = g.s["sleepLog"].get(g.today())
+        stats = g.sleep_stats()
+        if last:
+            col = T.GREEN if last.get("ok") else T.GOLD
+            self.big.setText(f"<span style='font-size:28px;font-weight:700;color:{col}'>{last['h']:g} h</span>"
+                             f"<span style='color:{T.MUTED}'> / {target:g} h</span>")
+        else:
+            self.big.setText(f"<span style='font-size:28px;font-weight:700;color:{T.MUTED}'>— h</span>"
+                             f"<span style='color:{T.MUTED}'> / {target:g} h</span>")
+        lines = [t("Horario: {bed} → {wake}", bed=st.get("bed", "23:30"), wake=st.get("wake", "07:30"))]
+        if stats.get("count"):
+            lines.append(t("Promedio 7 días: {h} h", h=f"{stats['avg']:g}"))
+        if g.suggested_readiness():
+            lines.append(f"<span style='color:{T.GOLD}'>" + t("Dormiste poco: hoy la sesión puede ir más tranqui.")
+                         + "</span>")
+        if g.s["remind"].get("sleepStart"):
+            lines.append(f"<span style='color:{T.CYAN}'>" + t("Durmiendo desde las {h}",
+                                                                h=g.s["remind"]["sleepStart"][11:16]) + "</span>")
+        self.sub.setText("<br>".join(lines))
 
 
 # =================================================================== REGISTRO
@@ -520,19 +640,31 @@ class AjustesPage(QWidget):
         pf.setHorizontalSpacing(24)
         self.plan = QComboBox()
         for k in PLAN_ORDER:
-            self.plan.addItem(f"{PLANS[k]['label']} — " + ", ".join(
-                f"{v}{' s' if EXERCISES[e].timed else ''} {EXERCISES[e].name.lower()}" for e, v in PLANS[k]["targets"].items()))
+            self.plan.addItem(f"{t(PLANS[k]['label'])} — {t(PLANS[k]['desc'])}")
         self.plan.currentIndexChanged.connect(lambda i: not self._loading and self.win.game.set_plan(PLAN_ORDER[i]))
-        pf.addRow("Plan base", self.plan)
+        pf.addRow(t("Nivel de partida"), self.plan)
         plan.lay.addLayout(pf)
-        plan.lay.addWidget(label("Si cambiás el plan, se aplica hoy (si todavía no empezaste) o desde mañana.", "muted", wrap=True))
-        self.auto_prog = QCheckBox("Progresión automática: +5% en los objetivos cada 7 días cumplidos")
-        self.auto_prog.toggled.connect(lambda on: self.set_setting("autoProgress", on))
-        plan.lay.addWidget(self.auto_prog)
-        self.prog_lbl = label("", "muted")
+        plan.lay.addWidget(label(t("La progresión es automática: cada ejercicio sube repeticiones, series o peso cuando "
+                                   "lo hacés bien y sin demasiado esfuerzo, y baja si venís fallando. Si cambiás el "
+                                   "nivel, se recalculan los ejercicios que todavía no hiciste."), "muted", wrap=True))
+        plan.lay.addWidget(label(t("Equipamiento que tenés:"), "lbl"))
+        eq = QHBoxLayout()
+        self.eq_cbs = {}
+        for key, txt in (("bar", t("Barra de dominadas")), ("dumbbell", t("Mancuernas"))):
+            cb = QCheckBox(txt)
+            cb.toggled.connect(lambda _=False: self.save_equipment())
+            self.eq_cbs[key] = cb
+            eq.addWidget(cb)
+        self.adj_kg = QCheckBox(t("Mancuernas ajustables (la progresión puede subir el peso)"))
+        self.adj_kg.toggled.connect(lambda on: self.set_setting("adjustableKg", on))
+        eq.addWidget(self.adj_kg)
+        eq.addStretch()
+        plan.lay.addLayout(eq)
+        self.prog_lbl = label("", "muted", wrap=True)
+        self.prog_lbl.setTextFormat(Qt.TextFormat.RichText)
         plan.lay.addWidget(self.prog_lbl)
-        plan.lay.addWidget(button("Reiniciar progresión a 0%", "ghost", self.reset_prog))
-        plan.lay.addWidget(label("Días de descanso (sin objetivo ni penalización):", "lbl"))
+        plan.lay.addWidget(label(t("Días de descanso fijos (además, el sistema programa descansos si acumulás cansancio):"),
+                                 "lbl", wrap=True))
         rd = QHBoxLayout()
         self.rest_cbs = []
         for i, d in enumerate(WEEKDAYS):
@@ -573,7 +705,16 @@ class AjustesPage(QWidget):
         self.name = QLineEdit()
         self.name.setMaxLength(24)
         self.name.editingFinished.connect(self.save_name)
-        f.addRow("Nombre", self.name)
+        f.addRow(t("Nombre"), self.name)
+        from ..i18n import LANGS
+        self.lang = QComboBox()
+        self.lang_keys = list(LANGS)
+        self.lang.addItems([LANGS[k] for k in self.lang_keys])
+        self.lang.currentIndexChanged.connect(self.set_lang)
+        f.addRow(t("Idioma"), self.lang)
+        self.camera = QComboBox()
+        self.camera.currentIndexChanged.connect(lambda i: i >= 0 and self.set_setting("camera", i))
+        f.addRow(t("Cámara"), self.camera)
         jug.lay.addLayout(f)
         self.voice = QCheckBox("Voz que cuenta las repeticiones y te corrige")
         self.sound = QCheckBox("Efectos de sonido")
@@ -612,6 +753,62 @@ class AjustesPage(QWidget):
         self.auto.toggled.connect(self.toggle_auto)
         guard.lay.addWidget(self.auto)
         guard.lay.addWidget(button("Probar alerta ahora", "", lambda: self.win.guardian.show(test=True), icon="bell-ring"))
+
+        well = Panel(t("AGUA Y SUEÑO"), "droplet")
+        well.lay.addWidget(label(t("Te ayudan a sostener el hábito: avisan, pero no te sacan XP ni rachas."), "muted",
+                                 wrap=True))
+        wf = QFormLayout()
+        wf.setVerticalSpacing(10)
+        wf.setHorizontalSpacing(24)
+        self.w_on = QCheckBox(t("Recordatorios de agua"))
+        self.w_on.toggled.connect(lambda on: self.set_sub("water", "enabled", on))
+        wf.addRow(self.w_on)
+        self.w_goal = QSpinBox()
+        self.w_goal.setRange(0, 6000)
+        self.w_goal.setSingleStep(250)
+        self.w_goal.setSuffix(" ml")
+        self.w_goal.setSpecialValueText(t("automática (según tu peso)"))
+        self.w_goal.valueChanged.connect(lambda v: self.set_sub("water", "goalMl", v))
+        wf.addRow(t("Meta diaria"), self.w_goal)
+        self.w_glass = QSpinBox()
+        self.w_glass.setRange(100, 1000)
+        self.w_glass.setSingleStep(50)
+        self.w_glass.setSuffix(" ml")
+        self.w_glass.valueChanged.connect(lambda v: self.set_sub("water", "glassMl", v))
+        wf.addRow(t("Tamaño del vaso"), self.w_glass)
+        self.w_every = QSpinBox()
+        self.w_every.setRange(20, 240)
+        self.w_every.setSingleStep(10)
+        self.w_every.setSuffix(" min")
+        self.w_every.valueChanged.connect(lambda v: self.set_sub("water", "everyMin", v))
+        wf.addRow(t("Si vas atrasado, avisar cada"), self.w_every)
+        hrs = QHBoxLayout()
+        self.w_start, self.w_end = QSpinBox(), QSpinBox()
+        for sp, key in ((self.w_start, "start"), (self.w_end, "end")):
+            sp.setRange(0, 23)
+            sp.setSuffix(" hs")
+            sp.valueChanged.connect(lambda v, key=key: self.set_sub("water", key, v))
+        hrs.addWidget(self.w_start)
+        hrs.addWidget(label("→"))
+        hrs.addWidget(self.w_end)
+        hrs.addStretch()
+        wf.addRow(t("Horario de avisos"), hrs)
+        self.s_on = QCheckBox(t("Seguimiento del sueño"))
+        self.s_on.toggled.connect(lambda on: self.set_sub("sleep", "enabled", on))
+        wf.addRow(self.s_on)
+        from PySide6.QtWidgets import QTimeEdit
+        from PySide6.QtCore import QTime
+        self._QTime = QTime
+        self.s_bed, self.s_wake = QTimeEdit(), QTimeEdit()
+        for te, key in ((self.s_bed, "bed"), (self.s_wake, "wake")):
+            te.setDisplayFormat("HH:mm")
+            te.timeChanged.connect(lambda v, key=key: self.set_sub("sleep", key, v.toString("HH:mm")))
+        wf.addRow(t("Hora de dormir"), self.s_bed)
+        wf.addRow(t("Hora de despertar"), self.s_wake)
+        self.s_rem = QCheckBox(t("Avisarme antes de la hora de dormir"))
+        self.s_rem.toggled.connect(lambda on: self.set_sub("sleep", "remind", on))
+        wf.addRow(self.s_rem)
+        well.lay.addLayout(wf)
 
         sist = Panel("SISTEMA", "settings")
         sf = QFormLayout()
@@ -655,7 +852,7 @@ class AjustesPage(QWidget):
 
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
-        lay.addWidget(scroll_page(plan, cuerpo, jug, guard, sist, datos))
+        lay.addWidget(scroll_page(plan, jug, well, guard, cuerpo, sist, datos))
 
     def refresh(self):
         self._loading = True
@@ -663,8 +860,36 @@ class AjustesPage(QWidget):
         st = s["settings"]
         self.name.setText(s["player"]["name"])
         self.plan.setCurrentIndex(PLAN_ORDER.index(st["plan"]) if st["plan"] in PLAN_ORDER else 0)
-        self.auto_prog.setChecked(st.get("autoProgress", True))
-        self.prog_lbl.setText(f"Progresión actual: +{round((s['progression'] - 1) * 100)}% sobre el plan base")
+        for k, cb in self.eq_cbs.items():
+            cb.setChecked(k in st.get("equipment", []))
+        self.adj_kg.setChecked(st.get("adjustableKg", True))
+        self.adj_kg.setVisible("dumbbell" in st.get("equipment", []))
+        done = [(k, p) for k, p in s.get("prog", {}).items() if p.get("hist") and k in EXERCISES]
+        if done:
+            self.prog_lbl.setText(t("Tu progresión actual") + ":<br>" + "  ·  ".join(
+                f"{t(EXERCISES[k].name)} <b style='color:white'>{p['sets']}×{p['reps']}"
+                f"{' s' if EXERCISES[k].timed else ''}{(' ' + format(p['kg'], 'g') + ' kg') if p.get('kg') else ''}</b>"
+                for k, p in done))
+        else:
+            self.prog_lbl.setText("")
+        from ..i18n import LANGS
+        cur = st.get("lang") or "es"
+        self.lang.setCurrentIndex(self.lang_keys.index(cur) if cur in self.lang_keys else 0)
+        from ..camera import list_cameras
+        self.camera.clear()
+        self.camera.addItems(list_cameras())
+        self.camera.setCurrentIndex(min(st.get("camera", 0), self.camera.count() - 1))
+        w, sl = st["water"], st["sleep"]
+        self.w_on.setChecked(w.get("enabled", True))
+        self.w_goal.setValue(int(w.get("goalMl", 0)))
+        self.w_glass.setValue(int(w.get("glassMl", 250)))
+        self.w_every.setValue(int(w.get("everyMin", 90)))
+        self.w_start.setValue(int(w.get("start", 9)))
+        self.w_end.setValue(int(w.get("end", 22)))
+        self.s_on.setChecked(sl.get("enabled", True))
+        self.s_bed.setTime(self._QTime.fromString(sl.get("bed", "23:30"), "HH:mm"))
+        self.s_wake.setTime(self._QTime.fromString(sl.get("wake", "07:30"), "HH:mm"))
+        self.s_rem.setChecked(sl.get("remind", True))
         for i, cb in enumerate(self.rest_cbs):
             cb.setChecked(i in st.get("restDays", []))
         prof = s.get("profile", {})
@@ -699,15 +924,35 @@ class AjustesPage(QWidget):
             return
         self.win.game.set_rest_days([i for i, cb in enumerate(self.rest_cbs) if cb.isChecked()])
 
-    def reset_prog(self):
+    def save_equipment(self):
+        if self._loading:
+            return
         g = self.win.game
-        g.s["progression"] = 1.0
-        g.s["progressCount"] = 0
-        if g._untouched():
-            g.quest["targets"] = g.build_targets(g.quest["penalty"])
+        g.settings["equipment"] = [k for k, cb in self.eq_cbs.items() if cb.isChecked()]
+        self.adj_kg.setVisible("dumbbell" in g.settings["equipment"])
+        if g._untouched():  # la sesión de hoy incluye los ejercicios nuevos si todavía no empezaste
+            g.new_quest(g.quest["date"], g.quest["penalty"])
         g.save()
         self.win.refresh()
-        self.refresh()
+
+    def set_sub(self, group, key, val):
+        if self._loading:
+            return
+        self.win.game.s["settings"][group][key] = val
+        self.win.game.save()
+        self.win.refresh()
+
+    def set_lang(self, i):
+        if self._loading or i < 0:
+            return
+        code = self.lang_keys[i]
+        self.win.game.s["settings"]["lang"] = code
+        self.win.game.save()
+        from ..i18n import set_lang
+        set_lang(code)
+        self.win.dialogs.show(t("IDIOMA"), t("El idioma se aplica al reiniciar Arise Trainer."),
+                              ((t("Reiniciar ahora"), "primary"), (t("Después"), "")),
+                              callback=lambda j, _: j == 0 and self.win.restart_app())
 
     def save_name(self):
         if self.name.text().strip():

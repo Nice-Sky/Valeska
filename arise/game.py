@@ -658,6 +658,107 @@ class Game:
         self.emit("changed")
         return entry
 
+    # ------------------------------------------------------------ bienestar: agua y sueño (ayudan, no castigan)
+    def water_goal(self) -> int:
+        """Meta de agua en ml: la tuya, o 35 ml por kg (+500 ml si hoy entrenás)."""
+        st = self.settings["water"]
+        if st.get("goalMl"):
+            return int(st["goalMl"])
+        w = self.weight_stats().get("last") or 0
+        base = int(round(w * 35 / 50) * 50) if w else 2500
+        q = self.quest
+        if q and not q.get("rest"):
+            base += 500
+        return max(1500, min(5000, base))
+
+    def water_today(self) -> int:
+        return int(self.s["water"].get(self.today(), {}).get("ml", 0))
+
+    def add_water(self, ml: int) -> int:
+        d = self.s["water"].setdefault(self.today(), {"ml": 0, "done": False})
+        before_done = d.get("done", False)
+        d["ml"] = max(0, int(d.get("ml", 0)) + int(ml))
+        d["done"] = d["ml"] >= self.water_goal()
+        if len(self.s["water"]) > 400:
+            for k in sorted(self.s["water"])[:-400]:
+                del self.s["water"][k]
+        if d["done"] and not before_done:
+            self.log(t("Meta de agua cumplida ({l} L).", l=f"{d['ml'] / 1000:.1f}"))
+            self.emit("toast", text=t("Meta de agua cumplida"), gold=True, icon="droplet")
+            self.gain_xp(20)
+            self.check_achievements()
+        self.save()
+        self.emit("changed")
+        return d["ml"]
+
+    def water_pace(self, now: Optional[datetime] = None) -> tuple[int, int]:
+        """(lo que deberías llevar a esta hora, lo que llevás)."""
+        now = now or datetime.now()
+        st = self.settings["water"]
+        start, end = int(st.get("start", 9)), int(st.get("end", 22))
+        h = now.hour + now.minute / 60
+        k = 0.0 if h <= start else 1.0 if h >= end else (h - start) / max(1, end - start)
+        return int(self.water_goal() * k), self.water_today()
+
+    def sleep_target_hours(self) -> float:
+        st = self.settings["sleep"]
+        bh, bm = (int(x) for x in st.get("bed", "23:30").split(":"))
+        wh, wm = (int(x) for x in st.get("wake", "07:30").split(":"))
+        mins = (wh * 60 + wm) - (bh * 60 + bm)
+        if mins <= 0:
+            mins += 24 * 60
+        return round(mins / 60, 2)
+
+    def sleep_start(self, when: Optional[datetime] = None):
+        self.s["remind"]["sleepStart"] = (when or datetime.now()).isoformat(timespec="minutes")
+        self.save()
+
+    def pending_sleep(self, now: Optional[datetime] = None) -> Optional[float]:
+        """Horas dormidas desde "me voy a dormir" (si todavía no lo registraste)."""
+        st = self.s["remind"].get("sleepStart")
+        if not st:
+            return None
+        now = now or datetime.now()
+        h = (now - datetime.fromisoformat(st)).total_seconds() / 3600
+        if h < 3:
+            return None
+        if h > 16:
+            self.s["remind"].pop("sleepStart", None)
+            return None
+        return round(h, 1)
+
+    def log_sleep(self, hours: float, quality: str = "", day: Optional[str] = None):
+        """Registra la noche (se guarda con la fecha del día en que te despertás)."""
+        hours = max(0.0, min(16.0, float(hours)))
+        ok = hours >= self.sleep_target_hours() - 0.5
+        self.s["sleepLog"][day or self.today()] = {"h": round(hours, 1), "q": quality, "ok": ok}
+        self.s["remind"].pop("sleepStart", None)
+        if len(self.s["sleepLog"]) > 400:
+            for k in sorted(self.s["sleepLog"])[:-400]:
+                del self.s["sleepLog"][k]
+        self.log(t("Sueño: {h} h.", h=f"{hours:.1f}"))
+        if ok:
+            self.gain_xp(15)
+        self.check_achievements()
+        self.save()
+        self.emit("changed")
+
+    def sleep_stats(self, days: int = 7) -> dict:
+        today = self._today()
+        vals = [v for k, v in self.s["sleepLog"].items() if 0 <= (today - date.fromisoformat(k)).days < days]
+        last = self.s["sleepLog"].get(self.today())
+        if not vals:
+            return {"count": 0, "last": last}
+        avg = sum(v["h"] for v in vals) / len(vals)
+        return {"count": len(vals), "avg": round(avg, 1), "ok": sum(1 for v in vals if v.get("ok")), "last": last}
+
+    def suggested_readiness(self) -> Optional[str]:
+        """Si dormiste poco, sugiere entrenar en modo "cansado" (no obliga)."""
+        last = self.s["sleepLog"].get(self.today())
+        if last and (last["h"] < 6 or last.get("q") == "mal"):
+            return "cansado"
+        return None
+
     # ------------------------------------------------------------ Guardián
     def guardian(self) -> dict:
         g = self.s["guardian"]

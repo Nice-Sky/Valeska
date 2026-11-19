@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (QApplication, QLabel, QButtonGroup, QHBoxLayout, 
                                QStackedWidget, QSystemTrayIcon, QVBoxLayout, QWidget)
 
 from . import storage
+from .i18n import lang, plural, t
 from .exercises import EXERCISES as EX
 from .game import PLAN_ORDER, PLANS, Game, rank_of
 from .guardian import Guardian
@@ -151,6 +152,8 @@ class MainWindow(QMainWindow):
             self.stack.addWidget(self.pages[key])
 
         self.guardian = Guardian(self)
+        from .wellness import Wellness
+        self.wellness = Wellness(self)
         self._setup_tray()
 
         self.pending_update = None
@@ -463,6 +466,18 @@ class MainWindow(QMainWindow):
         else:
             self._really_quit()
 
+    def restart_app(self):
+        """Reinicia la app (por ejemplo, al cambiar el idioma)."""
+        from PySide6.QtCore import QProcess
+        srv = getattr(QApplication.instance(), "arise_server", None)
+        if srv:
+            srv.close()
+        args = sys.argv[1:] if getattr(sys, "frozen", False) else [sys.argv[0]] + sys.argv[1:]
+        args = [a for a in args if a not in ("--minimizado", "--actualizado")]
+        self.game.save()
+        QProcess.startDetached(sys.executable, args)
+        self._really_quit()
+
     def _really_quit(self):
         from . import updater
         if self.pending_update and not getattr(self, "_installing", False):
@@ -503,6 +518,17 @@ class MainWindow(QMainWindow):
 
         def got_plan(i, _):
             self.game.register(self._name, PLAN_ORDER[max(0, i)])
+            self.game.settings["lang"] = lang()
+            d.show(t("EQUIPAMIENTO"), t("¿Qué tenés para entrenar en casa?<br><small>Suma ejercicios con barra y "
+                                        "mancuernas a tu rotación. Se cambia en Ajustes.</small>"),
+                   ((t("Nada"), ""), (t("Barra"), ""), (t("Mancuernas"), ""), (t("Las dos"), "primary")),
+                   callback=got_equipment, icon="dumbbell")
+
+        def got_equipment(i, _):
+            self.game.settings["equipment"] = [[], ["bar"], ["dumbbell"], ["bar", "dumbbell"]][max(0, i)]
+            self.game.new_quest(self.game.today(), False)
+            self.game.save()
+            self.refresh()
             if storage.autostart_supported():
                 d.show("RECORDATORIOS", "¿Querés que Arise Trainer arranque solo al prender la compu?<br>"
                                         "<small>Así los recordatorios funcionan aunque te olvides de abrirlo.</small>",
@@ -519,7 +545,24 @@ class MainWindow(QMainWindow):
                 body = "Tu objetivo de hoy:<br><br>" + "<br>".join(self._quest_lines())
             d.show("OBJETIVO DIARIO", body, ("Empezar",), icon="target", callback=lambda *_: self.show_page("mision"))
 
-        d.show("NOTIFICACIÓN",
+        def intro():
+            self._intro_dialog(ask_name)
+
+        def pick_lang(i, _):
+            code = ["es", "en", "pt"][max(0, i)]
+            if code != lang():
+                self.game.s["settings"]["lang"] = code
+                self.game.save()
+                self.restart_app()
+                return
+            intro()
+
+        d.show("IDIOMA · LANGUAGE", "Elegí el idioma · Choose your language · Escolha o idioma",
+               (("Español", "primary" if lang() == "es" else ""), ("English", "primary" if lang() == "en" else ""),
+                ("Português", "primary" if lang() == "pt" else "")), callback=pick_lang, icon="languages")
+
+    def _intro_dialog(self, ask_name):
+        self.dialogs.show("NOTIFICACIÓN",
                "Bienvenido a <b style='color:#4fd8ff'>Arise Trainer</b>.<br><br>"
                "Cada día tenés un objetivo de entrenamiento. Cumplirlo suma XP, racha y nivel.<br>"
                "Fallarlo tiene penalización.<br><br>La cámara cuenta tus repeticiones: solo valen las bien hechas.",
@@ -541,8 +584,11 @@ class MainWindow(QMainWindow):
 
     def _quest_lines(self):
         from .exercises import EXERCISES
-        q = self.game.quest
-        return [f"{EXERCISES[k].name}: <b>{t}</b>{' s' if EXERCISES[k].timed else ''}" for k, t in q["targets"].items()]
+        out = []
+        for it in self.game.session_items():
+            e = EXERCISES[it["ex"]]
+            out.append(f"{t(e.name)}: <b>{it['sets']} × {it['reps']}{' s' if e.timed else ''}</b>")
+        return out
 
     def startup(self, minimized: bool):
         storage.migrate_autostart()
@@ -565,12 +611,16 @@ class MainWindow(QMainWindow):
             self.game.check_achievements()
             self.refresh()
             QTimer.singleShot(1200, self._welcome)
-            if self.game.checkin_due():
+            rem = self.game.s.setdefault("remind", {})
+            if self.game.checkin_due() and rem.get("checkin") != self.game.today():
+                rem["checkin"] = self.game.today()  # una sola vez por día, aunque abras y cierres la app
+                self.game.save()
                 QTimer.singleShot(4000, lambda: self.notifier.show(
                     "CONTROL SEMANAL", "Hoy te toca el control corporal: 3 fotos y tu peso.", "scan-line", "gold",
                     actions=[("Hacer ahora", lambda: (self.show_page("cuerpo"), self.pages["cuerpo"].start_checkin()))],
                     timeout=15))
         QTimer.singleShot(5000, self.guardian.check)
+        QTimer.singleShot(9000, self.wellness.check)
 
 
 def main():
@@ -607,6 +657,15 @@ def main():
     QLocalServer.removeServer(INSTANCE_KEY)
     server = QLocalServer()
     server.listen(INSTANCE_KEY)
+    app.arise_server = server
+
+    # idioma: el elegido, o el del sistema la primera vez
+    from .i18n import set_lang, system_lang
+    try:
+        data = storage.Store().load() or {}
+    except Exception:
+        data = {}
+    set_lang((data.get("settings") or {}).get("lang") or system_lang())
 
     win = MainWindow()
     server.newConnection.connect(lambda: (server.nextPendingConnection(), win.show_page("estado")))

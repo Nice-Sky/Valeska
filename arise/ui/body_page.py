@@ -593,6 +593,11 @@ class CuerpoPage(QWidget):
                                                                                  g.save(), next_step()), icon="user-round")
 
         def ask_weight():
+            today = g.s["weights"].get(g.today())
+            if today:  # ya lo cargaste hoy: no se vuelve a pedir
+                self.weight_today = today
+                next_step()
+                return
             st = g.weight_stats()
             ph = f"Ej: {st['last']:.1f}" if st.get("last") else "Ej: 78.5"
             d.show("PESO DE HOY", "Pesate y escribí tu peso en kg.<br><small>Ideal: en ayunas, sin ropa o con poca ropa.</small>",
@@ -607,6 +612,7 @@ class CuerpoPage(QWidget):
                 ask_weight()
                 return
             self.weight_today = kg
+            g.log_weight(kg)  # se guarda ya: si cancelás las fotos, no te lo vuelve a pedir
             next_step()
 
         steps = []

@@ -244,3 +244,26 @@ def test_weights_and_checkins(tmp_path):
     clock.d = date(2026, 11, 23)
     assert g.checkin_due()
     assert "checkin1" in g.s["achievements"]
+
+
+def test_water_goal_and_log(tmp_path):
+    g, clock, ev = make(tmp_path)
+    g.log_weight(80)
+    goal = g.water_goal()
+    assert goal == 80 * 35 + 500
+    g.add_water(goal)
+    assert g.s["water"][g.today()]["done"]
+    should, have = g.water_pace(datetime(2026, 11, 18, 15, 30))
+    assert have == goal and 0 < should < goal
+
+
+def test_sleep_log_and_suggestion(tmp_path):
+    g, clock, ev = make(tmp_path)
+    g.settings["sleep"].update(bed="23:00", wake="07:00")
+    assert g.sleep_target_hours() == 8
+    g.log_sleep(5.2, "mal")
+    assert g.suggested_readiness() == "cansado"
+    g.log_sleep(8, "bien")
+    assert g.s["sleepLog"][g.today()]["ok"]
+    g.sleep_start(datetime(2026, 11, 17, 23, 0))
+    assert g.pending_sleep(datetime(2026, 11, 18, 7, 0)) == 8.0
