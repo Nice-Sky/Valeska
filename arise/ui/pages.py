@@ -67,26 +67,26 @@ class QuestList(QWidget):
         if q.get("rest"):
             r = QHBoxLayout()
             r.addWidget(icon_label("moon", 20, T.GLOW))
-            r.addWidget(label("Día de descanso. Recuperar también es parte del plan. Si querés, podés entrenar igual.", "muted", wrap=True), 1)
+            r.addWidget(label(t("Día de descanso. Recuperar también es parte del plan. Si querés, podés entrenar igual."), "muted", wrap=True), 1)
             self.lay.addLayout(r)
             return
-        for k, t in q["targets"].items():
+        for k, tgt in q["targets"].items():
             ex = EXERCISES[k]
-            v = min(q["progress"].get(k, 0), t)
-            done = v >= t
+            v = min(q["progress"].get(k, 0), tgt)
+            done = v >= tgt
             row = QHBoxLayout()
             row.addWidget(icon_label(ex.icon, 20, T.GREEN if done else icons.WHITE))
-            name = label(ex.name)
+            name = label(t(ex.name))
             name.setStyleSheet("font-size:17px;font-weight:600;")
             row.addWidget(name)
             row.addStretch()
-            num = label(f"[{fmt(v)}/{t}]{' s' if ex.timed else ''}")
+            num = label(f"[{fmt(v)}/{tgt}]{' s' if ex.timed else ''}")
             num.setStyleSheet(f"font-size:16px;color:{T.GREEN if done else 'white'};")
             row.addWidget(num)
             if self.with_buttons and not done:
-                row.addWidget(button("Entrenar", "", lambda _=False, k=k: self.win.open_training(k), icon="swords"))
+                row.addWidget(button(t("Entrenar"), "", lambda _=False, k=k: self.win.open_training(k), icon="swords"))
             self.lay.addLayout(row)
-            self.lay.addWidget(ThinBar(v / t if t else 0, done))
+            self.lay.addWidget(ThinBar(v / tgt if tgt else 0, done))
             self.lay.addSpacing(6)
 
 
@@ -181,7 +181,7 @@ class EstadoPage(QWidget):
         super().__init__()
         self.win = win
         self.setObjectName("page")
-        status = Panel("ESTADO", "user-round")
+        status = Panel(t("ESTADO"), "user-round")
         head = QHBoxLayout()
         self.badge = RankBadge(110)
         head.addWidget(self.badge)
@@ -191,8 +191,8 @@ class EstadoPage(QWidget):
         info.setVerticalSpacing(8)
         self.name, self.level, self.rank_next, self.streak, self.adh, self.title = (label() for _ in range(6))
         self.level = GlowLabel("1", 26, spacing=1)
-        for txt, w in (("NOMBRE", self.name), ("NIVEL", self.level), ("PRÓXIMO RANGO", self.rank_next),
-                       ("RACHA", self.streak), ("CONSTANCIA (30 DÍAS)", self.adh), ("ÚLTIMO LOGRO", self.title)):
+        for txt, w in ((t("NOMBRE"), self.name), (t("NIVEL"), self.level), (t("PRÓXIMO RANGO"), self.rank_next),
+                       (t("RACHA"), self.streak), (t("CONSTANCIA (30 DÍAS)"), self.adh), (t("ÚLTIMO LOGRO"), self.title)):
             info.addRow(label(txt, "lbl"), w)
         head.addLayout(info, 1)
         status.lay.addLayout(head)
@@ -202,15 +202,15 @@ class EstadoPage(QWidget):
         self.stats.setSpacing(10)
         status.lay.addLayout(self.stats)
 
-        quest = Panel("OBJETIVO DE HOY", "target")
+        quest = Panel(t("OBJETIVO DE HOY"), "target")
         self.quest = QuestList(win, False)
         quest.lay.addWidget(self.quest)
-        quest.lay.addWidget(button("Ir al objetivo", "primary", lambda: win.go("mision"), icon="target"))
+        quest.lay.addWidget(button(t("Ir al objetivo"), "primary", lambda: win.go("mision"), icon="target"))
 
-        rec = Panel("RÉCORDS PERSONALES", "trophy")
+        rec = Panel(t("RÉCORDS PERSONALES"), "trophy")
         self.records = QGridLayout()
         self.records.setSpacing(8)
-        rec.lay.addWidget(label("Mejor serie de cada ejercicio (repeticiones seguidas o segundos de plancha).", "muted", wrap=True))
+        rec.lay.addWidget(label(t("Mejor serie de cada ejercicio (repeticiones seguidas o segundos de plancha)."), "muted", wrap=True))
         rec.lay.addLayout(self.records)
 
         lay = QVBoxLayout(self)
@@ -225,8 +225,10 @@ class EstadoPage(QWidget):
         self.name.setText(p["name"])
         self.level.setText(str(lvl))
         nr = next_rank(lvl)
-        self.rank_next.setText(f"{nr[1]} en el nivel {nr[0]} (faltan {nr[0] - lvl})" if nr else "Rango máximo")
-        self.streak.setText(f"{g.s['streak']} día{'s' if g.s['streak'] != 1 else ''}  (mejor: {g.s['bestStreak']})")
+        self.rank_next.setText(t("{r} en el nivel {n} (faltan {left})", r=nr[1], n=nr[0], left=nr[0] - lvl) if nr
+                               else t("Rango máximo"))
+        self.streak.setText(plural(g.s["streak"], "{n} día", "{n} días") + "  "
+                            + t("(mejor: {n})", n=g.s["bestStreak"]))
         adh = g.adherence()
         self.adh.setText("—" if adh is None else f"{adh}%")
         self.adh.setStyleSheet(f"color:{T.GREEN if (adh or 0) >= 80 else T.GOLD if (adh or 0) >= 50 else T.RED if adh is not None else T.TEXT};font-weight:700;")
@@ -236,17 +238,17 @@ class EstadoPage(QWidget):
         self.xp.setValue(int(p["xp"]))
         self.xp.setFormat(f"XP  {fmt(p['xp'])} / {fmt(need)}")
         clear_layout(self.stats)
-        cards = [(k, name, tip, str(g.stat_value(k))) for k, (name, tip, _) in STATS.items()]
-        cards.append(("DIS", "Disciplina", "Porcentaje de días cumplidos en los últimos 30 (sin contar descansos)",
+        cards = [(k, t(name), t(tip), str(g.stat_value(k))) for k, (name, tip, _) in STATS.items()]
+        cards.append(("DIS", t("Disciplina"), t("Porcentaje de días cumplidos en los últimos 30 (sin contar descansos)"),
                       "—" if adh is None else f"{adh}%"))
         for i, (k, name, tip, val) in enumerate(cards):
             card = Panel(compact=True)
             card.setToolTip(tip)
             row = QHBoxLayout()
             col = QVBoxLayout()
-            t = label(k)
-            t.setStyleSheet(f"color:{T.GLOW};font-size:15px;font-weight:700;")
-            col.addWidget(t)
+            tl = label(k)
+            tl.setStyleSheet(f"color:{T.GLOW};font-size:15px;font-weight:700;")
+            col.addWidget(tl)
             col.addWidget(label(name, "lbl"))
             row.addLayout(col)
             row.addStretch()
@@ -260,7 +262,7 @@ class EstadoPage(QWidget):
             r = g.s["records"].get(e, 0)
             box = label(f"<span style='font-size:22px;font-weight:700;color:white'>{fmt(r) if r else '—'}</span>"
                         f"<span style='color:{T.MUTED}'>{' s' if ex.timed and r else ''}</span><br>"
-                        f"{icons.img(ex.icon, 15, T.GLOW)}&nbsp; {ex.name}", align=Qt.AlignmentFlag.AlignCenter)
+                        f"{icons.img(ex.icon, 15, T.GLOW)}&nbsp; {t(ex.name)}", align=Qt.AlignmentFlag.AlignCenter)
             box.setTextFormat(Qt.TextFormat.RichText)
             box.setStyleSheet("border:1px solid #1c3a70;padding:8px;")
             self.records.addWidget(box, i // 3, i % 3)
@@ -273,7 +275,7 @@ class MisionPage(QWidget):
         super().__init__()
         self.win = win
         self.setObjectName("page")
-        self.panel = Panel("OBJETIVO DE HOY", "target")
+        self.panel = Panel(t("OBJETIVO DE HOY"), "target")
         self.sub = label("", "muted", align=Qt.AlignmentFlag.AlignCenter)
         self.panel.lay.addWidget(self.sub)
         self.list = QuestList(win, True)
@@ -291,22 +293,22 @@ class MisionPage(QWidget):
         wl.setSpacing(4)
         wl.addWidget(self.water, 1)
         wl.addWidget(self.sleep, 1)
-        self.checkin = Panel("CONTROL SEMANAL", "scan-line")
+        self.checkin = Panel(t("CONTROL SEMANAL"), "scan-line")
         self.checkin.set_tone("gold")
-        self.checkin.lay.addWidget(label("Hoy te toca: 3 fotos (frente, perfil izquierdo y derecho) y tu peso.",
+        self.checkin.lay.addWidget(label(t("Hoy te toca: 3 fotos (frente, perfil izquierdo y derecho) y tu peso."),
                                          "muted", wrap=True, align=Qt.AlignmentFlag.AlignCenter))
         crow = QHBoxLayout()
         crow.addStretch()
-        crow.addWidget(button("Hacer control", "primary", lambda: (win.show_page("cuerpo"), win.pages["cuerpo"].start_checkin()),
+        crow.addWidget(button(t("Hacer control"), "primary", lambda: (win.show_page("cuerpo"), win.pages["cuerpo"].start_checkin()),
                               icon="camera"))
         crow.addStretch()
         self.checkin.lay.addLayout(crow)
         lay = QVBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
         lay.addWidget(scroll_page(self.panel, well, self.checkin))
-        t = QTimer(self)
-        t.timeout.connect(self.tick)
-        t.start(1000)
+        tmr = QTimer(self)
+        tmr.timeout.connect(self.tick)
+        tmr.start(1000)
 
     def refresh(self):
         q = self.win.game.quest
@@ -315,7 +317,7 @@ class MisionPage(QWidget):
         g = self.win.game
         self.checkin.setVisible(g.checkin_due())
         rest = q.get("rest")
-        self.panel.set_title("DÍA DE DESCANSO" if rest else "PENALIZACIÓN: OBJETIVO +30%" if q["penalty"] else "OBJETIVO DE HOY")
+        self.panel.set_title(t("DÍA DE DESCANSO") if rest else t("PENALIZACIÓN: OBJETIVO +30%") if q["penalty"] else t("OBJETIVO DE HOY"))
         self.panel.title.set_icon("moon" if rest else "triangle-alert" if q["penalty"] else "target")
         self.panel.set_tone("red" if q["penalty"] else "")
         plan = PLANS.get(q.get("plan"), PLANS["principiante"])["label"]
@@ -331,10 +333,10 @@ class MisionPage(QWidget):
             self.warning.setText("")
         elif q["completed"]:
             self.warning.setObjectName("ok")
-            self.warning.setText(icons.img("circle-check", 18, T.GREEN) + "&nbsp; Objetivo cumplido. Mañana, de nuevo.")
+            self.warning.setText(icons.img("circle-check", 18, T.GREEN) + t("&nbsp; Objetivo cumplido. Mañana, de nuevo."))
         else:
             self.warning.setObjectName("warn")
-            self.warning.setText(icons.img("triangle-alert", 18, T.RED) + "&nbsp; Si no lo cumplís antes de medianoche: pérdida de XP, racha a cero y mañana +30%.")
+            self.warning.setText(icons.img("triangle-alert", 18, T.RED) + t("&nbsp; Si no lo cumplís antes de medianoche: pérdida de XP, racha a cero y mañana +30%."))
         restyle(self.warning)
         self.tick()
 
@@ -346,7 +348,7 @@ class MisionPage(QWidget):
         now = datetime.now()
         end = datetime.combine(now.date() + timedelta(days=1), datetime.min.time())
         s = int((end - now).total_seconds())
-        self.count.setText(f"TIEMPO RESTANTE  {s // 3600:02d}:{s % 3600 // 60:02d}:{s % 60:02d}")
+        self.count.setText(t("TIEMPO RESTANTE") + f"  {s // 3600:02d}:{s % 3600 // 60:02d}:{s % 60:02d}")
 
 
 class WaterCard(Panel):
@@ -506,28 +508,28 @@ class RegistroPage(QWidget):
         super().__init__()
         self.win = win
         self.setObjectName("page")
-        summ = Panel("RESUMEN", "activity")
+        summ = Panel(t("RESUMEN"), "activity")
         self.summary = QGridLayout()
         self.summary.setSpacing(8)
         summ.lay.addLayout(self.summary)
-        vol = Panel("VOLUMEN DIARIO · 30 DÍAS", "chart-column")
+        vol = Panel(t("VOLUMEN DIARIO · 30 DÍAS"), "chart-column")
         self.chart = VolumeChart()
         vol.lay.addWidget(self.chart)
-        vol.lay.addWidget(label("Repeticiones totales por día (la plancha cuenta 1 por cada 5 s). "
-                                "Verde: objetivo cumplido · Rojo: no cumplido · Gris: descanso.", "muted", wrap=True))
-        heat = Panel("ÚLTIMOS 28 DÍAS", "calendar-days")
+        vol.lay.addWidget(label(t("Repeticiones totales por día (la plancha cuenta 1 por cada 5 s). "
+                                "Verde: objetivo cumplido · Rojo: no cumplido · Gris: descanso."), "muted", wrap=True))
+        heat = Panel(t("ÚLTIMOS 28 DÍAS"), "calendar-days")
         self.heat = QGridLayout()
         self.heat.setSpacing(6)
         heat.lay.addLayout(self.heat)
-        tot = Panel("TOTALES", "dumbbell")
+        tot = Panel(t("TOTALES"), "dumbbell")
         self.totals = QGridLayout()
         self.totals.setSpacing(8)
         tot.lay.addLayout(self.totals)
-        ach = Panel("LOGROS", "trophy")
+        ach = Panel(t("LOGROS"), "trophy")
         self.ach = QGridLayout()
         self.ach.setSpacing(8)
         ach.lay.addLayout(self.ach)
-        log = Panel("HISTORIAL", "terminal")
+        log = Panel(t("HISTORIAL"), "terminal")
         self.log = QListWidget()
         self.log.setMinimumHeight(240)
         log.lay.addWidget(self.log)
@@ -564,14 +566,14 @@ class RegistroPage(QWidget):
         adh = g.adherence()
         cumplidos = sum(1 for d in days if self._day_state(d.isoformat(), today) == "ok")
         clear_layout(self.summary)
-        items = [("Constancia 30 días", "—" if adh is None else f"{adh}%"),
-                 ("Días cumplidos (30 d)", str(cumplidos)),
-                 ("Volumen últimos 7 días", fmt(week)),
-                 ("vs. semana anterior", delta),
-                 ("Racha actual", str(s["streak"])),
-                 ("Mejor racha", str(s["bestStreak"])),
-                 ("Progresión de objetivos", f"+{round((s['progression'] - 1) * 100)}%"),
-                 ("Nivel / Rango", f"{s['player']['level']} / {rank_of(s['player']['level'])}")]
+        items = [(t("Constancia 30 días"), "—" if adh is None else f"{adh}%"),
+                 (t("Días cumplidos (30 d)"), str(cumplidos)),
+                 (t("Volumen últimos 7 días"), fmt(week)),
+                 (t("vs. semana anterior"), delta),
+                 (t("Racha actual"), str(s["streak"])),
+                 (t("Mejor racha"), str(s["bestStreak"])),
+                 (t("Progresión de objetivos"), f"+{round((s['progression'] - 1) * 100)}%"),
+                 (t("Nivel / Rango"), f"{s['player']['level']} / {rank_of(s['player']['level'])}")]
         for i, (name, val) in enumerate(items):
             box = label(f"<span style='font-size:22px;font-weight:700;color:white'>{val}</span><br>"
                         f"<span style='color:{T.MUTED}'>{name}</span>", align=Qt.AlignmentFlag.AlignCenter)
@@ -600,8 +602,8 @@ class RegistroPage(QWidget):
             self.heat.addWidget(c, i // 7, i % 7)
 
         clear_layout(self.totals)
-        items = [(icons.img(EXERCISES[e].icon, 16, T.GLOW) + "&nbsp; " + EXERCISES[e].name + (" (seg)" if EXERCISES[e].timed else ""), s["totals"].get(e, 0))
-                 for e in EXERCISE_ORDER] + [(icons.img("trophy", 16, T.GOLD) + "&nbsp; Misiones cumplidas", s["questsDone"])]
+        items = [(icons.img(EXERCISES[e].icon, 16, T.GLOW) + "&nbsp; " + t(EXERCISES[e].name) + (" (s)" if EXERCISES[e].timed else ""), s["totals"].get(e, 0))
+                 for e in EXERCISE_ORDER] + [(icons.img("trophy", 16, T.GOLD) + t("&nbsp; Misiones cumplidas"), s["questsDone"])]
         for i, (name, val) in enumerate(items):
             box = label(f"<span style='font-size:24px;font-weight:700;color:white'>{fmt(val)}</span><br>{name}",
                         align=Qt.AlignmentFlag.AlignCenter)
@@ -612,18 +614,18 @@ class RegistroPage(QWidget):
         clear_layout(self.ach)
         for i, (aid, title, desc, _) in enumerate(ACHIEVEMENTS):
             on = aid in s["achievements"]
-            box = label(f"{icons.img('award' if on else 'lock', 16, T.GOLD if on else T.MUTED)}&nbsp; <b style='color:{T.GOLD if on else T.MUTED}'>{escape(title)}</b><br>"
-                        f"<span style='color:{T.MUTED}'>{escape(desc)}</span>", wrap=True)
+            box = label(f"{icons.img('award' if on else 'lock', 16, T.GOLD if on else T.MUTED)}&nbsp; <b style='color:{T.GOLD if on else T.MUTED}'>{escape(t(title))}</b><br>"
+                        f"<span style='color:{T.MUTED}'>{escape(t(desc))}</span>", wrap=True)
             box.setTextFormat(Qt.TextFormat.RichText)
             box.setStyleSheet(f"border:1px solid {T.GOLD if on else '#1c3a70'};padding:8px;")
             self.ach.addWidget(box, i // 3, i % 3)
 
         self.log.clear()
         for entry in s["log"][:80]:
-            t = datetime.fromtimestamp(entry["t"]).strftime("%d/%m %H:%M")
-            self.log.addItem(f"{t}   {entry['msg']}")
+            when = datetime.fromtimestamp(entry["t"]).strftime("%d/%m %H:%M")
+            self.log.addItem(f"{when}   {entry['msg']}")
         if not s["log"]:
-            self.log.addItem("Sin mensajes todavía.")
+            self.log.addItem(t("Sin mensajes todavía."))
 
 
 # =================================================================== AJUSTES
@@ -634,7 +636,7 @@ class AjustesPage(QWidget):
         self.setObjectName("page")
         self._loading = False
 
-        plan = Panel("PLAN DE ENTRENAMIENTO", "target")
+        plan = Panel(t("PLAN DE ENTRENAMIENTO"), "target")
         pf = QFormLayout()
         pf.setVerticalSpacing(12)
         pf.setHorizontalSpacing(24)
@@ -668,36 +670,36 @@ class AjustesPage(QWidget):
         rd = QHBoxLayout()
         self.rest_cbs = []
         for i, d in enumerate(WEEKDAYS):
-            cb = QCheckBox(d[:3])
+            cb = QCheckBox(t(d)[:3])
             cb.toggled.connect(lambda _=False: self.save_rest())
             self.rest_cbs.append(cb)
             rd.addWidget(cb)
         rd.addStretch()
         plan.lay.addLayout(rd)
 
-        cuerpo = Panel("CONTROL CORPORAL", "scan-line")
+        cuerpo = Panel(t("CONTROL CORPORAL"), "scan-line")
         cf = QFormLayout()
         cf.setVerticalSpacing(10)
         self.height_cm = QSpinBox()
         self.height_cm.setRange(0, 230)
         self.height_cm.setSuffix(" cm")
-        self.height_cm.setSpecialValueText("sin definir")
+        self.height_cm.setSpecialValueText(t("sin definir"))
         self.height_cm.valueChanged.connect(lambda v: self._set_profile("heightCm", v))
         self.sex = QComboBox()
-        self.sex.addItems(["Sin definir", "Hombre", "Mujer"])
+        self.sex.addItems([t("Sin definir"), t("Hombre"), t("Mujer")])
         self.sex.currentIndexChanged.connect(lambda i: self._set_profile("sex", ["", "m", "f"][i]))
         self.ck_day = QComboBox()
-        self.ck_day.addItems(WEEKDAYS)
+        self.ck_day.addItems([t(d) for d in WEEKDAYS])
         self.ck_day.currentIndexChanged.connect(lambda i: self.set_setting("checkinDay", i))
-        cf.addRow("Altura", self.height_cm)
-        cf.addRow("Sexo (para la fórmula de grasa)", self.sex)
-        cf.addRow("Día del control semanal", self.ck_day)
+        cf.addRow(t("Altura"), self.height_cm)
+        cf.addRow(t("Sexo (para la fórmula de grasa)"), self.sex)
+        cf.addRow(t("Día del control semanal"), self.ck_day)
         cuerpo.lay.addLayout(cf)
-        cuerpo.lay.addWidget(label("Las fotos se guardan solo en tu compu, en la carpeta de datos (ver abajo), subcarpeta \"fotos\".",
+        cuerpo.lay.addWidget(label(t("Las fotos se guardan solo en tu compu, en la carpeta de datos (ver abajo), subcarpeta \"fotos\"."),
                                    "muted", wrap=True))
         self.cuerpo_panel = cuerpo
 
-        jug = Panel("PERFIL Y CÁMARA", "user-round")
+        jug = Panel(t("PERFIL Y CÁMARA"), "user-round")
         f = QFormLayout()
         f.setVerticalSpacing(12)
         f.setHorizontalSpacing(24)
@@ -716,18 +718,18 @@ class AjustesPage(QWidget):
         self.camera.currentIndexChanged.connect(lambda i: i >= 0 and self.set_setting("camera", i))
         f.addRow(t("Cámara"), self.camera)
         jug.lay.addLayout(f)
-        self.voice = QCheckBox("Voz que cuenta las repeticiones y te corrige")
-        self.sound = QCheckBox("Efectos de sonido")
-        self.mirror = QCheckBox("Cámara en modo espejo")
+        self.voice = QCheckBox(t("Voz que cuenta las repeticiones y te corrige"))
+        self.sound = QCheckBox(t("Efectos de sonido"))
+        self.mirror = QCheckBox(t("Cámara en modo espejo"))
         for cb, key in ((self.voice, "voice"), (self.sound, "sound"), (self.mirror, "mirror")):
             cb.toggled.connect(lambda on, key=key: self.set_setting(key, on))
             jug.lay.addWidget(cb)
 
-        guard = Panel("RECORDATORIOS", "bell-ring")
-        guard.lay.addWidget(label("Mientras Arise Trainer esté abierto (aunque sea minimizado al lado del reloj), "
-                                  "te muestra una alerta encima de todo hasta que cumplas el objetivo del día.",
+        guard = Panel(t("RECORDATORIOS"), "bell-ring")
+        guard.lay.addWidget(label(t("Mientras Arise Trainer esté abierto (aunque sea minimizado al lado del reloj), "
+                                  "te muestra una alerta encima de todo hasta que cumplas el objetivo del día."),
                                   "muted", wrap=True))
-        self.nag = QCheckBox("Activado")
+        self.nag = QCheckBox(t("Activado"))
         self.nag.toggled.connect(lambda on: self.set_nag("enabled", on))
         guard.lay.addWidget(self.nag)
         gf = QFormLayout()
@@ -742,17 +744,17 @@ class AjustesPage(QWidget):
         self.snooze.setRange(0, 10)
         for sp, key in ((self.hour, "startHour"), (self.every, "intervalMin"), (self.snooze, "snoozesPerDay")):
             sp.valueChanged.connect(lambda v, key=key: self.set_nag(key, v))
-        gf.addRow("Empieza a molestar desde las", self.hour)
-        gf.addRow("Repetir cada", self.every)
-        gf.addRow("Posposiciones por día", self.snooze)
+        gf.addRow(t("Empieza a molestar desde las"), self.hour)
+        gf.addRow(t("Repetir cada"), self.every)
+        gf.addRow(t("Posposiciones por día"), self.snooze)
         guard.lay.addLayout(gf)
-        self.hard = QCheckBox("Modo estricto: la alerta cubre todas las pantallas y no se puede cerrar")
+        self.hard = QCheckBox(t("Modo estricto: la alerta cubre todas las pantallas y no se puede cerrar"))
         self.hard.toggled.connect(self.toggle_hard)
         guard.lay.addWidget(self.hard)
-        self.auto = QCheckBox("Abrir Arise Trainer automáticamente al prender la compu")
+        self.auto = QCheckBox(t("Abrir Arise Trainer automáticamente al prender la compu"))
         self.auto.toggled.connect(self.toggle_auto)
         guard.lay.addWidget(self.auto)
-        guard.lay.addWidget(button("Probar alerta ahora", "", lambda: self.win.guardian.show(test=True), icon="bell-ring"))
+        guard.lay.addWidget(button(t("Probar alerta ahora"), "", lambda: self.win.guardian.show(test=True), icon="bell-ring"))
 
         well = Panel(t("AGUA Y SUEÑO"), "droplet")
         well.lay.addWidget(label(t("Te ayudan a sostener el hábito: avisan, pero no te sacan XP ni rachas."), "muted",
@@ -810,41 +812,41 @@ class AjustesPage(QWidget):
         wf.addRow(self.s_rem)
         well.lay.addLayout(wf)
 
-        sist = Panel("SISTEMA", "settings")
+        sist = Panel(t("SISTEMA"), "settings")
         sf = QFormLayout()
         sf.setVerticalSpacing(12)
         sf.setHorizontalSpacing(24)
         self.quality = QComboBox()
-        self.quality.addItems(["Alto (todos los efectos, 40 fps)", "Medio (menos humo y partículas)",
-                               "Bajo (sin animaciones, para compus lentas)"])
+        self.quality.addItems([t("Alto (todos los efectos, 40 fps)"), t("Medio (menos humo y partículas)"),
+                               t("Bajo (sin animaciones, para compus lentas)")])
         self.quality.currentIndexChanged.connect(lambda i: self.set_setting("quality", ["alto", "medio", "bajo"][i]))
-        sf.addRow("Calidad de efectos", self.quality)
+        sf.addRow(t("Calidad de efectos"), self.quality)
         from PySide6.QtWidgets import QSlider
         self.volume = QSlider(Qt.Orientation.Horizontal)
         self.volume.setRange(0, 100)
         self.volume.valueChanged.connect(lambda v: self.set_setting("volume", v))
         self.volume.sliderReleased.connect(lambda: self.win.sounds.play("notify"))
-        sf.addRow("Volumen de efectos", self.volume)
+        sf.addRow(t("Volumen de efectos"), self.volume)
         sist.lay.addLayout(sf)
         from .._version import VERSION
-        self.version_lbl = label(f"Versión instalada: {VERSION}", "muted")
+        self.version_lbl = label(t("Versión instalada: {v}", v=VERSION), "muted")
         sist.lay.addWidget(self.version_lbl)
-        self.auto_upd = QCheckBox("Actualizar automáticamente en segundo plano (busca cada 3 horas e instala cuando no la usás)")
+        self.auto_upd = QCheckBox(t("Actualizar automáticamente en segundo plano (busca cada 3 horas e instala cuando no la usás)"))
         self.auto_upd.toggled.connect(lambda on: self.set_setting("autoUpdate", on))
         sist.lay.addWidget(self.auto_upd)
         urow = QHBoxLayout()
-        urow.addWidget(button("Buscar actualizaciones", "primary", lambda: self.win.check_updates(True), icon="download"))
-        urow.addWidget(button("Probar notificación", "", lambda: self.win.notifier.show(
-            "NOTIFICACIÓN", "Así se ven los avisos del Sistema en tu escritorio.", "bell-ring", "",
-            actions=[("Genial", lambda: None)]), icon="bell-ring"))
+        urow.addWidget(button(t("Buscar actualizaciones"), "primary", lambda: self.win.check_updates(True), icon="download"))
+        urow.addWidget(button(t("Probar notificación"), "", lambda: self.win.notifier.show(
+            t("NOTIFICACIÓN"), t("Así se ven los avisos del Sistema en tu escritorio."), "bell-ring", "",
+            actions=[(t("Genial"), lambda: None)]), icon="bell-ring"))
         urow.addStretch()
         sist.lay.addLayout(urow)
 
-        datos = Panel("DATOS", "download")
+        datos = Panel(t("DATOS"), "download")
         row = QHBoxLayout()
-        row.addWidget(button("Exportar progreso", "", self.export, icon="download"))
-        row.addWidget(button("Importar", "", self.import_, icon="upload"))
-        row.addWidget(button("Reiniciar todo", "danger", self.reset, icon="trash-2"))
+        row.addWidget(button(t("Exportar progreso"), "", self.export, icon="download"))
+        row.addWidget(button(t("Importar"), "", self.import_, icon="upload"))
+        row.addWidget(button(t("Reiniciar todo"), "danger", self.reset, icon="trash-2"))
         datos.lay.addLayout(row)
         self.path = label("", "muted", wrap=True)
         self.path.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
@@ -873,7 +875,8 @@ class AjustesPage(QWidget):
         else:
             self.prog_lbl.setText("")
         from ..i18n import LANGS
-        cur = st.get("lang") or "es"
+        from ..i18n import lang as current_lang
+        cur = st.get("lang") or current_lang()
         self.lang.setCurrentIndex(self.lang_keys.index(cur) if cur in self.lang_keys else 0)
         from ..camera import list_cameras
         self.camera.clear()
@@ -910,7 +913,7 @@ class AjustesPage(QWidget):
         self.hard.setChecked(bool(n["hard"]))
         self.auto.setEnabled(storage.autostart_supported())
         self.auto.setChecked(storage.autostart_enabled())
-        self.path.setText(f"Tus datos se guardan en: {self.win.game.store.path}")
+        self.path.setText(t("Tus datos se guardan en: {path}", path=self.win.game.store.path))
         self._loading = False
 
     def _set_profile(self, key, val):
@@ -987,39 +990,40 @@ class AjustesPage(QWidget):
                 self._loading = True
                 self.hard.setChecked(False)
                 self._loading = False
-        self.win.dialogs.show("CONFIRMAR",
-                              "En modo estricto la alerta cubre <b>todas tus pantallas</b> y no se puede cerrar "
-                              "hasta que vayas a entrenar, uses una posposición o escribas la frase de rendición.<br><br>¿Aceptás?",
-                              (("Acepto", "danger"), ("Mejor no", "")), tone="red", callback=answer)
+        self.win.dialogs.show(t("CONFIRMAR"),
+                              t("En modo estricto la alerta cubre <b>todas tus pantallas</b> y no se puede cerrar "
+                              "hasta que vayas a entrenar, uses una posposición o escribas la frase de rendición.<br><br>¿Aceptás?"),
+                              ((t("Acepto"), "danger"), (t("Mejor no"), "")), tone="red", callback=answer)
 
     def toggle_auto(self, on):
         if not self._loading and not storage.set_autostart(on):
-            self.win.toaster.show("No pude cambiar el inicio automático")
+            self.win.toaster.show(t("No pude cambiar el inicio automático"))
 
     def export(self):
-        path, _ = QFileDialog.getSaveFileName(self, "Exportar progreso", f"arise-trainer-{date.today()}.json", "JSON (*.json)")
+        path, _ = QFileDialog.getSaveFileName(self, t("Exportar progreso"), f"arise-trainer-{date.today()}.json",  # i18n: no
+                                              t("JSON (*.json)"))
         if path:
             with open(path, "w", encoding="utf-8") as f:
                 json.dump(self.win.game.export(), f, ensure_ascii=False, indent=1)
-            self.win.toaster.show("Progreso exportado")
+            self.win.toaster.show(t("Progreso exportado"))
 
     def import_(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Importar progreso", "", "JSON (*.json)")
+        path, _ = QFileDialog.getOpenFileName(self, t("Importar progreso"), "", t("JSON (*.json)"))
         if not path:
             return
         try:
             with open(path, encoding="utf-8") as f:
                 self.win.game.import_state(json.load(f))
-            self.win.toaster.show("Progreso importado")
+            self.win.toaster.show(t("Progreso importado"))
             self.refresh()
         except Exception as e:
-            self.win.toaster.show(f"No se pudo importar: {e}")
+            self.win.toaster.show(t("No se pudo importar: {e}", e=e))
 
     def reset(self):
         def answer(i, val):
-            if i == 0 and val.strip().upper() == "BORRAR":
+            if i == 0 and val.strip().upper() in ("BORRAR", t("BORRAR").upper()):
                 self.win.game.reset()
                 self.win.start_onboarding()
-        self.win.dialogs.show("REINICIAR", "Vas a borrar TODO tu progreso.<br>Escribí <b>BORRAR</b> para confirmar.",
-                              (("Borrar todo", "danger"), ("Cancelar", "")), tone="red", callback=answer,
-                              with_input=True, placeholder="BORRAR")
+        self.win.dialogs.show(t("REINICIAR"), t("Vas a borrar TODO tu progreso.<br>Escribí <b>BORRAR</b> para confirmar."),
+                              ((t("Borrar todo"), "danger"), (t("Cancelar"), "")), tone="red", callback=answer,
+                              with_input=True, placeholder=t("BORRAR"))

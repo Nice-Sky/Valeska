@@ -13,8 +13,8 @@ from typing import Callable, Optional
 from ._version import VERSION
 
 REPO = "Nice-Sky/Valeska"   # si el repo se renombra, GitHub redirige la API al nombre nuevo
-API = f"https://api.github.com/repos/{REPO}/releases/latest"
-RELEASES_PAGE = f"https://github.com/{REPO}/releases/latest"
+API = f"https://api.github.com/repos/{REPO}/releases/latest"  # i18n: no
+RELEASES_PAGE = f"https://github.com/{REPO}/releases/latest"  # i18n: no
 ASSET = "AriseTrainer-Instalador.exe"
 
 
@@ -80,7 +80,8 @@ def download_async(url: str, progress: Callable[[float], None], done: Callable[[
                         progress(got / total)
             if sha256 and h.hexdigest().lower() != sha256.lower():
                 os.remove(path)
-                raise ValueError("la descarga no coincide con la huella publicada (archivo dañado)")
+                from .i18n import t
+                raise ValueError(t("la descarga no coincide con la huella publicada (archivo dañado)"))
             done(path, None)
         except Exception as e:  # noqa: BLE001
             done(None, str(e))

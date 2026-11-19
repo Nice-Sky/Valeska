@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 APP_NAME = "AriseTrainer"
-_OLD_APP_NAMES = ("Ascenso",)
+_OLD_APP_NAMES = ("Ascenso",)  # i18n: no
 
 
 def resource(*parts) -> Path:
@@ -71,16 +71,16 @@ class Store:
 
 
 # ------------------------------------------------------------ inicio automático
-_RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"
+_RUN_KEY = r"Software\Microsoft\Windows\CurrentVersion\Run"  # i18n: no
 
 
 def _launch_command() -> str:
     if getattr(sys, "frozen", False):
-        return f'"{sys.executable}" --minimizado'
+        return f'"{sys.executable}" --minimizado'  # i18n: no
     exe = Path(sys.executable)
     pyw = exe.with_name("pythonw.exe")
     main = Path(__file__).resolve().parent.parent / "main.py"
-    return f'"{pyw if pyw.exists() else exe}" "{main}" --minimizado'
+    return f'"{pyw if pyw.exists() else exe}" "{main}" --minimizado'  # i18n: no
 
 
 def autostart_supported() -> bool:

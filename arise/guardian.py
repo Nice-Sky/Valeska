@@ -12,17 +12,19 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QVBoxLayout, QWidg
 from .exercises import EXERCISES
 from .game import fmt
 from .ui import theme as T
+from .i18n import t
 from .ui import fx, holo, icons
 from .ui.widgets import button
 
-SURRENDER_PHRASE = "ME RINDO"
+def surrender_phrase() -> str:
+    return t("ME RINDO")
 CHECK_MS = 10_000
 
 
 class NagWindow(QWidget, holo.Surface):
     """Ventana de alerta. En modo hardcore hay una por pantalla, a pantalla completa."""
 
-    def __init__(self, guardian: "Guardian", screen, hard: bool, primary: bool):
+    def __init__(self, guardian: "Guardian", screen, hard: bool, primary: bool):  # i18n: no
         flags = Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool
         QWidget.__init__(self, None, flags)
         self.surface_init()
@@ -32,7 +34,7 @@ class NagWindow(QWidget, holo.Surface):
         self.g = guardian
         self.hard = hard
         self.allow_close = False
-        self.setWindowTitle("Arise Trainer: objetivo pendiente")
+        self.setWindowTitle(t("Arise Trainer: objetivo pendiente"))
         if not hard:
             self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         geo = screen.geometry()
@@ -49,7 +51,7 @@ class NagWindow(QWidget, holo.Surface):
         else:
             row = QHBoxLayout()
             row.addStretch()
-            row.addWidget(holo.TitleBar("OBJETIVO PENDIENTE", "triangle-alert", "red", 28))
+            row.addWidget(holo.TitleBar(t("OBJETIVO PENDIENTE"), "triangle-alert", "red", 28))
             row.addStretch()
             lay.addLayout(row)
 
@@ -82,14 +84,15 @@ class NagWindow(QWidget, holo.Surface):
         bl.setSpacing(14)
         row = QHBoxLayout()
         row.addStretch()
-        row.addWidget(holo.TitleBar("OBJETIVO PENDIENTE", "triangle-alert", "red", size))
+        row.addWidget(holo.TitleBar(t("OBJETIVO PENDIENTE"), "triangle-alert", "red", size))
         row.addStretch()
         bl.addLayout(row)
         q = game.quest or {}
         name = escape(game.player["name"] or "")
-        kind = "objetivo de penalización (+30%)" if q.get("penalty") else "objetivo de hoy"
-        msg = QLabel(f"{name}, tu {kind} sigue pendiente.<br>"
-                     "Si no lo cumplís antes de medianoche: <b style='color:#ff3b5c'>-XP, racha a cero y mañana +30%</b>.")
+        txt = (t("{name}, tu objetivo de penalización (+30%) sigue pendiente.", name=name) if q.get("penalty")
+               else t("{name}, tu objetivo de hoy sigue pendiente.", name=name))
+        msg = QLabel(txt + "<br>" + t("Si no lo cumplís antes de medianoche: "
+                                      "<b style='color:#ff3b5c'>-XP, racha a cero y mañana +30%</b>."))
         msg.setTextFormat(Qt.TextFormat.RichText)
         msg.setAlignment(Qt.AlignmentFlag.AlignCenter)
         msg.setWordWrap(True)
@@ -97,47 +100,48 @@ class NagWindow(QWidget, holo.Surface):
         bl.addWidget(msg)
         rem = game.remaining()
         fs = 19 if self.hard else 15
-        lines = [f"{icons.img(EXERCISES[k].icon, fs + 2, T.GLOW)}&nbsp;&nbsp;{EXERCISES[k].name}: faltan <b>{fmt(v)}</b>"
-                 f"{' s' if EXERCISES[k].timed else ''}" for k, v in rem] or ["Abrí Arise Trainer para ver el objetivo de hoy"]
+        lines = [f"{icons.img(EXERCISES[k].icon, fs + 2, T.GLOW)}&nbsp;&nbsp;"
+                 + t("{name}: faltan <b>{n}</b>", name=t(EXERCISES[k].name), n=fmt(v)) + (" s" if EXERCISES[k].timed else "")
+                 for k, v in rem] or [t("Abrí Arise Trainer para ver el objetivo de hoy")]
         pend = QLabel("<br>".join(lines))
         pend.setTextFormat(Qt.TextFormat.RichText)
         pend.setAlignment(Qt.AlignmentFlag.AlignCenter)
         pend.setStyleSheet(f"color:{T.GLOW};font-size:{fs}px;padding:8px;line-height:150%;")
         bl.addWidget(pend)
 
-        train = button("ENTRENAR AHORA", "primary", self.g.train_now, icon="swords")
+        train = button(t("ENTRENAR AHORA"), "primary", self.g.train_now, icon="swords")
         train.setMinimumHeight(54)
         bl.addWidget(train)
         left = game.snoozes_left()
         if left > 0:
-            sn = button(f"Posponer 15 minutos  (te quedan {left})", "", self.g.snooze, icon="hourglass")
+            sn = button(t("Posponer 15 minutos  (te quedan {n})", n=left), "", self.g.snooze, icon="hourglass")
             sn.setMinimumHeight(42)
             bl.addWidget(sn)
         if not self.hard:
-            bl.addWidget(button("Cerrar (vuelvo en un rato)", "ghost", self.g.dismiss))
+            bl.addWidget(button(t("Cerrar (vuelvo en un rato)"), "ghost", self.g.dismiss))
 
         self.surr_box = QWidget()
         sl = QHBoxLayout(self.surr_box)
         sl.setContentsMargins(0, 0, 0, 0)
         self.surr = QLineEdit()
-        self.surr.setPlaceholderText(f'Escribí "{SURRENDER_PHRASE}"')
+        self.surr.setPlaceholderText(t('Escribí "{p}"', p=surrender_phrase()))
         self.surr.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.surr.returnPressed.connect(self._surrender)
         sl.addWidget(self.surr, 1)
-        sl.addWidget(button("Confirmar", "danger", self._surrender))
+        sl.addWidget(button(t("Confirmar"), "danger", self._surrender))
         self.surr_box.hide()
-        surr_btn = button("Saltear hoy… (la penalización se aplica igual)", "ghost",
+        surr_btn = button(t("Saltear hoy… (la penalización se aplica igual)"), "ghost",
                           lambda: (self.surr_box.show(), self.surr.setFocus()))
         bl.addWidget(surr_btn)
         bl.addWidget(self.surr_box)
         lay.addWidget(box, 0, Qt.AlignmentFlag.AlignCenter)
 
     def _surrender(self):
-        if self.surr.text().strip().upper() == SURRENDER_PHRASE:
+        if self.surr.text().strip().upper() == surrender_phrase().upper():
             self.g.surrender()
         else:
             self.surr.clear()
-            self.surr.setPlaceholderText("Frase incorrecta")
+            self.surr.setPlaceholderText(t("Frase incorrecta"))
 
     def closeEvent(self, e):
         if self.allow_close:
@@ -196,14 +200,14 @@ class Guardian(QObject):
         self.soft_sent = True
         self.next_nag = time.time() + 180
         rem = self.game.remaining()
-        txt = "Todavía no cumpliste el entrenamiento de hoy."
+        txt = t("Todavía no cumpliste el entrenamiento de hoy.")
         if rem:
             txt += "<br><span style='color:#7f95bf'>" + " · ".join(
-                f"{EXERCISES[k].name} {fmt(v)}" for k, v in rem[:3]) + "</span>"
-        self.win.notifier.show("OBJETIVO PENDIENTE", txt, "triangle-alert", "red",
-                               actions=[("Entrenar", self.train_now), ("15 min", self.snooze)],
+                f"{t(EXERCISES[k].name)} {fmt(v)}" for k, v in rem[:3]) + "</span>"
+        self.win.notifier.show(t("OBJETIVO PENDIENTE"), txt, "triangle-alert", "red",
+                               actions=[(t("Entrenar"), self.train_now), (t("15 min"), self.snooze)],
                                timeout=25, sound="alarm", on_click=self.train_now)
-        self.win.voice.say("Objetivo del día pendiente.", True)
+        self.win.voice.say(t("Objetivo del día pendiente."), True)
 
     def show(self, test: bool = False):
         self.close()
@@ -219,7 +223,7 @@ class Guardian(QObject):
             w.raise_()
             w.activateWindow()
         self.win.sounds.play("alarm")
-        self.win.voice.say("Objetivo del día pendiente.", True)
+        self.win.voice.say(t("Objetivo del día pendiente."), True)
         self.raise_timer.start(1500)
 
     def _keep_on_top(self):

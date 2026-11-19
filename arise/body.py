@@ -12,6 +12,8 @@ import math
 from dataclasses import asdict, dataclass, field
 from typing import Optional
 
+from .i18n import t
+
 import numpy as np
 
 try:
@@ -109,7 +111,7 @@ def measure_front(mask: np.ndarray, lm) -> FrontMeasure:
     shoulder = row_width(m, int(sh_y + torso * 0.06), cx)
     warns = []
     if shoulder and waist / shoulder > 0.92:
-        warns.append("Separá un poco los brazos del cuerpo en la foto de frente")
+        warns.append(t("Separá un poco los brazos del cuerpo en la foto de frente"))
     hh = max(1, bottom - top)
     return FrontMeasure(top, bottom, neck, waist, hip, shoulder,
                         (neck_y - top) / hh, (waist_y - top) / hh, (hip_yy - top) / hh, warns)
@@ -199,7 +201,8 @@ def analyze(front_mask, front_lm, left_mask, left_lm, right_mask, right_lm,
     hip = ellipse_perimeter(f.hip_px * cm_f, depth_cm("hip_px"))
     reliable = 22 <= neck <= 65 and 50 <= waist <= 180 and 60 <= hip <= 190 and waist > neck
     if not reliable:
-        warns.append("Las medidas salieron fuera de rango: repetí las fotos con el cuerpo entero, buena luz y fondo despejado")
+        warns.append(t("Las medidas salieron fuera de rango: repetí las fotos con el cuerpo entero, buena luz y fondo "
+                       "despejado"))
     bf = navy_body_fat(sex, height_cm, waist, neck, hip) if reliable else None
     fat = lean = None
     if bf is not None and weight_kg:
@@ -220,30 +223,33 @@ def compare(prev: dict, cur: dict, prev_weight: Optional[float], cur_weight: Opt
     dwaist = cur["waist_cm"] - prev["waist_cm"] if prev.get("reliable") and cur.get("reliable") else None
     if dw is not None and dwaist is not None:
         if dw > 0.3 and dwaist <= 0.3:
-            out.append(f"Subiste {dw:.1f} kg pero la cintura no creció ({dwaist:+.1f} cm): lo más probable es que sea "
-                       "músculo (o agua/glucógeno), no grasa.")
+            out.append(t("Subiste {kg} kg pero la cintura no creció ({cm} cm): lo más probable es que sea "
+                         "músculo (o agua/glucógeno), no grasa.", kg=f"{dw:.1f}", cm=f"{dwaist:+.1f}"))
         elif dw > 0.3 and dwaist > 0.5:
-            out.append(f"Subiste {dw:.1f} kg y la cintura creció {dwaist:.1f} cm: parte de ese aumento probablemente sea grasa.")
+            out.append(t("Subiste {kg} kg y la cintura creció {cm} cm: parte de ese aumento probablemente sea grasa.",
+                         kg=f"{dw:.1f}", cm=f"{dwaist:.1f}"))
         elif dw < -0.3 and dwaist < -0.3:
-            out.append(f"Bajaste {abs(dw):.1f} kg y {abs(dwaist):.1f} cm de cintura: estás perdiendo grasa.")
+            out.append(t("Bajaste {kg} kg y {cm} cm de cintura: estás perdiendo grasa.", kg=f"{abs(dw):.1f}",
+                         cm=f"{abs(dwaist):.1f}"))
         elif dw < -0.3 and dwaist >= -0.3:
-            out.append(f"Bajaste {abs(dw):.1f} kg pero la cintura no bajó: puede ser agua o músculo. "
-                       "Cuidá la proteína y no recortes demasiado las calorías.")
+            out.append(t("Bajaste {kg} kg pero la cintura no bajó: puede ser agua o músculo. "
+                         "Cuidá la proteína y no recortes demasiado las calorías.", kg=f"{abs(dw):.1f}"))
         elif abs(dw) <= 0.3 and dwaist < -0.5:
-            out.append(f"Peso estable y {abs(dwaist):.1f} cm menos de cintura: recomposición (menos grasa, más músculo).")
+            out.append(t("Peso estable y {cm} cm menos de cintura: recomposición (menos grasa, más músculo).",
+                         cm=f"{abs(dwaist):.1f}"))
         elif abs(dw) <= 0.3 and abs(dwaist) <= 0.5:
-            out.append("Peso y cintura estables esta semana.")
+            out.append(t("Peso y cintura estables esta semana."))
     elif dw is not None:
-        out.append(f"Peso: {dw:+.1f} kg respecto del último control.")
+        out.append(t("Peso: {kg} kg respecto del último control.", kg=f"{dw:+.1f}"))
     if prev.get("lean_kg") and cur.get("lean_kg"):
         dl = cur["lean_kg"] - prev["lean_kg"]
         df = cur["fat_kg"] - prev["fat_kg"]
-        out.append(f"Estimado: masa magra {dl:+.1f} kg · masa grasa {df:+.1f} kg.")
+        out.append(t("Estimado: masa magra {lean} kg · masa grasa {fat} kg.", lean=f"{dl:+.1f}", fat=f"{df:+.1f}"))
     if prev.get("shoulder_waist") and cur.get("shoulder_waist"):
         d = cur["shoulder_waist"] - prev["shoulder_waist"]
         if abs(d) >= 0.02:
-            out.append(f"Relación hombros/cintura {cur['shoulder_waist']:.2f} ({d:+.2f}): "
-                       + ("más forma en V." if d > 0 else "menos forma en V."))
+            out.append(t("Relación hombros/cintura {r} ({d}): ", r=f"{cur['shoulder_waist']:.2f}", d=f"{d:+.2f}")
+                       + (t("más forma en V.") if d > 0 else t("menos forma en V.")))
     return out
 
 

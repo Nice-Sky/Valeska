@@ -7,6 +7,7 @@ import time
 from PySide6.QtCore import QThread, Signal
 from PySide6.QtGui import QImage
 
+from .i18n import t
 from .storage import resource
 
 MODEL = resource("models", "pose_landmarker_lite.task")
@@ -21,7 +22,8 @@ def list_cameras() -> list[str]:
             return names
     except Exception:
         pass
-    return [f"Cámara {i + 1}" for i in range(3)]
+    from .i18n import t
+    return [t("Cámara {n}", n=i + 1) for i in range(3)]
 
 
 class CameraWorker(QThread):
@@ -92,7 +94,7 @@ class CameraWorker(QThread):
             from mediapipe.tasks.python import BaseOptions
             from mediapipe.tasks.python import vision
         except Exception as e:  # pragma: no cover
-            self.failed.emit(f"Falta una librería: {e}")
+            self.failed.emit(t("Falta una librería: {e}", e=e))
             return
 
         backend = cv2.CAP_DSHOW if sys.platform == "win32" else cv2.CAP_ANY
@@ -100,13 +102,13 @@ class CameraWorker(QThread):
         if not cap.isOpened():
             cap = cv2.VideoCapture(self.index)
         if not cap.isOpened():
-            self.failed.emit("No pude abrir la cámara. ¿Está conectada o la está usando otro programa?")
+            self.failed.emit(t("No pude abrir la cámara. ¿Está conectada o la está usando otro programa?"))
             return
-        self.status.emit("Ajustando cámara…")
+        self.status.emit(t("Ajustando cámara…"))
         self._configure(cap, cv2)
         if self._warmup(cap, cv2) > 230 and sys.platform == "win32":
             # la imagen sigue quemada en blanco: probamos con el otro sistema de video de Windows
-            self.status.emit("Probando otro modo de cámara…")
+            self.status.emit(t("Probando otro modo de cámara…"))
             cap.release()
             cap = cv2.VideoCapture(self.index, cv2.CAP_MSMF)
             if not cap.isOpened():
@@ -127,7 +129,7 @@ class CameraWorker(QThread):
             landmarker = vision.PoseLandmarker.create_from_options(options)
         except Exception as e:
             cap.release()
-            self.failed.emit(f"No pude cargar el modelo de visión: {e}")
+            self.failed.emit(t("No pude cargar el modelo de visión: {e}", e=e))
             return
 
         from .equipment import EquipmentDetector
@@ -143,7 +145,7 @@ class CameraWorker(QThread):
                 if not ok or bgr is None:
                     fails += 1
                     if fails > 60:
-                        self.failed.emit("La cámara dejó de enviar imagen.")
+                        self.failed.emit(t("La cámara dejó de enviar imagen."))
                         break
                     time.sleep(0.02)
                     continue

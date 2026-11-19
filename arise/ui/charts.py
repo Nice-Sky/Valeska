@@ -15,6 +15,7 @@ from PySide6.QtGui import QColor, QFont, QFontMetricsF, QLinearGradient, QPainte
 from PySide6.QtWidgets import QWidget
 
 from . import holo
+from ..i18n import t
 from . import theme as T
 
 SERIES_BLUE = "#3a8de8"    # validados: banda de luminosidad, ΔE daltonismo 27, contraste ≥ 3:1 sobre #061230
@@ -51,7 +52,7 @@ def fmt_num(v: float, decimals: int = 1) -> str:
 
 
 class LineChart(QWidget):
-    def __init__(self, unit: str = "", decimals: int = 1, height: int = 260, empty: str = "Sin datos todavía."):
+    def __init__(self, unit: str = "", decimals: int = 1, height: int = 260, empty: str = t("Sin datos todavía.")):
         super().__init__()
         self.setFixedHeight(height)
         self.setMouseTracking(True)

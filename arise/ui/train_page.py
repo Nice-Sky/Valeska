@@ -478,7 +478,7 @@ class EntrenarPage(QWidget):
         from ..game import PLANS
         self.ov_meta.setText(f"{t('Plan')} {t(PLANS[g.settings['plan']]['label'])}  ·  "
                              + plural(len(self.items), "{n} ejercicio", "{n} ejercicios")
-                             + f"  ·  ~{mins} min  ·  " + t("Sesión {n}", n=g.s.get("sessionsDone", 0) + 1))
+                             + "  ·  " + t("~{n} min", n=mins) + "  ·  " + t("Sesión {n}", n=g.s.get("sessionsDone", 0) + 1))
         banners = []
         if q.get("penalty"):
             banners.append(f"<span style='color:{T.RED}'>{icons.img('triangle-alert', 15, T.RED)}&nbsp; "
@@ -965,7 +965,7 @@ class EntrenarPage(QWidget):
         if in_session and not g.quest.get("rest"):
             kind, txt = g.record_exercise(self.ex.id, self.set_results, rpe)
             word = {"up": t("Sube"), "down": t("Baja"), "hold": t("Se mantiene")}.get(kind, "")
-            nice = txt if txt[:1].isdigit() else t(txt.split(":")[0]) + txt[len(txt.split(":")[0]):]
+            nice = txt
             self.sess_log.append(f"{icons.img(self.ex.icon, 14)}&nbsp; <b>{t(self.ex.name)}</b>: {word} → {nice}")
             self.win.toaster.show(f"{t(self.ex.name)}: {word} → {nice}", gold=kind == "up",
                                   icon="trending-up" if kind == "up" else "activity")

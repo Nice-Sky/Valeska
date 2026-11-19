@@ -26,7 +26,7 @@ class VideoView(QWidget):
         self.skeleton = T.GLOW
         self.count = "0"
         self.target = ""
-        self.feedback = "Encendé la cámara para empezar"
+        self.feedback = ""
         self.tone = ""
         self.progress = 0.0
         self.center = ""
@@ -430,11 +430,13 @@ class VideoView(QWidget):
         f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 2)
         p.setFont(f)
         if lm is None:
-            txt, col = "SIN DETECCIÓN", QColor(T.RED)
+            from ..i18n import t
+            txt, col = t("SIN DETECCIÓN"), QColor(T.RED)
         else:
             keys = (0, 11, 12, 23, 24, 25, 26, 27, 28)
             conf = sum((lm[i].visibility or 0) for i in keys) / len(keys)
-            txt = f"SEGUIMIENTO {int(conf * 100)}%"
+            from ..i18n import t
+            txt = t("SEGUIMIENTO {p}%", p=int(conf * 100))
             col = QColor(T.GREEN if conf > 0.7 else T.GOLD if conf > 0.45 else T.RED)
         fm = p.fontMetrics()
         w = fm.horizontalAdvance(txt) + 34

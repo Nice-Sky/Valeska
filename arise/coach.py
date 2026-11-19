@@ -15,6 +15,7 @@ from datetime import date, timedelta
 from typing import Optional
 
 from .exercises import EXERCISES
+from .i18n import t
 
 # repeticiones por serie (o segundos) para el plan intermedio; los demás planes escalan
 BASE_REPS = {
@@ -141,7 +142,7 @@ def progress(p: dict, ex_id: str, sets: list[dict], rpe: Optional[int], adjustab
     del p["hist"][:-12]
 
     if not done:
-        return p, "hold", "Sin datos: se mantiene"
+        return p, "hold", t("Sin datos: se mantiene")
     step = max(5, int(round(target * 0.1 / 5) * 5)) if e.timed else max(1, int(round(target * 0.08)))
 
     if hit and q >= 0.8 and eff <= 2:
@@ -151,15 +152,15 @@ def progress(p: dict, ex_id: str, sets: list[dict], rpe: Optional[int], adjustab
             if target + step > LOADED_RANGE[1] and adjustable_kg and p.get("kg", 0) > 0:
                 p["kg"] = round(p["kg"] + (1.0 if p["kg"] < 6 else 2.0), 1)
                 p["reps"] = LOADED_RANGE[0]
-                return p, "up", f"+peso: {p['kg']:g} kg × {p['reps']}"
+                return p, "up", t("+peso: {kg} kg × {reps}", kg=f"{p['kg']:g}", reps=p["reps"])
             if target + step > LOADED_RANGE[1] and p["sets"] < MAX_SETS:
                 p["sets"] += 1
                 p["reps"] = LOADED_RANGE[0] + 1
-                return p, "up", f"+1 serie: {p['sets']}×{p['reps']}"
+                return p, "up", t("+1 serie: {sets}×{reps}", sets=p["sets"], reps=p["reps"])
         elif not e.timed and target + step > 25 and p["sets"] < MAX_SETS:
             p["sets"] += 1
             p["reps"] = max(5, int(target * 0.8))
-            return p, "up", f"+1 serie: {p['sets']}×{p['reps']}"
+            return p, "up", t("+1 serie: {sets}×{reps}", sets=p["sets"], reps=p["reps"])
         p["reps"] = target + step
         return p, "up", f"{p['sets']}×{p['reps']}{' s' if e.timed else ''}"
     if hit and q >= 0.8 and eff == 3:
@@ -169,7 +170,7 @@ def progress(p: dict, ex_id: str, sets: list[dict], rpe: Optional[int], adjustab
             p["holds"] = 0
             p["reps"] = target + max(1, step // 2) if not e.timed else target + 5
             return p, "up", f"{p['sets']}×{p['reps']}{' s' if e.timed else ''}"
-        return p, "hold", "Se mantiene para consolidar"
+        return p, "hold", t("Se mantiene para consolidar")
     # no se cumplió, técnica floja o al límite
     p["fails"] = p.get("fails", 0) + 1
     p["holds"] = 0
@@ -179,9 +180,9 @@ def progress(p: dict, ex_id: str, sets: list[dict], rpe: Optional[int], adjustab
         if new >= target:
             new = max(1, target - 1)
         p["reps"] = new
-        why = "Primero la técnica" if q < 0.6 else "Ajuste por cansancio"
+        why = t("Primero la técnica") if q < 0.6 else t("Ajuste por cansancio")
         return p, "down", f"{why}: {p['sets']}×{p['reps']}{' s' if e.timed else ''}"
-    return p, "hold", "Se mantiene: la próxima sale"
+    return p, "hold", t("Se mantiene: la próxima sale")
 
 
 def update_fatigue(fatigue: float, rpes: list[int], missed_ratio: float) -> float:
@@ -229,7 +230,7 @@ def needs_rest(history: dict, today: date, plan: str, rest_days: list[int], fati
         streak += 1
         d -= timedelta(days=1)
     if streak >= MAX_STREAK.get(plan, 4):
-        return f"Descanso programado: llevás {streak} días seguidos entrenando"
+        return t("Descanso programado: llevás {n} días seguidos entrenando", n=streak)
     if fatigue > 0.8 and streak >= 2:
         return "Descanso programado: tu cansancio está alto, el cuerpo se adapta descansando"
     return None

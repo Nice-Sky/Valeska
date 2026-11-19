@@ -533,8 +533,10 @@ class Dialogs:
         self.dimmer = _Dimmer(parent)
         self.dimmer.hide()
 
-    def show(self, title, body, buttons=("Aceptar",), tone="", sound="open",
+    def show(self, title, body, buttons=None, tone="", sound="open",
              callback: Optional[Callable[[int, str], None]] = None, with_input=False, placeholder="", icon=""):
+        from ..i18n import t
+        buttons = buttons or (t("Aceptar"),)
         self.queue.append((title, body, buttons, tone, sound, callback, with_input, placeholder, icon))
         if self.current is None:
             QTimer.singleShot(0, self._next)
@@ -617,7 +619,8 @@ class Toaster:
 
     def show(self, text: str, gold: bool = False, icon: str = ""):
         if self.notifier is not None:
-            self.notifier.show("SISTEMA" if not gold else "LOGRO", text, icon or ("sparkles" if gold else "bell-ring"),
+            from ..i18n import t
+            self.notifier.show(t("SISTEMA") if not gold else t("LOGRO"), text, icon or ("sparkles" if gold else "bell-ring"),
                                "gold" if gold else "", timeout=4.5, sound="notify")
             return
         self._show_inline(text, gold, icon)

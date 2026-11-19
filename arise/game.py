@@ -205,7 +205,7 @@ class Game:
         self.on_event(kind, data)
 
     def modal(self, title, body, color="", sound="open", icon=""):
-        self.emit("modal", title=title, body=body, color=color, sound=sound, icon=icon)
+        self.emit("modal", title=t(title), key=title, body=body, color=color, sound=sound, icon=icon)
 
     def log(self, msg):
         self.s["log"].insert(0, {"t": time.time(), "msg": msg})
@@ -259,7 +259,7 @@ class Game:
     def last_achievement(self) -> str:
         for aid, title, *_ in reversed(ACHIEVEMENTS):
             if aid in self.s["achievements"]:
-                return title
+                return t(title)
         return "—"
 
     # ------------------------------------------------------------ registro
@@ -268,7 +268,7 @@ class Game:
         self.player["createdAt"] = time.time()
         self.settings["plan"] = plan
         self.new_quest(self.today(), False)
-        self.log(f"Registro: {self.player['name']}, plan {PLANS[plan]['label']}.")
+        self.log(t("Registro: {name}, plan {plan}.", name=self.player["name"], plan=t(PLANS[plan]["label"])))
         self.save()
         self.emit("changed")
 
@@ -282,17 +282,17 @@ class Game:
             old_rank = rank_of(p["level"])
             p["level"] += 1
             leveled += 1
-            self.log(f"Nivel {p['level']}.")
+            self.log(t("Nivel {n}.", n=p["level"]))
             new_rank = rank_of(p["level"])
             if new_rank != old_rank:
-                self.log(f"Nuevo rango: {new_rank}.")
+                self.log(t("Nuevo rango: {r}.", r=new_rank))
                 self.modal("NUEVO RANGO",
-                           f"Rango <span style='font-size:30px;color:#ffd166'><b>{new_rank}</b></span><br>"
-                           f"Nivel {p['level']} alcanzado. Seguí así.", "gold", "level", "crown")
+                           t("Rango") + f" <span style='font-size:30px;color:#ffd166'><b>{new_rank}</b></span><br>"
+                           + t("Nivel {n} alcanzado. Seguí así.", n=p["level"]), "gold", "level", "crown")
         if leveled:
-            self.emit("say", text=f"Nivel {p['level']}", force=True)
+            self.emit("say", text=t("Nivel {n}", n=p["level"]), force=True)
             nr = next_rank(p["level"])
-            extra = f"<br><small>Próximo rango ({nr[1]}) en el nivel {nr[0]}.</small>" if nr else ""
+            extra = ("<br><small>" + t("Próximo rango ({r}) en el nivel {n}.", r=nr[1], n=nr[0]) + "</small>") if nr else ""
             self.modal("NIVEL ALCANZADO",
                        f"<span style='font-size:34px;color:#ffd166'><b>{p['level']}</b></span>{extra}", "gold", "level",
                        "sparkles")
@@ -394,16 +394,16 @@ class Game:
             # sesión adaptada por cansancio: no cuenta como fallo ni como avance
             new = dict(p, hist=(p.get("hist", []) + [{"d": self.today(), "sets": [x.get("good", 0) for x in sets],
                                                          "q": 1.0, "rpe": rpe or 3, "target": "adaptada"}])[-12:])
-            kind, txt = "hold", "Sesión adaptada: tu progresión se mantiene"
+            kind, txt = "hold", t("Sesión adaptada: tu progresión se mantiene")
         else:
             # en días de penalización se pidió más: se evalúa contra tu objetivo normal
             new, kind, txt = coach.progress(p, ex, sets, rpe, self.settings.get("adjustableKg", True), self.today())
         self.s["prog"][ex] = new
         name = EXERCISES[ex].name
         if kind == "up":
-            self.log(t("Progresión: {name} → {txt}", name=t(name), txt=t(txt) if not txt[0].isdigit() else txt) + ".")
+            self.log(t("Progresión: {name} → {txt}", name=t(name), txt=txt) + ".")
         elif kind == "down":
-            self.log(t("Ajuste: {name} → {txt}", name=t(name), txt=t(txt.split(":")[0]) + txt[len(txt.split(":")[0]):]) + ".")
+            self.log(t("Ajuste: {name} → {txt}", name=t(name), txt=txt) + ".")
         self.save()
         return kind, txt
 
@@ -471,15 +471,16 @@ class Game:
             p["xp"] -= lost
             prev = self.s["streak"]
             self.s["streak"] = 0
-            self.log(f"Día no cumplido ({missed}). -{fmt(lost)} XP. Racha reiniciada (era {prev}).")
+            self.log(t("Día no cumplido ({n}). -{xp} XP. Racha reiniciada (era {prev}).", n=missed, xp=fmt(lost), prev=prev))
             self.new_quest(today, True)
-            dias = f"<b>{missed} días</b> sin cumplir" if missed > 1 else "Ayer no cumpliste el objetivo"
-            penal = ("Hoy los objetivos son <b>+30%</b>. Cumplilos para recuperar el ritmo."
-                     if not self.quest.get("rest") else "Hoy es día de descanso: mañana se retoma.")
+            dias = t("<b>{n} días</b> sin cumplir", n=missed) if missed > 1 else t("Ayer no cumpliste el objetivo")
+            penal = (t("Hoy los objetivos son <b>+30%</b>. Cumplilos para recuperar el ritmo.")
+                     if not self.quest.get("rest") else t("Hoy es día de descanso: mañana se retoma."))
             self.modal("PENALIZACIÓN",
                        f"{dias}.<br><br>"
-                       f"<span style='color:#ff3b5c'><b>-{fmt(lost)} XP</b></span>  ·  Racha reiniciada (era {prev} días)<br><br>"
-                       f"{penal}", "red", "penalty", "triangle-alert")
+                       f"<span style='color:#ff3b5c'><b>-{fmt(lost)} XP</b></span>  ·  "
+                       + t("Racha reiniciada (era {n} días)", n=prev) + f"<br><br>{penal}", "red", "penalty",
+                       "triangle-alert")
         else:
             self.new_quest(today, False)
         self.save()
@@ -490,7 +491,7 @@ class Game:
         q = self.quest
         if not q:
             return []
-        return [(k, t - q["progress"].get(k, 0)) for k, t in q["targets"].items() if q["progress"].get(k, 0) < t]
+        return [(k, v - q["progress"].get(k, 0)) for k, v in q["targets"].items() if q["progress"].get(k, 0) < v]
 
     def _check_complete(self):
         q = self.quest
@@ -508,8 +509,8 @@ class Game:
         base = PLANS.get(q.get("plan"), PLANS["principiante"])["reward"]
         bonus = min(200, s["streak"] * 10)
         total = round(base * (1.3 if q["penalty"] else 1) + bonus)
-        self.log(f"Objetivo diario cumplido. +{fmt(total)} XP. Racha: {s['streak']}.")
-        self.emit("say", text="Objetivo diario cumplido", force=True)
+        self.log(t("Objetivo diario cumplido. +{xp} XP. Racha: {n}.", xp=fmt(total), n=s["streak"]))
+        self.emit("say", text=t("Objetivo diario cumplido"), force=True)
         prog = ""
         s["sessionsDone"] = s.get("sessionsDone", 0) + 1
         res = q.get("results", {})
@@ -526,7 +527,7 @@ class Game:
             names = ", ".join(t(EXERCISES[k].name) for k in new)
             self.log(t("Ejercicios nuevos en tu rotación: {names}.", names=names))
             prog = "<br><br>" + t("<b>Nuevo en tu rotación:</b> {names}.", names=names)
-        self.modal(t("OBJETIVO CUMPLIDO"),
+        self.modal("OBJETIVO CUMPLIDO",
                    f"<span style='font-size:26px;color:#ffd166'><b>+{fmt(total)} XP</b></span><br>"
                    + t("Racha: <b>{n}</b> días (+{bonus} por racha)", n=s["streak"], bonus=bonus) + prog,
                    "gold", "quest", "circle-check")
@@ -548,9 +549,9 @@ class Game:
             before = q["progress"].get(ex, 0)
             q["progress"][ex] = before + n
             if before < q["targets"][ex] <= q["progress"][ex]:
-                name = EXERCISES[ex].name
-                self.emit("toast", text=f"{name}: objetivo cumplido", gold=True, icon="circle-check")
-                self.emit("say", text=f"{name} completo", force=True)
+                name = t(EXERCISES[ex].name)
+                self.emit("toast", text=t("{name}: objetivo cumplido", name=name), gold=True, icon="circle-check")
+                self.emit("say", text=t("{name} completo", name=name), force=True)
         xp = n * EXERCISES[ex].xp * (0.7 if manual else 1.0)
         self.gain_xp(xp)
         self._check_complete()
@@ -563,15 +564,17 @@ class Game:
         """Registra una serie terminada. Devuelve True si fue récord personal."""
         e = EXERCISES[ex]
         unit = " s" if e.timed else " reps"
-        extra = f", {bad} mal hechas" if bad else ""
-        self.log(f"Serie de {e.name}: {fmt(good)}{unit}{extra}. +{fmt(xp)} XP")
+        extra = t(", {n} mal hechas", n=bad) if bad else ""
+        self.log(t("Serie de {name}: {n}{u}{extra}. +{xp} XP", name=t(e.name), n=fmt(good), u=unit, extra=extra,
+                   xp=fmt(xp)))
         record = False
         prev = self.s["records"].get(ex, 0)
         if good > prev:
             self.s["records"][ex] = int(good)
             record = prev > 0
             if record:
-                self.log(f"Récord personal: {e.name} {fmt(good)}{unit} en una serie (antes {fmt(prev)}).")
+                self.log(t("Récord personal: {name} {n}{u} en una serie (antes {prev}).", name=t(e.name), n=fmt(good),
+                           u=unit, prev=fmt(prev)))
         self.check_achievements()
         self.save()
         self.emit("changed")
@@ -581,10 +584,10 @@ class Game:
         for aid, title, desc, test in ACHIEVEMENTS:
             if aid not in self.s["achievements"] and test(self.s):
                 self.s["achievements"].append(aid)
-                self.log(f"Logro: {title}.")
+                self.log(t("Logro: {name}.", name=t(title)))
                 self.modal("LOGRO",
-                           f"<span style='font-size:22px;color:#ffd166'><b>{escape(title)}</b></span>"
-                           f"<br><small>{escape(desc)}</small>", "gold", "achievement", "award")
+                           f"<span style='font-size:22px;color:#ffd166'><b>{escape(t(title))}</b></span>"
+                           f"<br><small>{escape(t(desc))}</small>", "gold", "achievement", "award")
 
     # ------------------------------------------------------------ cuerpo: peso y controles semanales
     @property
@@ -593,7 +596,7 @@ class Game:
 
     def log_weight(self, kg: float, day: Optional[str] = None):
         if not (20 <= kg <= 350):
-            raise ValueError("Peso fuera de rango")
+            raise ValueError(t("Peso fuera de rango"))
         self.s["weights"][day or self.today()] = round(float(kg), 2)
         self.save()
         self.emit("changed")
@@ -634,14 +637,14 @@ class Game:
 
     def next_checkin(self) -> str:
         if self.checkin_due():
-            return "hoy"
+            return t("hoy")
         today = self._today()
         last = date.fromisoformat(self.last_checkin()["date"])
         target = self.settings.get("checkinDay", 0)
         d = today + timedelta(days=1)
         while d.weekday() != target or (d - last).days < 4:
             d += timedelta(days=1)
-        return f"{WEEKDAYS[d.weekday()].lower()} {d.day}/{d.month}"
+        return f"{t(WEEKDAYS[d.weekday()]).lower()} {d.day}/{d.month}"
 
     def add_checkin(self, weight: float, photos: dict, metrics: dict, findings: list, landmarks: dict | None = None) -> dict:
         today = self.today()
@@ -650,8 +653,8 @@ class Game:
                  "landmarks": landmarks or {}}
         self.s["checkins"] = [c for c in self.s["checkins"] if c["date"] != today] + [entry]
         bf = metrics.get("body_fat")
-        self.log(f"Control corporal: {weight:.1f} kg" + (f", ~{bf:.1f}% grasa" if bf else "") +
-                 (f", cintura {metrics['waist_cm']:.1f} cm" if metrics.get("reliable") else "") + ".")
+        self.log(t("Control corporal: {kg} kg", kg=f"{weight:.1f}") + (t(", ~{p}% grasa", p=f"{bf:.1f}") if bf else "") +
+                 (t(", cintura {cm} cm", cm=f"{metrics['waist_cm']:.1f}") if metrics.get("reliable") else "") + ".")
         self.gain_xp(100)
         self.check_achievements()
         self.save()
@@ -788,7 +791,7 @@ class Game:
 
     def surrender(self):
         self.guardian()["surrender"] = True
-        self.log("Te rendiste por hoy.")
+        self.log(t("Te rendiste por hoy."))
         self.save()
 
     # ------------------------------------------------------------ datos
@@ -797,7 +800,7 @@ class Game:
 
     def import_state(self, data: dict):
         if not isinstance(data, dict) or "player" not in data:
-            raise ValueError("Archivo inválido")
+            raise ValueError(t("Archivo inválido"))
         self.s = _migrate(_merge(new_state(), data))
         self.save()
         self.emit("changed")

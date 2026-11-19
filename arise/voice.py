@@ -10,7 +10,13 @@ import time
 import wave
 from pathlib import Path
 
-SPANISH_HINTS = ("spanish", "español", "espanol", "es-", "es_", "sabina", "helena", "laura", "pablo", "raul", "elvira")
+# pistas para elegir una voz de Windows en el idioma de la app
+VOICE_HINTS = {
+    "es": ("spanish", "español", "espanol", "es-", "es_", "sabina", "helena", "laura", "pablo", "raul", "elvira"),
+    "en": ("english", "en-", "en_", "zira", "david", "mark", "hazel", "susan", "aria", "guy", "jenny"),
+    "pt": ("portuguese", "português", "portugues", "pt-", "pt_", "maria", "daniel", "francisca", "antonio", "helia"),
+}
+SPANISH_HINTS = VOICE_HINTS["es"]
 
 
 class Voice:
@@ -39,9 +45,11 @@ class Voice:
         try:
             import pyttsx3
             engine = pyttsx3.init()
+            from .i18n import lang
+            hints = VOICE_HINTS.get(lang(), SPANISH_HINTS)
             for v in engine.getProperty("voices"):
-                desc = f"{v.id} {v.name} {getattr(v, 'languages', '')}".lower()
-                if any(h in desc for h in SPANISH_HINTS):
+                desc = f"{v.id} {v.name} {getattr(v, 'languages', '')}".lower()  # i18n: no
+                if any(h in desc for h in hints):
                     engine.setProperty("voice", v.id)
                     break
             engine.setProperty("rate", 190)

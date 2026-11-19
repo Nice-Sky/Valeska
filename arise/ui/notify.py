@@ -23,7 +23,7 @@ MARGIN = 14
 class NotificationCard(QWidget, holo.Surface):
     sweep = True
 
-    def __init__(self, center: "Notifier", title: str, text: str, icon: str, tone: str,
+    def __init__(self, center: "Notifier", title: str, text: str, icon: str, tone: str,  # i18n: no
                  actions: list[tuple[str, Callable]], timeout: float, on_click: Optional[Callable]):
         flags = (Qt.WindowType.FramelessWindowHint | Qt.WindowType.WindowStaysOnTopHint | Qt.WindowType.Tool
                  | Qt.WindowType.WindowDoesNotAcceptFocus)

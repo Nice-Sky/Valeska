@@ -52,7 +52,7 @@ class NavRail(QWidget):
         super().__init__()
         from .ui import holo
         self._holo = holo
-        self._sf = type("NavSurface", (QWidget, holo.Surface), {
+        self._sf = type("NavSurface", (QWidget, holo.Surface), {  # i18n: no
             "surface_spec": lambda w: holo.SurfaceSpec(QRectF(w.rect()).adjusted(18, 18, -18, -18), "", cut=12,
                                                        brackets=True, seed=77, glass_alpha=150, density=0.8),
             "paintEvent": lambda w, e: w.paint_surface(_aa(QPainter(w))),
@@ -119,7 +119,7 @@ class MainWindow(QMainWindow):
         self.nav_group = QButtonGroup(self)
         self.nav_buttons = {}
         for key, text, ic in PAGES:
-            b = QPushButton("  " + text)
+            b = QPushButton("  " + t(text))
             b.setIcon(icons.icon(ic, 18))
             b.setIconSize(QSize(18, 18))
             b.setCheckable(True)
@@ -179,9 +179,9 @@ class MainWindow(QMainWindow):
         hl = QHBoxLayout(bar)
         hl.setContentsMargins(14, 4, 4, 0)
         hl.setSpacing(4)
-        t = label("ARISE TRAINER  ·  SISTEMA ACTIVO", "lbl")
-        t.setStyleSheet(f"color:{T.GLOW};font-size:11px;letter-spacing:3px;")
-        hl.addWidget(t)
+        tl = label("ARISE TRAINER  ·  " + t("SISTEMA ACTIVO"), "lbl")  # i18n: no
+        tl.setStyleSheet(f"color:{T.GLOW};font-size:11px;letter-spacing:3px;")
+        hl.addWidget(tl)
         hl.addStretch()
         for ic, slot, kind in (("minus", self.showMinimized, ""), ("square", self._toggle_max, ""),
                                ("x", self.close, "danger")):
@@ -247,7 +247,7 @@ class MainWindow(QMainWindow):
             self.voice.say(data["text"], data.get("force", False))
         elif kind == "modal":
             training = self.is_training()
-            if training and data["title"] not in ("OBJETIVO CUMPLIDO", "PENALIZACIÓN"):
+            if training and data.get("key") not in ("OBJETIVO CUMPLIDO", "PENALIZACIÓN"):
                 self.toaster.show(data["title"], True, "star")
                 self.sounds.play(data.get("sound", "open"))
                 return
@@ -285,12 +285,12 @@ class MainWindow(QMainWindow):
         from . import updater
         if err or not info:
             if manual:
-                self.notifier.show("SIN CONEXIÓN", "No pude consultar si hay versión nueva. Probá más tarde.",
+                self.notifier.show(t("SIN CONEXIÓN"), t("No pude consultar si hay versión nueva. Probá más tarde."),
                                    "circle-alert", "", timeout=6)
             return
         if not updater.is_newer(info["version"]):
             if manual:
-                self.notifier.show("ESTÁS AL DÍA", f"Tenés la última versión ({updater.VERSION}).", "circle-check", "",
+                self.notifier.show(t("ESTÁS AL DÍA"), t("Tenés la última versión ({v}).", v=updater.VERSION), "circle-check", "",
                                    timeout=5)
             return
         if self.pending_update and self.pending_update["version"] == info["version"]:
@@ -299,10 +299,10 @@ class MainWindow(QMainWindow):
         if self._auto_update_enabled() or manual:
             self._download_update(info, show_progress=manual)
         else:
-            self.notifier.show("ACTUALIZACIÓN DISPONIBLE",
-                               f"Hay una versión nueva: <b>{info['version']}</b> (tenés {updater.VERSION}).",
+            self.notifier.show(t("ACTUALIZACIÓN DISPONIBLE"),
+                               t("Hay una versión nueva: <b>{new}</b> (tenés {old}).", new=info["version"], old=updater.VERSION),
                                "download", "gold", timeout=30,
-                               actions=[("Actualizar", lambda i=info: self._download_update(i, True))])
+                               actions=[(t("Actualizar"), lambda i=info: self._download_update(i, True))])
 
     def _download_update(self, info, show_progress=False):
         from . import updater
@@ -316,7 +316,7 @@ class MainWindow(QMainWindow):
         self._downloading = True
         card = body = None
         if show_progress:
-            card = self.notifier.show("DESCARGANDO ACTUALIZACIÓN", "0%", "download", "", timeout=0)
+            card = self.notifier.show(t("DESCARGANDO ACTUALIZACIÓN"), "0%", "download", "", timeout=0)
             body = card.findChildren(QLabel)[-1]
 
         def prog(k):
@@ -330,7 +330,7 @@ class MainWindow(QMainWindow):
                     card.dismiss()
                 if err or not path:
                     if show_progress:
-                        self.notifier.show("ERROR", f"No se pudo descargar la actualización: {err}", "circle-alert",
+                        self.notifier.show(t("ERROR"), t("No se pudo descargar la actualización: {e}", e=err), "circle-alert",
                                            "red", timeout=8)
                     return
                 self.pending_update = {"version": info["version"], "path": path}
@@ -356,10 +356,10 @@ class MainWindow(QMainWindow):
             return
         if not self._ready_notified:
             self._ready_notified = True
-            self.notifier.show("ACTUALIZACIÓN LISTA",
-                               f"La versión <b>{upd['version']}</b> ya está descargada. Se instala sola cuando no estés "
-                               "usando la app (o al cerrarla).", "download", "gold", timeout=12,
-                               actions=[("Instalar ahora", self._install_now)])
+            self.notifier.show(t("ACTUALIZACIÓN LISTA"),
+                               t("La versión <b>{v}</b> ya está descargada. Se instala sola cuando no estés usando la "
+                                 "app (o al cerrarla).", v=upd["version"]), "download", "gold", timeout=12,
+                               actions=[(t("Instalar ahora"), self._install_now)])
         self.install_timer.start(120_000)
 
     def _install_now(self):
@@ -369,7 +369,7 @@ class MainWindow(QMainWindow):
             return
         self.install_timer.stop()
         self._installing = True  # evita que _really_quit lo vuelva a lanzar
-        self.notifier.show("ACTUALIZANDO", f"Instalando la versión {upd['version']}… La app se vuelve a abrir sola.",
+        self.notifier.show(t("ACTUALIZANDO"), t("Instalando la versión {v}… La app se vuelve a abrir sola.", v=upd["version"]),
                            "download", "gold", timeout=4)
         self.game.save()
         QTimer.singleShot(1200, lambda: (updater.run_installer(upd["path"]), self._really_quit()))
@@ -378,15 +378,17 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "pages"):
             return
         p = self.game.player
-        self.nav_player.setText(f"<b style='color:white'>{p['name'] or '—'}</b><br>NV {p['level']} · RANGO {rank_of(p['level'])}")
+        self.nav_player.setText(f"<b style='color:white'>{p['name'] or '—'}</b><br>"
+                                + t("NV {n} · RANGO {r}", n=p["level"], r=rank_of(p["level"])))
         current = self.stack.currentWidget()
         for page in self.pages.values():
             if page is current or page in (self.pages["estado"], self.pages["mision"]):
                 page.refresh()
         if self.tray:
             q = self.game.quest
-            state = ("Día de descanso" if q and q.get("rest") else "Objetivo cumplido" if q and q["completed"] else "Objetivo pendiente")
-            self.tray.setToolTip(f"Arise Trainer — {p['name']} · Nivel {p['level']}\n{state}")
+            state = (t("Día de descanso") if q and q.get("rest") else t("Objetivo cumplido") if q and q["completed"]
+                     else t("Objetivo pendiente"))
+            self.tray.setToolTip(t("Arise Trainer — {name} · Nivel {n}", name=p["name"], n=p["level"]) + f"\n{state}")
 
     def show_page(self, key: str):
         changed = self.stack.currentWidget() is not self.pages[key]
@@ -422,14 +424,14 @@ class MainWindow(QMainWindow):
             return
         self.tray = QSystemTrayIcon(app_icon(), self)
         menu = QMenu()
-        for text, slot in (("Abrir Arise Trainer", lambda: self.show_page("estado")),
-                           ("Objetivo de hoy", lambda: self.show_page("mision")),
-                           ("Entrenar", lambda: self.show_page("entrenar"))):
+        for text, slot in ((t("Abrir Arise Trainer"), lambda: self.show_page("estado")),
+                           (t("Objetivo de hoy"), lambda: self.show_page("mision")),
+                           (t("Entrenar"), lambda: self.show_page("entrenar"))):
             a = QAction(text, menu)
             a.triggered.connect(slot)
             menu.addAction(a)
         menu.addSeparator()
-        quit_a = QAction("Salir", menu)
+        quit_a = QAction(t("Salir"), menu)
         quit_a.triggered.connect(self.quit_app)
         menu.addAction(quit_a)
         self.tray.setContextMenu(menu)
@@ -450,8 +452,8 @@ class MainWindow(QMainWindow):
         self.hide()
         if not self.tray_hint_shown:
             self.tray_hint_shown = True
-            self.notifier.show("SIGO ACTIVO", "Arise Trainer queda funcionando al lado del reloj para recordarte "
-                                              "el objetivo del día.", "eye", "", timeout=6)
+            self.notifier.show(t("SIGO ACTIVO"), t("Arise Trainer queda funcionando al lado del reloj para recordarte "
+                                                   "el objetivo del día."), "eye", "", timeout=6)
 
     def quit_app(self):
         q = self.game.quest
@@ -460,9 +462,9 @@ class MainWindow(QMainWindow):
                 if i == 1:
                     self._really_quit()
             self.bring_to_front()
-            self.dialogs.show("¿SALIR?", "El objetivo de hoy todavía no está cumplido.<br>Si cerrás la app no vas a recibir "
-                                        "recordatorios, pero la penalización a medianoche se aplica igual.",
-                              (("Me quedo", "primary"), ("Salir igual", "danger")), tone="red", callback=answer)
+            self.dialogs.show(t("¿SALIR?"), t("El objetivo de hoy todavía no está cumplido.<br>Si cerrás la app no vas a "
+                                              "recibir recordatorios, pero la penalización a medianoche se aplica igual."),
+                              ((t("Me quedo"), "primary"), (t("Salir igual"), "danger")), tone="red", callback=answer)
         else:
             self._really_quit()
 
@@ -502,18 +504,20 @@ class MainWindow(QMainWindow):
         d = self.dialogs
 
         def ask_name(*_):
-            d.show("REGISTRO", "¿Cómo te llamás?", ("Confirmar",), callback=got_name,
-                   with_input=True, placeholder="Tu nombre", icon="user-round")
+            d.show(t("REGISTRO"), t("¿Cómo te llamás?"), (t("Confirmar"),), callback=got_name,
+                   with_input=True, placeholder=t("Tu nombre"), icon="user-round")
 
         def got_name(_, name):
             if not name.strip():
                 ask_name()
                 return
             self._name = name.strip()
-            plans = "<br>".join(f"<b>{p['label']}</b>: <span style='color:#7f95bf'>{p['desc']}</span>" for p in PLANS.values())
-            d.show("PLAN", f"Elegí tu punto de partida.<br><br><div style='text-align:left'>{plans}</div><br>"
-                           "<small>Los objetivos suben solos un 5% cada 7 días cumplidos. Podés cambiar el plan en Ajustes.</small>",
-                   (("Principiante", "primary"), ("Intermedio", ""), ("Avanzado", ""), ("Extremo", "danger")),
+            plans = "<br>".join(f"<b>{t(p['label'])}</b>: <span style='color:#7f95bf'>{t(p['desc'])}</span>"
+                                for p in PLANS.values())
+            d.show(t("PLAN"), t("Elegí tu punto de partida.") + f"<br><br><div style='text-align:left'>{plans}</div><br><small>"
+                   + t("La progresión es automática: cada ejercicio sube cuando lo hacés bien y sin demasiado esfuerzo. "
+                       "Podés cambiar el nivel en Ajustes.") + "</small>",
+                   ((t("Principiante"), "primary"), (t("Intermedio"), ""), (t("Avanzado"), ""), (t("Extremo"), "danger")),
                    callback=got_plan, icon="target")
 
         def got_plan(i, _):
@@ -530,9 +534,9 @@ class MainWindow(QMainWindow):
             self.game.save()
             self.refresh()
             if storage.autostart_supported():
-                d.show("RECORDATORIOS", "¿Querés que Arise Trainer arranque solo al prender la compu?<br>"
-                                        "<small>Así los recordatorios funcionan aunque te olvides de abrirlo.</small>",
-                       (("Sí", "primary"), ("No", "")), icon="bell-ring",
+                d.show(t("RECORDATORIOS"), t("¿Querés que Arise Trainer arranque solo al prender la compu?<br>"
+                                             "<small>Así los recordatorios funcionan aunque te olvides de abrirlo.</small>"),
+                       ((t("Sí"), "primary"), (t("No"), "")), icon="bell-ring",
                        callback=lambda i, _: (storage.set_autostart(i == 0), show_quest()))
             else:
                 show_quest()
@@ -540,10 +544,12 @@ class MainWindow(QMainWindow):
         def show_quest():
             q = self.game.quest
             if q.get("rest"):
-                body = "Hoy es tu día de descanso. Tu primer objetivo arranca mañana.<br><small>Los días de descanso se configuran en Ajustes.</small>"
+                body = t("Hoy es tu día de descanso. Tu primer objetivo arranca mañana.<br><small>Los días de descanso "
+                         "se configuran en Ajustes.</small>")
             else:
-                body = "Tu objetivo de hoy:<br><br>" + "<br>".join(self._quest_lines())
-            d.show("OBJETIVO DIARIO", body, ("Empezar",), icon="target", callback=lambda *_: self.show_page("mision"))
+                body = t("Tu sesión de hoy:") + "<br><br>" + "<br>".join(self._quest_lines())
+            d.show(t("OBJETIVO DIARIO"), body, (t("Empezar"),), icon="target",
+                   callback=lambda *_: self.show_page("entrenar"))
 
         def intro():
             self._intro_dialog(ask_name)
@@ -562,24 +568,25 @@ class MainWindow(QMainWindow):
                 ("Português", "primary" if lang() == "pt" else "")), callback=pick_lang, icon="languages")
 
     def _intro_dialog(self, ask_name):
-        self.dialogs.show("NOTIFICACIÓN",
-               "Bienvenido a <b style='color:#4fd8ff'>Arise Trainer</b>.<br><br>"
-               "Cada día tenés un objetivo de entrenamiento. Cumplirlo suma XP, racha y nivel.<br>"
-               "Fallarlo tiene penalización.<br><br>La cámara cuenta tus repeticiones: solo valen las bien hechas.",
-               ("Empezar",), callback=ask_name)
+        self.dialogs.show(t("NOTIFICACIÓN"),
+                          t("Bienvenido a <b style='color:#4fd8ff'>Arise Trainer</b>.<br><br>"
+                            "Cada día tenés una sesión de entrenamiento. Cumplirla suma XP, racha y nivel.<br>"
+                            "Fallarla tiene penalización.<br><br>La cámara cuenta tus repeticiones y revisa tu técnica: "
+                            "solo valen las bien hechas."),
+                          (t("Empezar"),), callback=ask_name)
 
     def _welcome(self):
         g = self.game
         q = g.quest
         if q and q.get("rest"):
-            txt = "Hoy es día de descanso."
+            txt = t("Hoy es día de descanso.")
         elif q and q["completed"]:
-            txt = "El objetivo de hoy ya está cumplido."
+            txt = t("El objetivo de hoy ya está cumplido.")
         else:
             rem = g.remaining()
-            txt = "Objetivo de hoy: " + " · ".join(f"{EX[k].name} {int(v)}" for k, v in rem[:3]) if rem else ""
-        self.notifier.show(f"SISTEMA ACTIVO · NIVEL {g.player['level']}",
-                           f"Bienvenido de vuelta, <b>{g.player['name']}</b>.<br>{txt}", "power", "",
+            txt = (t("Objetivo de hoy:") + " " + " · ".join(f"{t(EX[k].name)} {int(v)}" for k, v in rem[:3])) if rem else ""
+        self.notifier.show(t("SISTEMA ACTIVO · NIVEL {n}", n=g.player["level"]),
+                           t("Bienvenido de vuelta, <b>{name}</b>.", name=g.player["name"]) + f"<br>{txt}", "power", "",
                            timeout=6, sound="open", on_click=lambda: self.show_page("mision"))
 
     def _quest_lines(self):
@@ -599,7 +606,7 @@ class MainWindow(QMainWindow):
         if "--actualizado" in sys.argv:
             from ._version import VERSION
             QTimer.singleShot(2500, lambda: self.notifier.show(
-                "ACTUALIZADO", f"Arise Trainer se actualizó a la versión <b>{VERSION}</b>.", "circle-check", "gold",
+                t("ACTUALIZADO"), t("Arise Trainer se actualizó a la versión <b>{v}</b>.", v=VERSION), "circle-check", "gold",
                 timeout=8, sound="level", on_click=lambda: self.show_page("estado")))
         if not minimized:
             self.show()
@@ -616,8 +623,8 @@ class MainWindow(QMainWindow):
                 rem["checkin"] = self.game.today()  # una sola vez por día, aunque abras y cierres la app
                 self.game.save()
                 QTimer.singleShot(4000, lambda: self.notifier.show(
-                    "CONTROL SEMANAL", "Hoy te toca el control corporal: 3 fotos y tu peso.", "scan-line", "gold",
-                    actions=[("Hacer ahora", lambda: (self.show_page("cuerpo"), self.pages["cuerpo"].start_checkin()))],
+                    t("CONTROL SEMANAL"), t("Hoy te toca el control corporal: 3 fotos y tu peso."), "scan-line", "gold",
+                    actions=[(t("Hacer ahora"), lambda: (self.show_page("cuerpo"), self.pages["cuerpo"].start_checkin()))],
                     timeout=15))
         QTimer.singleShot(5000, self.guardian.check)
         QTimer.singleShot(9000, self.wellness.check)

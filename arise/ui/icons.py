@@ -57,7 +57,7 @@ def img(name: str, size: int = 18, color: str = WHITE) -> str:
     if _TMP is None:
         _TMP = Path(tempfile.gettempdir()) / "arise_icons"
         _TMP.mkdir(exist_ok=True)
-    f = _TMP / f"{name}_{size}_{color.strip('#')}.png"
+    f = _TMP / f"{name}_{size}_{color.strip('#')}.png"  # i18n: no
     if not f.exists():
         pm = pixmap(name, size, color, dpr=2.0)
         pm.save(str(f))
