@@ -601,6 +601,8 @@ class EntrenarPage(QWidget):
             self.kg.setValue(self.item.get("kg", 0.0))
             self.kg.blockSignals(False)
         self.side_stack.setCurrentIndex(0)
+        if self.worker:
+            self.worker.equip_kinds = {self.ex.equip} if self.ex.equip else set()
         self._new_set()
         self._update_next()
         self.win.voice.say(t(self.ex.name), True)
@@ -667,6 +669,8 @@ class EntrenarPage(QWidget):
 
     def on_ready(self):
         self.win.atmo.paused = True
+        if self.worker and self.ex is not None:
+            self.worker.equip_kinds = {self.ex.equip} if self.ex.equip else set()
         self.video.center_small = ""
 
     def on_failed(self, msg: str):
@@ -692,6 +696,7 @@ class EntrenarPage(QWidget):
         if self.worker:
             QTimer.singleShot(0, self.worker.ack)
         v = self.video
+        v.objects = list(getattr(self.worker, "objects", []) or [])
         color = T.GLOW
         st = self.state
         if self.ex is None or st in ("idle", "done"):

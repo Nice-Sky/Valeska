@@ -40,6 +40,8 @@ class CameraWorker(QThread):
         self.latest = None  # (rgb, mask, landmarks) del último cuadro, para sacar fotos
         self._stop = False
         self._pending = False  # hay un cuadro enviado que la interfaz todavía no procesó
+        self.equip_kinds: set = set()  # "bar" / "dumbbell": buscar ese equipamiento en la imagen
+        self.objects: list = []        # lo encontrado (arise.equipment.Found)
 
     def ack(self):
         """La interfaz avisa que terminó con el cuadro anterior (evita que se acumulen cuadros y haya retraso)."""
@@ -128,6 +130,8 @@ class CameraWorker(QThread):
             self.failed.emit(f"No pude cargar el modelo de visión: {e}")
             return
 
+        from .equipment import EquipmentDetector
+        detector = EquipmentDetector(set())
         self.ready.emit()
         t0 = time.monotonic()
         last_ts = -1
@@ -176,6 +180,14 @@ class CameraWorker(QThread):
                     view = cv2.resize(view, (960, int(h * 960 / w)), interpolation=cv2.INTER_AREA)
                     h, w = view.shape[:2]
                 view = view.copy() if not view.flags["C_CONTIGUOUS"] else view
+                if self.equip_kinds:
+                    detector.kinds = set(self.equip_kinds)
+                    try:
+                        self.objects = detector.process(view, lm)
+                    except Exception:
+                        self.objects = []
+                elif self.objects:
+                    self.objects = []
                 if self._pending:  # la interfaz viene atrasada: se descarta este cuadro (se manda el próximo)
                     continue
                 img = QImage(view.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()

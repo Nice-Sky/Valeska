@@ -36,6 +36,7 @@ class VideoView(QWidget):
         self.ghost_opacity = 0.35
         self.flash = 0
         self.rest = None   # (segundos restantes, total, título, detalle) durante el descanso
+        self.objects = []  # barra / mancuernas detectadas (se pintan con filtro rojo)
 
     def set_frame(self, img: QImage, lm, color: str, world=None):
         self.image, self.landmarks, self.skeleton = img, lm, color
@@ -106,6 +107,8 @@ class VideoView(QWidget):
             if self.flash:
                 p.fillRect(area, QColor(255, 255, 255, int(255 * self.flash / 6)))
                 self.flash -= 1
+            if self.objects:
+                self._equipment(p, area)
             if self.landmarks is not None:
                 self._skeleton(p, area)
             self._tracking_badge(p, area)
@@ -158,6 +161,58 @@ class VideoView(QWidget):
             p.setFont(QFont(T.FONT, max(12, int(H * 0.035))))
             p.setPen(QColor("white"))
             p.drawText(QRectF(20, 0, W - 40, H), Qt.AlignmentFlag.AlignCenter | Qt.TextFlag.TextWordWrap, self.center_small)
+
+    def _equipment(self, p: QPainter, area: QRectF):
+        """Filtro rojo sobre la barra y las mancuernas detectadas."""
+        from PySide6.QtGui import QPainterPath, QPolygonF
+        from ..i18n import t
+        red = QColor(T.RED)
+        f = QFont(T.FONT, 8)
+        f.setWeight(QFont.Weight.Bold)
+        f.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 2)
+        for o in self.objects:
+            pts = [QPointF(area.x() + x * area.width(), area.y() + y * area.height()) for x, y in o.pts]
+            if o.kind == "bar":
+                a, b = pts
+                for wd, al in ((22, 40), (12, 80), (5, 200)):
+                    c = QColor(red)
+                    c.setAlpha(al)
+                    pen = QPen(c, wd)
+                    pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+                    p.setPen(pen)
+                    p.drawLine(a, b)
+                p.setPen(QPen(QColor(255, 220, 225), 1.5))
+                p.drawLine(a, b)
+                anchor = QPointF(min(a.x(), b.x()), min(a.y(), b.y()) - 22)
+                label = t("BARRA")
+            else:
+                poly = QPolygonF(pts + [pts[0]])
+                path = QPainterPath()
+                path.addPolygon(poly)
+                c = QColor(red)
+                c.setAlpha(85)
+                p.setPen(Qt.PenStyle.NoPen)
+                p.setBrush(c)
+                p.drawPath(path)
+                p.setBrush(Qt.BrushStyle.NoBrush)
+                for wd, al in ((9, 50), (4, 110), (1.6, 255)):
+                    cc = QColor(red)
+                    cc.setAlpha(al)
+                    p.setPen(QPen(cc, wd))
+                    p.drawPath(path)
+                anchor = QPointF(min(q.x() for q in pts), min(q.y() for q in pts) - 20)
+                label = t("MANCUERNA")
+            p.setFont(f)
+            fm = p.fontMetrics()
+            r = QRectF(anchor.x(), anchor.y(), fm.horizontalAdvance(label) + 14, 16)
+            p.setPen(Qt.PenStyle.NoPen)
+            p.setBrush(QColor(40, 4, 10, 200))
+            p.drawRect(r)
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.setPen(QPen(red, 1))
+            p.drawRect(r)
+            p.setPen(QColor(255, 225, 230))
+            p.drawText(r, Qt.AlignmentFlag.AlignCenter, label)
 
     def _rest_overlay(self, p: QPainter, area: QRectF):
         """Descanso: video atenuado, anillo de tiempo, segundos grandes y qué viene después."""
