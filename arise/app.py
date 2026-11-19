@@ -159,7 +159,7 @@ class MainWindow(QMainWindow):
         self.pending_update = None
         self._downloading = False
         self._ready_notified = False
-        self.update_timer = QTimer(self)  # busca actualizaciones cada 3 horas mientras la app está abierta
+        self.update_timer = QTimer(self)  # busca actualizaciones cada 30 minutos mientras la app está abierta
         self.update_timer.timeout.connect(lambda: self._auto_update_enabled() and self.check_updates())
         self.install_timer = QTimer(self)
         self.install_timer.setSingleShot(True)
@@ -271,6 +271,8 @@ class MainWindow(QMainWindow):
     def check_updates(self, manual: bool = False):
         """Consulta GitHub Releases. En automático descarga e instala sola en segundo plano."""
         from . import updater
+        import time as _time
+        self._last_update_check = _time.monotonic()
 
         def done(info, err):
             QTimer.singleShot(0, lambda: self._update_result(info, err, manual))
@@ -362,11 +364,32 @@ class MainWindow(QMainWindow):
                                actions=[(t("Instalar ahora"), self._install_now)])
         self.install_timer.start(120_000)
 
+    def _check_failed_update(self):
+        """Si la última instalación automática no se completó, avisa y ofrece instalar con el asistente."""
+        from . import updater
+        import os as _os
+        tried = self.game.s.get("remind", {}).get("updateTried")
+        if not tried or not updater.is_newer(tried.get("version", "")):
+            return
+        path = tried.get("path", "")
+        if not _os.path.exists(path):
+            return
+        QTimer.singleShot(6000, lambda: self.notifier.show(
+            t("ACTUALIZACIÓN PENDIENTE"),
+            t("La versión <b>{v}</b> no se pudo instalar sola. Tocá «Instalar» para abrir el instalador.", v=tried["version"]),
+            "download", "gold", timeout=0,
+            actions=[(t("Instalar"), lambda: (updater.run_installer(path, silent=False), self._really_quit()))]))
+
+    def _remember_install(self, upd):
+        self.game.s.setdefault("remind", {})["updateTried"] = {"version": upd["version"], "path": upd["path"]}
+        self.game.save()
+
     def _install_now(self):
         from . import updater
         upd = self.pending_update
         if not upd:
             return
+        self._remember_install(upd)
         self.install_timer.stop()
         self._installing = True  # evita que _really_quit lo vuelva a lanzar
         self.notifier.show(t("ACTUALIZANDO"), t("Instalando la versión {v}… La app se vuelve a abrir sola.", v=upd["version"]),
@@ -390,7 +413,14 @@ class MainWindow(QMainWindow):
                      else t("Objetivo pendiente"))
             self.tray.setToolTip(t("Arise Trainer — {name} · Nivel {n}", name=p["name"], n=p["level"]) + f"\n{state}")
 
+    def _maybe_check_on_open(self):
+        """Al abrir la ventana, busca actualizaciones si pasaron más de 15 minutos desde la última vez."""
+        import time as _time
+        if self._auto_update_enabled() and _time.monotonic() - getattr(self, "_last_update_check", 0) > 15 * 60:
+            self.check_updates()
+
     def show_page(self, key: str):
+        self._maybe_check_on_open()
         changed = self.stack.currentWidget() is not self.pages[key]
         self.stack.setCurrentWidget(self.pages[key])
         self.nav_buttons[key].setChecked(True)
@@ -484,6 +514,7 @@ class MainWindow(QMainWindow):
         from . import updater
         if self.pending_update and not getattr(self, "_installing", False):
             self._installing = True
+            self._remember_install(self.pending_update)
             updater.run_installer(self.pending_update["path"], relaunch=False)
         self.quitting = True
         self.guardian.close()
@@ -602,7 +633,8 @@ class MainWindow(QMainWindow):
         self.apply_settings()
         if self.game.s["settings"].get("autoUpdate", True):
             QTimer.singleShot(8000, self.check_updates)
-        self.update_timer.start(3 * 3600 * 1000)
+        self.update_timer.start(30 * 60 * 1000)
+        self._check_failed_update()
         if "--actualizado" in sys.argv:
             from ._version import VERSION
             QTimer.singleShot(2500, lambda: self.notifier.show(

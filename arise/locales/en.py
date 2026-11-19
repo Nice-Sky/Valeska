@@ -806,4 +806,7 @@ TEXT = {
     "Objetivo de hoy actualizado": "Today's goal updated",
     "Objetivo diario cumplido": "Daily goal completed",
     "Probando otro modo de cámara…": "Trying another camera mode…",
+    "ACTUALIZACIÓN PENDIENTE": "PENDING UPDATE",
+    "La versión <b>{v}</b> no se pudo instalar sola. Tocá «Instalar» para abrir el instalador.": "Version <b>{v}</b> couldn't install by itself. Tap “Install” to open the installer.",
+    "Instalar": "Install",
 }

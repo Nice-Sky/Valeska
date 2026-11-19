@@ -88,12 +88,40 @@ def download_async(url: str, progress: Callable[[float], None], done: Callable[[
     threading.Thread(target=run, daemon=True).start()
 
 
-def run_installer(path: str, relaunch: bool = True) -> bool:
-    """Lanza el instalador en modo silencioso: cierra la app, actualiza y (si relaunch) la vuelve a abrir minimizada."""
+def release_mutex():
+    """Suelta el "candado" que usa el instalador para saber si la app está abierta.
+
+    Si el instalador silencioso lo encuentra tomado, se cancela solo (sin avisar): por eso se suelta antes de lanzarlo.
+    """
+    try:
+        import ctypes
+        from . import app as _app
+        h = getattr(_app, "_MUTEX", None)
+        if h:
+            ctypes.windll.kernel32.CloseHandle(h)
+            _app._MUTEX = None
+    except Exception:
+        pass
+
+
+def run_installer(path: str, relaunch: bool = True, silent: bool = True) -> bool:
+    """Lanza el instalador: cierra la app, actualiza y (si relaunch) la vuelve a abrir.
+
+    Se lanza con unos segundos de espera (la app termina de cerrarse antes de que el instalador arranque).
+    silent=False abre el asistente normal (para cuando la instalación automática no funcionó).
+    """
     if sys.platform != "win32":
         return False
-    args = [path, "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS"]
-    if not relaunch:
-        args.append("/NORELAUNCH")
-    subprocess.Popen(args, close_fds=True, creationflags=getattr(subprocess, "DETACHED_PROCESS", 0))
+    release_mutex()
+    args = [path]
+    if silent:
+        args += ["/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS"]
+        if not relaunch:
+            args.append("/NORELAUNCH")
+    quoted = " ".join(f'"{a}"' if " " in a else a for a in args)
+    # "ping" como pausa de ~3 s (timeout no funciona sin consola); start "" lanza el instalador desacoplado
+    cmd = f'ping -n 4 127.0.0.1 >nul & start "" {quoted}'  # i18n: no
+    # como texto (no lista): así cmd recibe las comillas tal cual, sin escapes de Python
+    subprocess.Popen("cmd /c " + cmd, close_fds=True,
+                     creationflags=getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0))
     return True

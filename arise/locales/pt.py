@@ -808,4 +808,7 @@ TEXT = {
     "Objetivo de hoy actualizado": "Objetivo de hoje atualizado",
     "Objetivo diario cumplido": "Objetivo diário cumprido",
     "Probando otro modo de cámara…": "Testando outro modo de câmera…",
+    "ACTUALIZACIÓN PENDIENTE": "ATUALIZAÇÃO PENDENTE",
+    "La versión <b>{v}</b> no se pudo instalar sola. Tocá «Instalar» para abrir el instalador.": "A versão <b>{v}</b> não pôde ser instalada sozinha. Toque em «Instalar» para abrir o instalador.",
+    "Instalar": "Instalar",
 }
