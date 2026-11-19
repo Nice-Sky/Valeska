@@ -696,6 +696,16 @@ def _autotest(app):
         with vision.PoseLandmarker.create_from_options(opts) as lm:
             img = mp.Image(image_format=mp.ImageFormat.SRGB, data=np.zeros((360, 640, 3), np.uint8))
             lm.detect_for_video(img, 1)
+        # traducciones empaquetadas y detector de equipamiento
+        from .i18n import lang, set_lang, t
+        prev = lang()
+        for code, word in (("en", "Set done"), ("pt", "Série pronta")):  # i18n: no
+            set_lang(code)
+            if t("Serie lista") != word:
+                raise RuntimeError(f"falta el idioma {code}")  # i18n: no
+        set_lang(prev)
+        from .equipment import EquipmentDetector
+        EquipmentDetector({"bar", "dumbbell"}).process(np.zeros((360, 640, 3), np.uint8), None)
         out.write_text("OK", encoding="utf-8")
     except Exception as e:
         out.write_text(f"ERROR {type(e).__name__}: {e}", encoding="utf-8")

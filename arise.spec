@@ -10,7 +10,8 @@ a = Analysis(
     pathex=[],
     binaries=binaries,
     datas=datas,
-    hiddenimports=["pyttsx3.drivers", "pyttsx3.drivers.sapi5", "comtypes.client"],
+    hiddenimports=["pyttsx3.drivers", "pyttsx3.drivers.sapi5", "comtypes.client",
+                   "arise.locales.en", "arise.locales.pt"],  # los idiomas se cargan con importlib
     excludes=["jax", "jaxlib", "tensorflow", "torch", "scipy", "sounddevice", "tkinter",
               "PySide6.QtWebEngineCore", "PySide6.QtWebEngineWidgets", "PySide6.Qt3DCore", "PySide6.QtQuick3D"],
     noarchive=False,
