@@ -134,7 +134,7 @@ class ExCard(QPushButton, holo.Surface, holo.HoverFade):
     def _spec(self, hovered: bool):
         return holo.SurfaceSpec(QRectF(self.rect()).adjusted(self.PAD, self.PAD, -self.PAD, -self.PAD),
                                 "gold" if self.done else "", cut=10, brackets=hovered, strong=hovered,
-                                seed=sum(map(ord, self.title_text)), density=0.7)
+                                seed=sum(map(ord, self.title_text)), density=0.7, quiet=not hovered)
 
     def surface_spec(self):
         return self._spec(self.hover_k > 0.5)

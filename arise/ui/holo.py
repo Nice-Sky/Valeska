@@ -212,18 +212,19 @@ def _brackets(p: QPainter, r: QRectF, cut: float, color: str, core: str, size: f
 # ================================================================== superficie con caché + bloom
 class SurfaceSpec:
     __slots__ = ("rect", "tone", "cut", "beams", "brackets", "strong", "seed", "glass_alpha", "frame", "density",
-                 "small", "fill")
+                 "small", "fill", "quiet")
 
     def __init__(self, rect: QRectF, tone="", cut=12.0, beams=False, brackets=True, strong=False, seed=1,
-                 glass_alpha=235, frame=True, density=1.0, small=False, fill=None):
+                 glass_alpha=235, frame=True, density=1.0, small=False, fill=None, quiet=False):
         self.rect, self.tone, self.cut, self.beams, self.brackets = rect, tone, cut, beams, brackets
         self.strong, self.seed, self.glass_alpha, self.frame, self.density = strong, seed, glass_alpha, frame, density
-        self.small, self.fill = small, fill
+        self.small, self.fill, self.quiet = small, fill, quiet
 
     def key(self):
         r = self.rect
         return (round(r.x()), round(r.y()), round(r.width()), round(r.height()), self.tone, self.cut, self.beams,
-                self.brackets, self.strong, self.seed, self.glass_alpha, self.frame, self.density, self.small, self.fill)
+                self.brackets, self.strong, self.seed, self.glass_alpha, self.frame, self.density, self.small, self.fill,
+                self.quiet)
 
 
 def build_surface(w: int, h: int, dpr: float, spec: SurfaceSpec):
@@ -254,7 +255,9 @@ def build_surface(w: int, h: int, dpr: float, spec: SurfaceSpec):
 
     path = chamfer(r, spec.cut)
     glass(pb, path, color, spec.seed, strong=spec.strong, density=spec.density, alpha=spec.glass_alpha)
-    if spec.frame:
+    if spec.frame and spec.quiet:  # versión sobria: línea fina, poco brillo
+        _stroke(pn, path, color, core, 1.2, 0.5, 150)
+    elif spec.frame:
         _stroke(pn, path, color, core, 1.8, 0.9, 235)
         # brillo interior pegado al borde
         inner = chamfer(r.adjusted(4, 4, -4, -4), max(0, spec.cut - 3))
@@ -274,7 +277,7 @@ def build_surface(w: int, h: int, dpr: float, spec: SurfaceSpec):
         pb.setBrush(g)
         pb.drawPath(path)
     passes = ((1.5, 1.2), (4, 1.0), (7, 0.6)) if spec.small else ((2.5, 1.3), (7, 1.1), (16, 0.9))
-    glow = fx.bloom(neon, passes, gain=1.0)
+    glow = fx.bloom(neon, passes, gain=0.45 if spec.quiet else 1.0)
     margin = min(r.left(), r.top(), w - r.right(), h - r.bottom())
     if spec.beams:  # las barras sobresalen ~94 px a los lados y ~46 px arriba/abajo
         margin = min(r.left() - 94, w - r.right() - 94, r.top() - 46, h - r.bottom() - 46)

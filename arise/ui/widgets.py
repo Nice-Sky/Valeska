@@ -7,7 +7,7 @@ from typing import Callable, Optional
 from PySide6.QtCore import QEasingCurve, QPointF, QPropertyAnimation, QRect, QRectF, Qt, QTimer, QSize
 from PySide6.QtGui import QColor, QFont, QPainter, QPainterPath, QPen, QPolygonF
 from PySide6.QtWidgets import (QDialog, QFrame, QGraphicsOpacityEffect, QHBoxLayout, QLabel, QLayout, QLineEdit, QPushButton,
-                               QVBoxLayout, QWidget)
+                               QSizePolicy, QVBoxLayout, QWidget)
 
 from . import fx, holo, icons
 from . import theme as T
@@ -87,7 +87,7 @@ class HoloButton(QPushButton, holo.Surface, holo.HoverFade):
             fill = T.RED if self.kind == "danger" else "#1d4fa8"
         return holo.SurfaceSpec(QRectF(self.rect()).adjusted(self.M, self.M, -self.M, -self.M), tone, cut=5,
                                 brackets=False, strong=True, seed=3, glass_alpha=225, density=0.25, small=True,
-                                fill=fill)
+                                fill=fill, quiet=not hovered and self.kind != "primary")
 
     def surface_spec(self):
         return self._spec(self.hover)
@@ -168,6 +168,70 @@ def restyle(w: QWidget):
         c.style().polish(c)
 
 
+class HeaderBar(QWidget):
+    """Encabezado sobrio de panel: ícono chico + TÍTULO espaciado + línea fina que se desvanece."""
+
+    def __init__(self, text: str, icon_name: str = "", tone: str = ""):
+        super().__init__()
+        self.text, self.icon_name, self.tone = text, icon_name, tone
+        self.setFixedHeight(34)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+    def set_text(self, text: str):
+        self.text = text
+        self.update()
+
+    def set_icon(self, name: str):
+        self.icon_name = name
+        self.update()
+
+    def set_tone(self, tone: str):
+        self.tone = tone
+        self.update()
+
+    @property
+    def label(self):  # compatibilidad con pruebas
+        class _L:
+            def __init__(s, b):
+                s.b = b
+
+            def text(s):
+                return s.b.text
+        return _L(self)
+
+    def paintEvent(self, e):
+        from PySide6.QtGui import QLinearGradient
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        color, core = holo.palette(self.tone)
+        x = 0.0
+        H = self.height()
+        if self.icon_name:
+            icons.paint(p, self.icon_name, QRectF(0, (H - 18) / 2, 18, 18), color, 1.8)
+            x = 30
+        f = QFont(T.FONT, 12)
+        f.setWeight(QFont.Weight.Bold)
+        from . import fx
+        fx.draw_glow_text(p, QRectF(x, 0, self.width() - x, H), self.text, f, color, core,
+                          Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter, glow=0.25, spacing=3.2,
+                          intensity=0.55)
+        from PySide6.QtGui import QFontMetricsF
+        f2 = QFont(f)
+        f2.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 3.2)
+        tw = QFontMetricsF(f2).horizontalAdvance(self.text)
+        lx = x + tw + 18
+        if lx < self.width() - 10:
+            g = QLinearGradient(QPointF(lx, 0), QPointF(self.width(), 0))
+            c = QColor(color)
+            c.setAlpha(200)
+            g.setColorAt(0, c)
+            c2 = QColor(color)
+            c2.setAlpha(0)
+            g.setColorAt(1, c2)
+            p.fillRect(QRectF(lx, H / 2 - 0.5, self.width() - lx, 1), g)
+            p.fillRect(QRectF(lx, H / 2 - 2, 3, 4), QColor(core))
+
+
 class Panel(QFrame, holo.Surface):
     """Ventana holográfica con borde de neón, bloom y encabezado [ícono][TÍTULO]."""
 
@@ -188,18 +252,14 @@ class Panel(QFrame, holo.Surface):
         self.lay.setSpacing(10)
         self.title = None
         if title:
-            self.title = holo.TitleBar(title, icon)
-            row = QHBoxLayout()
-            row.addStretch()
-            row.addWidget(self.title)
-            row.addStretch()
-            self.lay.addLayout(row)
-            self.lay.addSpacing(4)
+            self.title = HeaderBar(title, icon)
+            self.lay.addWidget(self.title)
+            self.lay.addSpacing(2)
 
     def surface_spec(self):
         r = QRectF(self.rect()).adjusted(self.INSET, self.INSET, -self.INSET, -self.INSET)
-        return holo.SurfaceSpec(r, self.tone, cut=8 if self.compact else 14, brackets=not self.compact,
-                                seed=self.seed, density=0.6 if self.compact else 1.0, glass_alpha=165)
+        return holo.SurfaceSpec(r, self.tone, cut=8 if self.compact else 12, brackets=not self.compact,
+                                seed=self.seed, density=0.6 if self.compact else 0.8, glass_alpha=175, quiet=True)
 
     def set_title(self, text: str):
         if self.title:
