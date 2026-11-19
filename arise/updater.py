@@ -122,6 +122,6 @@ def run_installer(path: str, relaunch: bool = True, silent: bool = True) -> bool
     # "ping" como pausa de ~3 s (timeout no funciona sin consola); start "" lanza el instalador desacoplado
     cmd = f'ping -n 4 127.0.0.1 >nul & start "" {quoted}'  # i18n: no
     # como texto (no lista): así cmd recibe las comillas tal cual, sin escapes de Python
-    subprocess.Popen("cmd /c " + cmd, close_fds=True,
+    subprocess.Popen("cmd /c " + cmd, close_fds=True,  # i18n: no
                      creationflags=getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NO_WINDOW", 0))
     return True
