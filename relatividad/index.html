@@ -221,6 +221,18 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:var(
 .two{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .card,.vs>div{background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
 .me{font-weight:500;color:var(--text)}
+.say{list-style:none;margin:0;padding:0;counter-reset:sy;display:flex;flex-direction:column;gap:12px}
+.say li{counter-increment:sy;display:grid;grid-template-columns:36px minmax(0,1fr);gap:14px;align-items:baseline;font-size:clamp(1.15rem,1.85vw,1.5rem);line-height:1.3;font-weight:500}
+.say li::before{content:counter(sy);font-family:var(--mono);font-size:.95rem;font-weight:500;color:var(--sun-ink);background:var(--sun);width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;transform:translateY(-3px)}
+.big-read{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big-read small{color:var(--muted);font-size:.85rem}
+.big-read b{font-family:var(--mono);font-weight:500;font-size:clamp(1.5rem,2.6vw,2rem);color:var(--sun);font-variant-numeric:tabular-nums}
+details.more{border-top:1px solid var(--line);padding-top:10px}
+details.more summary{cursor:pointer;font-size:.84rem;color:var(--muted);list-style:none;display:inline-flex;align-items:center;gap:6px}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::before{content:"+";font-family:var(--mono);color:var(--sun);width:14px}
+details.more[open] summary::before{content:"−"}
+.more-in{display:flex;flex-direction:column;gap:12px;margin-top:12px}
 .card .y,.vs .y{font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--sun)}
 .card p{font-size:.92rem}
 .card ul.pts,.vs ul.pts{font-size:.9rem;gap:7px}
@@ -492,25 +504,31 @@ html.anim .rv.in .w>span{transform:none}
     <div class="eyebrow"><span>Tópico 5 · Parte 1</span><span>Expone: <b class="me">vos</b></span></div>
     <div class="split">
       <div class="stack">
-        <h2>Incidencia de la Teoría de la Relatividad en la sociedad</h2>
-        <p>La Relatividad no quedó solo en los libros: hoy la usamos todos los días.</p>
-        <div class="two">
-          <div class="card"><span class="y">GPS del celular</span><p>Los relojes de los satélites se adelantan <b>38 millonésimas de segundo por día</b>. Sin corregirlo, el GPS se equivocaría <b>unos 11 km por día</b>.</p></div>
-          <div class="card"><span class="y">Energía y medicina</span><p><b>E = mc²</b>: un poco de masa se convierte en muchísima energía. Así funcionan las centrales nucleares (Atucha y Embalse) y estudios médicos como la tomografía PET.</p></div>
-        </div>
+        <h2>La Relatividad en la sociedad</h2>
+        <ol class="say">
+          <li>La Relatividad se usa todos los días.</li>
+          <li>El GPS del celular funciona gracias a Einstein.</li>
+          <li>Los relojes de los satélites van un poquito más rápido que los nuestros.</li>
+          <li>Sin corregirlo, el GPS se equivocaría 11 km por día.</li>
+          <li>Además, E = mc² explica la energía nuclear.</li>
+        </ol>
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>Relojes de los satélites GPS</h3><div class="inst-a"><span class="tag">Simulador 7</span></div></div>
-        <div class="view"><canvas id="gps" class="ar-16-10" aria-label="Tierra en 3D con la constelación GPS, la Estación Espacial y satélites geoestacionarios. Arrastrá para girar"></canvas><div class="ov">Arrastrá para girar · 1 segundo = 1 hora</div></div>
-        <div class="legend3"><span><i style="background:var(--sun)"></i>24 satélites GPS en 6 planos a 55°</span><span><i style="background:var(--mass)"></i>Tu satélite</span><span><i style="background:var(--text)"></i>Estación Espacial</span><span><i style="background:var(--muted)"></i>Geoestacionarios</span></div>
-        <div class="seg" id="gps-p" role="group" aria-label="Órbitas reales"><button data-v="400">Estación Espacial · 400 km</button><button data-v="20200">GPS · 20.200 km</button><button data-v="35786">Geoestacionario · 35.786 km</button></div>
-        <div class="ctrls"><div class="ctl"><label for="gps-h">Altura de la órbita <output id="gps-hv"></output></label><input type="range" id="gps-h" min="400" max="36000" step="100" value="20200"></div></div>
-        <div class="reads">
-          <div class="read neg"><small>Por velocidad (Especial)</small><b id="gps-sr"></b></div>
-          <div class="read ray"><small>Por menor gravedad (General)</small><b id="gps-gr"></b></div>
-          <div class="read hi"><small>Adelanto neto por día</small><b id="gps-net"></b></div>
-          <div class="read hi"><small>Error de posición por día</small><b id="gps-err"></b></div>
-        </div>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>Satélites GPS alrededor de la Tierra</h3><div class="inst-a"><span class="tag">Simulador 7</span></div></div>
+        <div class="view"><canvas id="gps" class="ar-16-10" aria-label="Tierra en 3D con los satélites GPS. Arrastrá para girar"></canvas><div class="ov">Arrastrá para girar</div></div>
+        <div class="big-read"><small>Sin Einstein, el GPS se equivoca</small><b id="gps-err"></b><small>por día</small></div>
+        <details class="more"><summary>Ver más números</summary>
+          <div class="more-in">
+            <div class="legend3"><span><i style="background:var(--sun)"></i>24 satélites GPS</span><span><i style="background:var(--mass)"></i>Tu satélite</span><span><i style="background:var(--text)"></i>Estación Espacial</span><span><i style="background:var(--muted)"></i>Geoestacionarios</span></div>
+            <div class="seg" id="gps-p" role="group" aria-label="Órbitas reales"><button data-v="400">Estación Espacial</button><button data-v="20200">GPS</button><button data-v="35786">Geoestacionario</button></div>
+            <div class="ctrls"><div class="ctl"><label for="gps-h">Altura de la órbita <output id="gps-hv"></output></label><input type="range" id="gps-h" min="400" max="36000" step="100" value="20200"></div></div>
+            <div class="reads">
+              <div class="read neg"><small>Por ir rápido se atrasa</small><b id="gps-sr"></b></div>
+              <div class="read ray"><small>Por estar lejos se adelanta</small><b id="gps-gr"></b></div>
+              <div class="read hi"><small>En total, por día</small><b id="gps-net"></b></div>
+            </div>
+          </div>
+        </details>
       </div>
     </div>
   </div>
@@ -522,26 +540,24 @@ html.anim .rv.in .w>span{transform:none}
     <div class="eyebrow"><span>Tópico 5 · Parte 2</span><span>Expone: <b class="me">vos</b></span></div>
     <div class="split">
       <div class="stack">
-        <h2>Incidencia en la concepción del Universo</h2>
-        <div class="vs">
-          <div><span class="y">Antes de Einstein</span><ul class="pts"><li>El espacio y el tiempo eran fijos e iguales para todos.</li><li>El Universo era eterno y no cambiaba.</li></ul></div>
-          <div><span class="y">Después de Einstein</span><ul class="pts"><li>El espacio y el tiempo cambian con la velocidad y la gravedad.</li><li>El Universo se expande y tuvo un comienzo: el <b>Big Bang</b>.</li></ul></div>
-        </div>
-        <ol class="steps">
-          <li>1929: Hubble observa que las galaxias se alejan unas de otras.</li>
-          <li>2015: se detectan las ondas gravitacionales que predijo Einstein.</li>
-          <li>2019: primera foto de un agujero negro.</li>
+        <h2>La Relatividad y el Universo</h2>
+        <ol class="say">
+          <li>Antes se creía que el Universo era fijo y eterno.</li>
+          <li>Gracias a Einstein, sabemos que se expande.</li>
+          <li>Empezó con el Big Bang, hace 13.800 millones de años.</li>
+          <li>Y también predijo los agujeros negros.</li>
         </ol>
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>El Universo en expansión</h3><div class="inst-a"><button class="btn" id="u-bang"><svg class="ic"><use href="#i-reset"/></svg>Volver al Big Bang</button><button class="btn ib" id="u-play" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><span class="tag">Simulador 8</span></div></div>
-        <div class="view"><canvas id="univ" class="ar-16-10" aria-label="Galaxias en 3D que se alejan unas de otras a medida que el Universo se expande. Arrastrá para girar"></canvas><div class="ov">Arrastrá para girar</div><span class="lbl fixed" id="u-t"></span></div>
-        <div class="reads">
-          <div class="read hi"><small>Tiempo desde el Big Bang</small><b id="u-age"></b></div>
-          <div class="read ray"><small>Tamaño comparado con hoy</small><b id="u-a"></b></div>
-          <div class="read"><small>Edad actual del Universo</small><b>13.800 millones de años</b></div>
-        </div>
-        <p class="hint">Expansión calculada con la solución de Einstein para un Universo con materia y energía oscura (Ωm = 0,31, ΩΛ = 0,69, H₀ = 67,7 km/s por megapársec). Las galaxias más lejanas se alejan más rápido y se ven más rojizas.</p>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>El Universo se expande</h3><div class="inst-a"><button class="btn" id="u-bang"><svg class="ic"><use href="#i-reset"/></svg>Volver al Big Bang</button><button class="btn ib" id="u-play" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><span class="tag">Simulador 8</span></div></div>
+        <div class="view"><canvas id="univ" class="ar-16-10" aria-label="Galaxias en 3D que se alejan unas de otras. Arrastrá para girar"></canvas><div class="ov">Arrastrá para girar</div><span class="lbl fixed" id="u-t"></span></div>
+        <div class="big-read"><small>Tiempo desde el Big Bang</small><b id="u-age"></b></div>
+        <details class="more"><summary>Ver más</summary>
+          <div class="more-in">
+            <div class="reads"><div class="read ray"><small>Tamaño comparado con hoy</small><b id="u-a"></b></div><div class="read"><small>Edad actual del Universo</small><b>13.800 millones de años</b></div></div>
+            <p class="hint">Cada punto es una galaxia. Las más lejanas se alejan más rápido. Calculado con las ecuaciones de Einstein (Ωm = 0,31, ΩΛ = 0,69, H₀ = 67,7 km/s por megapársec).</p>
+          </div>
+        </details>
       </div>
     </div>
   </div>
@@ -691,23 +707,23 @@ La diferencia: para Newton la gravedad es una fuerza entre masas y funciona muy 
 [Pestaña 1887] Michelson y Morley buscaban el éter con un interferómetro. Si existía, las franjas se correrían al girar el aparato. [Tocar "Lo que midieron en 1887"] No se movieron.
 [Pestaña 1915] La órbita de Mercurio gira 43 segundos de arco por siglo más de lo que explicaba Newton. Einstein calculó exactamente 43.
 [Pestaña 1919] Eddington fotografió estrellas durante un eclipse. Einstein predecía 1,75 segundos de arco, el doble que Newton. Se midió 1,98 y 1,61: ganó Einstein.`,
-`Habla: vos (30 s)
-Mi tema es la incidencia de la Teoría de la Relatividad en la sociedad y en la concepción del Universo.
-En la sociedad, el ejemplo más fácil es el GPS del celular. [Tocar "GPS"]
-Por ir rápido, los relojes de los satélites se atrasan 7 millonésimas de segundo por día. Por estar lejos de la gravedad, se adelantan 45. En total, 38.
-Sin corregirlo, el GPS se equivocaría 11 kilómetros por día. Además, E = mc² explica la energía nuclear, como la de Atucha.
+`Habla: vos (30 s) — leé los puntos de la pantalla en orden
+1. La Relatividad se usa todos los días.
+2. El GPS del celular funciona gracias a Einstein.
+3. Los relojes de los satélites van un poquito más rápido que los nuestros.
+4. Sin corregirlo, el GPS se equivocaría 11 km por día. [Señalar el número naranja]
+5. Además, E = mc² explica la energía nuclear.
 
 SI TE PREGUNTAN
-¿Por qué se adelantan si van rápido? Porque el efecto de estar lejos de la gravedad (45) es más grande que el de la velocidad (7).
-¿Qué es una millonésima de segundo? Un microsegundo: un segundo dividido en un millón de partes.`,
-`Habla: vos (25 s)
-Y en la concepción del Universo: antes se pensaba que el espacio y el tiempo eran fijos y que el Universo era eterno.
-Con la Relatividad sabemos que el Universo se expande. [Tocar "Volver al Big Bang"] Si lo rebobinamos, todo estaba junto: eso es el Big Bang, hace 13.800 millones de años.
-También predijo los agujeros negros y las ondas gravitacionales, que se comprobaron en 2015 y 2019.
+¿Por qué van más rápido? Porque allá arriba la gravedad es más débil, y con menos gravedad el tiempo pasa un poquito más rápido.`,
+`Habla: vos (25 s) — leé los puntos de la pantalla en orden
+1. Antes se creía que el Universo era fijo y eterno.
+2. Gracias a Einstein, sabemos que se expande. [Tocar "Volver al Big Bang"]
+3. Empezó con el Big Bang, hace 13.800 millones de años.
+4. Y también predijo los agujeros negros.
 
 SI TE PREGUNTAN
-¿Qué es el Big Bang? El comienzo del Universo: todo estaba concentrado y desde ahí se expandió.
-¿Cómo saben que se expande? Porque las galaxias lejanas se alejan de nosotros, y más rápido cuanto más lejos están (Hubble, 1929).`,
+¿Qué es el Big Bang? El comienzo del Universo: todo estaba junto y desde ahí se fue expandiendo.`,
 `Habla: todos (20 s)
 Newton no estaba equivocado: Einstein lo amplió. La gravedad es la forma del espacio-tiempo, se comprobó una y otra vez, y la usamos cada vez que abrimos el GPS. ¡Gracias! ¿Preguntas?`,
 `Anexo: no se expone. Mostrar solo si hay preguntas o sobra tiempo.
@@ -1124,7 +1140,7 @@ yo.addEventListener('focus',()=>{if(yo.textContent==='Tu nombre'){const r=docume
 
 /* ---------- animaciones de entrada y salida ---------- */
 function splitWords(el){let j=0;const walk=n=>{[...n.childNodes].forEach(ch=>{if(ch.nodeType===3){const frag=document.createDocumentFragment();ch.textContent.split(/(\s+)/).forEach(t=>{if(!t)return;if(/^\s+$/.test(t)){frag.appendChild(document.createTextNode(t));return}const w=document.createElement('span');w.className='w';const inn=document.createElement('span');inn.textContent=t;inn.style.setProperty('--j',j++);w.appendChild(inn);frag.appendChild(w)});ch.replaceWith(frag)}else if(ch.nodeType===1)walk(ch)})};walk(el)}
-const RV='.eyebrow, h1, h2, .lead, .tl-line, .who, .meta, .cue, .cover-fig, .stack>p, .stack>h3, ul.pts>li, .plate, .formula, .media-row, .inst, .tabs, .concl>div, .biblio li, .adds, .two, .steps>li, .vs';
+const RV='.eyebrow, h1, h2, .lead, .tl-line, .who, .meta, .cue, .cover-fig, .stack>p, .stack>h3, ul.pts>li, .plate, .formula, .media-row, .inst, .tabs, .concl>div, .biblio li, .adds, .two, .steps>li, .vs, .say>li, .big-read';
 slides.forEach(s=>{let k=0;s.querySelectorAll(RV).forEach(el=>{if(el.parentElement.closest('.rv'))return;el.classList.add('rv');el.style.setProperty('--i',Math.min(k++,8));if(/^H[12]$/.test(el.tagName))splitWords(el)})});
 const rvIO=new IntersectionObserver(es=>es.forEach(e=>{const el=e.target;if(e.isIntersecting){el.classList.add('in');el.classList.remove('up')}else{el.classList.remove('in');el.classList.toggle('up',e.boundingClientRect.top<(e.rootBounds?e.rootBounds.top:0))}}),{root:stage,rootMargin:'0px 0px -6% 0px',threshold:.08});
 $$('.rv').forEach(el=>rvIO.observe(el));
@@ -1134,14 +1150,14 @@ const sizeStage=()=>root.style.setProperty('--sh',stage.clientHeight+'px');new R
 const times=slides.map(s=>+s.dataset.time||0),starts=times.map((_,i)=>times.slice(0,i).reduce((a,b)=>a+b,0)),TOTAL=times.reduce((a,b)=>a+b,0);
 const nMain=slides.filter(x=>!x.dataset.annex).length;
 const dots=$('#dots');slides.forEach((s,i)=>{const b=document.createElement('button');b.className=s.dataset.annex?'ax':'';b.setAttribute('aria-label',s.dataset.title);b.innerHTML=`<span>${s.dataset.title}</span>`;b.onclick=()=>go(i);dots.appendChild(b)});
-const notesEl=$('#notes'),ntext=$('#ntext');const noteFor=i=>store.get('rel5-note-'+i)??NOTES[i];
+const notesEl=$('#notes'),ntext=$('#ntext');const noteFor=i=>store.get('rel6-note-'+i)??NOTES[i];
 function go(i){i=clamp(i,0,slides.length-1);slides[i].scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})}
 function setCur(i){if(i!==cur)sfx.whoosh();cur=i;const s=slides[i];$('#count').textContent=s.dataset.annex?'Anexo '+(i-nMain+1)+' / '+(slides.length-nMain):(i+1)+' / '+nMain;$('#stitle').textContent=s.dataset.title;
   [...dots.children].forEach((b,k)=>b.classList.toggle('on',k===i));ntext.textContent=noteFor(i);$('#nhead').textContent='Guion · '+s.dataset.title+(times[i]?' · '+times[i]+' s':'');
   $('#pmark').style.left=(Math.min(starts[i],TOTAL)/TOTAL*100)+'%';try{history.replaceState(null,'','#s'+i)}catch(e){}tick()}
 let pend=false;function detect(){const mid=stage.scrollTop+stage.clientHeight*.4;let k=0;slides.forEach((s,i)=>{if(s.offsetTop<=mid)k=i});if(k!==cur)setCur(k)}
 stage.addEventListener('scroll',()=>{if(!pend){pend=true;requestAnimationFrame(()=>{pend=false;detect()})}},{passive:true});
-ntext.addEventListener('input',()=>store.set('rel5-note-'+cur,ntext.innerText));
+ntext.addEventListener('input',()=>store.set('rel6-note-'+cur,ntext.innerText));
 $('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);$('#cue').onclick=()=>go(1);
 const mq=matchMedia('(prefers-color-scheme: dark)'),isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
 function themeUI(){$('#thico').setAttribute('href',isDark()?'#i-sun':'#i-moon');refreshCol()}
