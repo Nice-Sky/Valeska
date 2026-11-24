@@ -125,7 +125,8 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:var(
 .read{background:var(--surface);padding:9px 11px;min-width:0}
 .read b{display:block;font-family:var(--mono);font-weight:500;font-size:1rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .read small{color:var(--muted);font-size:.74rem}
-.read.hi b{color:var(--sun)}.read.ray b{color:var(--ray)}.read.neg b{color:var(--mass)}
+.read.hi b{color:var(--sun)}
+.read .pred{display:block;margin-top:2px}.read.ray b{color:var(--ray)}.read.neg b{color:var(--mass)}
 .cmp{display:flex;flex-direction:column;gap:8px;font-size:.8rem;color:var(--muted)}
 .cmp div{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;align-items:center}
 .cmp i{display:block;height:8px;background:var(--sun);transition:width .8s var(--ez)}
@@ -434,76 +435,20 @@ html.anim .rv.in .w>span{transform:none}
 </section>
 
 <!-- EXPERIMENTO 1 -->
-<section class="slide" data-time="25" data-title="Experimento 1 · Michelson y Morley" data-x="0">
+<section class="slide" data-time="35" data-title="Experimento 1 · Eclipse de 1919" data-x="0">
   <div class="wrap">
-    <div class="eyebrow"><span>Tópico 4 · Experimento 1 de 3</span><span>Expone: <b class="me">Bruno Rinaldi</b></span></div>
-    <h2>Tres pruebas que confirmaron a Einstein</h2>
-    <div class="xtl" style="--w:0%"><span class="rail"><i class="fill"></i></span><button class="xn on" data-go="0"><span class="y">1887</span><span>Michelson y Morley</span></button><button class="xn" data-go="1"><span class="y">1915</span><span>Órbita de Mercurio</span></button><button class="xn" data-go="2"><span class="y">1919</span><span>Eclipse de Eddington</span></button></div>
+    <div class="eyebrow"><span>Tópico 4 · Experimento 1 de 2</span><span>Expone: <b class="me">Bruno Rinaldi</b></span></div>
+    <h2>Pruebas de la Teoría de la Relatividad</h2>
+    <p class="lead">Einstein presentó dos teorías: la Relatividad Especial (1905) y la General (1915). Ambas hicieron predicciones que podían comprobarse con experimentos y observaciones. Dos de las pruebas más importantes fueron:</p>
+    <div class="xtl" style="--w:0%;grid-template-columns:repeat(2,minmax(0,1fr))"><span class="rail"><i class="fill"></i></span><button class="xn on" data-go="0"><span class="y">1919</span><span>Eclipse de Eddington</span></button><button class="xn" data-go="1"><span class="y">1971</span><span>Hafele y Keating</span></button></div>
     <div class="split">
-        <div class="stack">
-          <h3 class="ph">Buscando el éter</h3>
-          <p>Buscaban el <b>éter</b>, el supuesto medio por el que viajaba la luz, con un <b>interferómetro</b>. Si existía, al girar el aparato las franjas se correrían 0,4. <b>No se movieron.</b> Fue la base de la Relatividad Especial.</p>
-          <figure class="plate" style="max-width:340px"><div class="pf paper" data-fig="Fig. 2"><img src="img/michelson.jpg" alt="Esquema del interferómetro de Michelson-Morley: fuente de luz, espejo semiplateado, dos espejos y detector"></div><figcaption>La luz se divide, recorre dos brazos perpendiculares y se recombina en el detector.</figcaption></figure>
-        </div>
-        <div class="inst">
-          <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>Interferómetro en 3D</h3><div class="inst-a"><button class="btn ib" id="mm-play" aria-label="Pausar giro"><svg class="ic"><use href="#i-pause"/></svg></button><span class="tag">Simulador 4</span></div></div>
-          <div class="view"><canvas id="mm3" class="ar-16-9" aria-label="Interferómetro en 3D sobre una losa de piedra que flota en mercurio. Arrastrá para girar la vista"></canvas><div class="ov">Arrastrá para girar la vista</div><span class="lbl fixed" id="mm-th"></span></div>
-          <canvas id="mm" class="ar-wide" aria-label="Franjas de interferencia y gráfico del corrimiento según el ángulo"></canvas>
-          <div class="seg" id="mm-mode" role="group" aria-label="Escenario"><button data-v="e">Si existiera el éter</button><button data-v="r">Lo que midieron en 1887</button></div>
-          <div class="ctrls"><div class="ctl"><label for="mm-v">Velocidad de la Tierra respecto del éter <output id="mm-vv"></output></label><input type="range" id="mm-v" min="0" max="60" step="1" value="30"></div></div>
-          <div class="reads">
-            <div class="read hi"><small>Corrimiento esperado</small><b id="mm-exp"></b></div>
-            <div class="read ray"><small>Corrimiento medido</small><b>&lt; 0,02 franjas</b></div>
-          </div>
-          <p class="hint">ΔN = 2Lv² / (λc²), con brazos de L = 11 m (luz reflejada varias veces) y λ = 500 nm.</p>
-        </div>
+      <div class="stack">
+        <h3 class="ph">Arthur Eddington, eclipse solar de 1919</h3>
+        <p>Consistió en comprobar si la gravedad del Sol podía <b>desviar la luz de las estrellas</b>. Eddington organizó expediciones para fotografiar las estrellas durante un eclipse solar. Las fotografías mostraron <b>desplazamientos en las posiciones aparentes de las estrellas</b>, confirmando la teoría de Einstein.</p>
+        <figure class="plate"><div class="pf" data-fig="Fig. 3"><img src="img/sobral.jpg" alt="Telescopios de la expedición de Sobral, Brasil, 1919, bajo un cobertizo de madera"></div><figcaption>Telescopios de la expedición a Sobral, Brasil, 1919.</figcaption></figure>
       </div>
-    <button class="nextx"><span>Siguiente prueba: 1915 · Órbita de Mercurio</span><svg class="ic"><use href="#i-down"/></svg></button>
-  </div>
-</section>
-
-<!-- EXPERIMENTO 2 -->
-<section class="slide" data-time="20" data-title="Experimento 2 · Órbita de Mercurio" data-x="1">
-  <div class="wrap">
-    <div class="eyebrow"><span>Tópico 4 · Experimento 2 de 3</span><span>Expone: <b class="me">Bruno Rinaldi</b></span></div>
-    <div class="xtl" style="--w:50%"><span class="rail"><i class="fill"></i></span><button class="xn done" data-go="0"><span class="y">1887</span><span>Michelson y Morley</span></button><button class="xn on" data-go="1"><span class="y">1915</span><span>Órbita de Mercurio</span></button><button class="xn" data-go="2"><span class="y">1919</span><span>Eclipse de Eddington</span></button></div>
-    <div class="split">
-        <div class="stack">
-          <h3 class="ph">43″ que Newton no explicaba</h3>
-          <p>La órbita de Mercurio gira lentamente. Los otros planetas explicaban casi todo ese giro, pero <b>sobraban 43″ por siglo</b>. En 1915 la Relatividad General dio exactamente ese valor.</p>
-          <p class="hint">Pruebas posteriores: Pound y Rebka (1959), relojes atómicos en aviones de Hafele y Keating (1971), ondas gravitacionales de LIGO (2015).</p>
-        </div>
-        <div class="inst">
-          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Perihelio de Mercurio</h3><div class="inst-a"><button class="btn ib" id="m-play" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><button class="btn ib" id="m-reset" aria-label="Reiniciar"><svg class="ic"><use href="#i-reset"/></svg></button><span class="tag">Simulador 5</span></div></div>
-          <canvas id="merc" class="ar-16-10" aria-label="Órbita de Mercurio que gira lentamente formando una roseta"></canvas>
-          <div class="btns"><span class="hint">Exagerar el efecto</span>
-            <div class="seg" id="m-x" role="group" aria-label="Exageración"><button data-v="3">× 1.000</button><button data-v="4">× 10.000</button><button data-v="5">× 100.000</button><button data-v="6">× 1.000.000</button></div>
-          </div>
-          <div class="reads">
-            <div class="read hi"><small>Calculado con Relatividad</small><b id="m-gr"></b></div>
-            <div class="read"><small>Por otros planetas (Newton)</small><b>≈ 532″ / siglo</b></div>
-            <div class="read ray"><small>Siglos simulados</small><b id="m-c">0</b></div>
-          </div>
-          <p class="hint">Δφ = 6πGM / (c²a(1 − e²)) por vuelta, con a = 57,9 millones de km y e = 0,2056.</p>
-        </div>
-      </div>
-    <button class="nextx"><span>Siguiente prueba: 1919 · Eclipse de Eddington</span><svg class="ic"><use href="#i-down"/></svg></button>
-  </div>
-</section>
-
-<!-- EXPERIMENTO 3 -->
-<section class="slide" data-time="25" data-title="Experimento 3 · Eclipse de Eddington" data-x="2">
-  <div class="wrap">
-    <div class="eyebrow"><span>Tópico 4 · Experimento 3 de 3</span><span>Expone: <b class="me">Bruno Rinaldi</b></span></div>
-    <div class="xtl" style="--w:100%"><span class="rail"><i class="fill"></i></span><button class="xn done" data-go="0"><span class="y">1887</span><span>Michelson y Morley</span></button><button class="xn done" data-go="1"><span class="y">1915</span><span>Órbita de Mercurio</span></button><button class="xn on" data-go="2"><span class="y">1919</span><span>Eclipse de Eddington</span></button></div>
-    <div class="split">
-        <div class="stack">
-          <h3 class="ph">La luz se curva cerca del Sol</h3>
-          <p>Einstein predijo que el Sol desviaría la luz de las estrellas. <b>Eddington</b> lo midió en el eclipse del 29 de mayo de 1919, en Sobral (Brasil) y Príncipe (África). El resultado fue <b>compatible con Einstein</b>: el doble de lo que daba Newton.</p>
-          <figure class="plate"><div class="pf" data-fig="Fig. 3"><img src="img/sobral.jpg" alt="Telescopios de la expedición de Sobral, Brasil, 1919, bajo un cobertizo de madera"></div><figcaption>Telescopios de la expedición a Sobral, Brasil, 1919.</figcaption></figure>
-        </div>
-        <div class="inst">
-          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Desviación de la luz</h3><div class="inst-a"><span class="tag">Simulador 6</span></div></div>
+      <div class="inst">
+          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Desviación de la luz</h3><div class="inst-a"><span class="tag">Simulador 4</span></div></div>
           <canvas id="edd" class="ar-16-9" aria-label="Rayo de luz de una estrella que se curva al pasar cerca del Sol. Arrastrá para alejar el rayo"></canvas>
           <div class="ctrls"><div class="ctl"><label for="e-b">Distancia del rayo al centro del Sol <output id="e-bv"></output></label><input type="range" id="e-b" min="1" max="10" step="0.1" value="1"></div></div>
           <div class="reads">
@@ -513,7 +458,32 @@ html.anim .rv.in .w>span{transform:none}
           <canvas id="eddc" class="ar-wide" aria-label="Gráfico de la desviación según la distancia, con las mediciones de 1919"></canvas>
           <p class="hint">Ángulo dibujado 12.000 veces más grande. ″ = segundo de arco (1/3600 de grado).</p>
         </div>
+    </div>
+    <button class="nextx"><span>Siguiente prueba: Hafele y Keating, 1971</span><svg class="ic"><use href="#i-down"/></svg></button>
+  </div>
+</section>
+
+<!-- EXPERIMENTO 2 -->
+<section class="slide" data-time="35" data-title="Experimento 2 · Hafele y Keating" data-x="1">
+  <div class="wrap">
+    <div class="eyebrow"><span>Tópico 4 · Experimento 2 de 2</span><span>Expone: <b class="me">Bruno Rinaldi</b></span></div>
+    <div class="xtl" style="--w:50%;grid-template-columns:repeat(2,minmax(0,1fr))"><span class="rail"><i class="fill"></i></span><button class="xn done" data-go="0"><span class="y">1919</span><span>Eclipse de Eddington</span></button><button class="xn on" data-go="1"><span class="y">1971</span><span>Hafele y Keating</span></button></div>
+    <div class="split">
+      <div class="stack">
+        <h3 class="ph">Hafele y Keating, 1971</h3>
+        <p>Consistió en comprobar si <b>el movimiento y la gravedad afectan el paso del tiempo</b>. Para esto, llevaron <b>relojes atómicos en aviones comerciales</b> alrededor del mundo, una vez hacia el este y otra hacia el oeste, y al volver los compararon con relojes que habían quedado en tierra. Los relojes de los aviones <b>se desfasaron casi exactamente lo que predecía Einstein</b>.</p>
+        <p class="src"><b>Fuentes:</b> OpenStax, <i>Astronomía</i>, «24.3 Pruebas de Relatividad General» (LibreTexts en español) · B. Crowell, <i>Relatividad General</i>, «1.2 Pruebas experimentales de la naturaleza del tiempo» (LibreTexts) · National Geographic España, «El eclipse de 1919 que confirmó la teoría de la relatividad de Einstein».</p>
       </div>
+      <div class="inst">
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>Relojes atómicos en avión</h3><div class="inst-a"><button class="btn" id="hk-again"><svg class="ic"><use href="#i-reset"/></svg>Repetir vuelo</button><span class="tag">Simulador 5</span></div></div>
+        <div class="view"><canvas id="hk" class="ar-16-10" aria-label="Tierra en 3D con dos aviones que dan la vuelta al mundo, uno hacia el este y otro hacia el oeste. Arrastrá para girar"></canvas><div class="ov">Arrastrá para girar</div><span class="lbl fixed" id="hk-st"></span></div>
+        <div class="reads">
+          <div class="read neg"><small>Reloj del avión hacia el este</small><b id="hk-e"></b><small class="pred">Predicción de Einstein: −40 ns</small></div>
+          <div class="read hi"><small>Reloj del avión hacia el oeste</small><b id="hk-w"></b><small class="pred">Predicción de Einstein: +275 ns</small></div>
+        </div>
+        <p class="hint">Diferencia con el reloj que quedó en tierra. ns = nanosegundo, una milmillonésima de segundo. Datos medidos en octubre de 1971 (Hafele y Keating, <i>Science</i>, 1972).</p>
+      </div>
+    </div>
     <button class="nextx"><span>Siguiente: la Relatividad en la sociedad</span><svg class="ic"><use href="#i-down"/></svg></button>
   </div>
 </section>
@@ -529,7 +499,7 @@ html.anim .rv.in .w>span{transform:none}
         <p class="src"><b>Fuentes:</b> Revista de Enseñanza de la Física, Universidad Nacional de Córdoba (2008), sobre las correcciones relativistas del GPS · Comisión Nacional de Energía Atómica (CNEA), «Sector nuclear».</p>
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>Satélites GPS alrededor de la Tierra</h3><div class="inst-a"><span class="tag">Simulador 7</span></div></div>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>Satélites GPS alrededor de la Tierra</h3><div class="inst-a"><span class="tag">Simulador 6</span></div></div>
         <div class="view"><canvas id="gps" class="ar-16-10" aria-label="Tierra en 3D con los satélites GPS. Arrastrá para girar"></canvas><div class="ov">Arrastrá para girar</div></div>
         <div class="big-read"><small>Sin Einstein, el GPS se equivoca</small><b id="gps-err"></b><small>por día</small></div>
         <details class="more"><summary>Ver más números</summary>
@@ -560,7 +530,7 @@ html.anim .rv.in .w>span{transform:none}
         <p class="src"><b>Fuentes:</b> Planetario de la Ciudad de Buenos Aires Galileo Galilei, revista <i>Si Muove</i>: «Cinco pasos hacia el Big Bang», de Juan Carlos Forte (CONICET) · CONICET, divulgación de Gustavo E. Romero sobre Relatividad General y agujeros negros.</p>
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>El Universo se expande</h3><div class="inst-a"><button class="btn" id="u-bang"><svg class="ic"><use href="#i-reset"/></svg>Volver al Big Bang</button><button class="btn ib" id="u-play" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><span class="tag">Simulador 8</span></div></div>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>El Universo se expande</h3><div class="inst-a"><button class="btn" id="u-bang"><svg class="ic"><use href="#i-reset"/></svg>Volver al Big Bang</button><button class="btn ib" id="u-play" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><span class="tag">Simulador 7</span></div></div>
         <div class="view"><canvas id="univ" class="ar-16-10" aria-label="Galaxias en 3D que se alejan unas de otras. Arrastrá para girar"></canvas><div class="ov">Arrastrá para girar</div><span class="lbl fixed" id="u-t"></span></div>
         <div class="big-read"><small>Tiempo desde el Big Bang</small><b id="u-age"></b></div>
         <details class="more"><summary>Ver más</summary>
@@ -582,10 +552,63 @@ html.anim .rv.in .w>span{transform:none}
     <div class="concl">
       <div><b>Gravedad</b><p>Para Newton, una fuerza entre masas. Para Einstein, la curvatura del espacio-tiempo.</p></div>
       <div><b>Relatividad</b><p>El tiempo y el espacio dependen del movimiento y de la gravedad. La luz es el límite.</p></div>
-      <div><b>Comprobación</b><p>Michelson-Morley, Mercurio, el eclipse de 1919, relojes atómicos y LIGO la confirmaron.</p></div>
+      <div><b>Comprobación</b><p>El eclipse de 1919, los relojes atómicos en avión de 1971 y muchas otras pruebas la confirmaron.</p></div>
       <div><b>Sociedad</b><p>Hoy la usamos sin darnos cuenta: cada vez que abrimos el GPS del celular.</p></div>
     </div>
     <p class="lead">¡Gracias! ¿Preguntas?</p>
+  </div>
+</section>
+
+<!-- ANEXO: MICHELSON -->
+<section class="slide" data-annex="1" data-time="0" data-title="Anexo · Michelson y Morley">
+  <div class="wrap">
+    <div class="eyebrow"><span>Anexo</span><span>Otras pruebas · 1887</span></div>
+    <div class="split">
+        <div class="stack">
+          <h3 class="ph">Buscando el éter</h3>
+          <p>Buscaban el <b>éter</b>, el supuesto medio por el que viajaba la luz, con un <b>interferómetro</b>. Si existía, al girar el aparato las franjas se correrían 0,4. <b>No se movieron.</b> Fue la base de la Relatividad Especial.</p>
+          <figure class="plate" style="max-width:340px"><div class="pf paper" data-fig="Fig. 2"><img src="img/michelson.jpg" alt="Esquema del interferómetro de Michelson-Morley: fuente de luz, espejo semiplateado, dos espejos y detector"></div><figcaption>La luz se divide, recorre dos brazos perpendiculares y se recombina en el detector.</figcaption></figure>
+        </div>
+        <div class="inst">
+          <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>Interferómetro en 3D</h3><div class="inst-a"><button class="btn ib" id="mm-play" aria-label="Pausar giro"><svg class="ic"><use href="#i-pause"/></svg></button><span class="tag">Simulador 8</span></div></div>
+          <div class="view"><canvas id="mm3" class="ar-16-9" aria-label="Interferómetro en 3D sobre una losa de piedra que flota en mercurio. Arrastrá para girar la vista"></canvas><div class="ov">Arrastrá para girar la vista</div><span class="lbl fixed" id="mm-th"></span></div>
+          <canvas id="mm" class="ar-wide" aria-label="Franjas de interferencia y gráfico del corrimiento según el ángulo"></canvas>
+          <div class="seg" id="mm-mode" role="group" aria-label="Escenario"><button data-v="e">Si existiera el éter</button><button data-v="r">Lo que midieron en 1887</button></div>
+          <div class="ctrls"><div class="ctl"><label for="mm-v">Velocidad de la Tierra respecto del éter <output id="mm-vv"></output></label><input type="range" id="mm-v" min="0" max="60" step="1" value="30"></div></div>
+          <div class="reads">
+            <div class="read hi"><small>Corrimiento esperado</small><b id="mm-exp"></b></div>
+            <div class="read ray"><small>Corrimiento medido</small><b>&lt; 0,02 franjas</b></div>
+          </div>
+          <p class="hint">ΔN = 2Lv² / (λc²), con brazos de L = 11 m (luz reflejada varias veces) y λ = 500 nm.</p>
+        </div>
+      </div>
+  </div>
+</section>
+
+<!-- ANEXO: MERCURIO -->
+<section class="slide" data-annex="1" data-time="0" data-title="Anexo · Mercurio">
+  <div class="wrap">
+    <div class="eyebrow"><span>Anexo</span><span>Otras pruebas · 1915</span></div>
+    <div class="split">
+        <div class="stack">
+          <h3 class="ph">43″ que Newton no explicaba</h3>
+          <p>La órbita de Mercurio gira lentamente. Los otros planetas explicaban casi todo ese giro, pero <b>sobraban 43″ por siglo</b>. En 1915 la Relatividad General dio exactamente ese valor.</p>
+          <p class="hint">Pruebas posteriores: Pound y Rebka (1959), relojes atómicos en aviones de Hafele y Keating (1971), ondas gravitacionales de LIGO (2015).</p>
+        </div>
+        <div class="inst">
+          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Perihelio de Mercurio</h3><div class="inst-a"><button class="btn ib" id="m-play" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><button class="btn ib" id="m-reset" aria-label="Reiniciar"><svg class="ic"><use href="#i-reset"/></svg></button><span class="tag">Simulador 9</span></div></div>
+          <canvas id="merc" class="ar-16-10" aria-label="Órbita de Mercurio que gira lentamente formando una roseta"></canvas>
+          <div class="btns"><span class="hint">Exagerar el efecto</span>
+            <div class="seg" id="m-x" role="group" aria-label="Exageración"><button data-v="3">× 1.000</button><button data-v="4">× 10.000</button><button data-v="5">× 100.000</button><button data-v="6">× 1.000.000</button></div>
+          </div>
+          <div class="reads">
+            <div class="read hi"><small>Calculado con Relatividad</small><b id="m-gr"></b></div>
+            <div class="read"><small>Por otros planetas (Newton)</small><b>≈ 532″ / siglo</b></div>
+            <div class="read ray"><small>Siglos simulados</small><b id="m-c">0</b></div>
+          </div>
+          <p class="hint">Δφ = 6πGM / (c²a(1 − e²)) por vuelta, con a = 57,9 millones de km y e = 0,2056.</p>
+        </div>
+      </div>
   </div>
 </section>
 
@@ -603,7 +626,7 @@ html.anim .rv.in .w>span{transform:none}
         </ul>
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>Órbitas en 3D</h3><div class="inst-a"><button class="btn ib" id="o-circ" aria-label="Agregar planeta en órbita circular"><svg class="ic"><use href="#i-plus"/></svg></button><button class="btn ib" id="o-clear" aria-label="Limpiar"><svg class="ic"><use href="#i-trash"/></svg></button><span class="tag">Simulador 9</span></div></div>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>Órbitas en 3D</h3><div class="inst-a"><button class="btn ib" id="o-circ" aria-label="Agregar planeta en órbita circular"><svg class="ic"><use href="#i-plus"/></svg></button><button class="btn ib" id="o-clear" aria-label="Limpiar"><svg class="ic"><use href="#i-trash"/></svg></button><span class="tag">Simulador 10</span></div></div>
         <div class="view"><canvas id="orbit" class="ar-16-10" aria-label="Sistema solar en 3D. Tocá el plano para agregar planetas y arrastrá para girar"></canvas><div class="ov">Arrastrá para girar · Tocá el plano para agregar un planeta</div></div>
         <div class="btns"><span class="hint">Velocidad del planeta nuevo</span><div class="seg" id="o-vel" role="group" aria-label="Velocidad"><button data-v="0.7">Lenta</button><button data-v="1">Circular</button><button data-v="1.2">Elíptica</button><button data-v="1.42">Escape</button></div></div>
         <div class="ctrls"><div class="ctl"><label for="o-M">Masa de la estrella <output id="o-Mv"></output></label><input type="range" id="o-M" min="0.4" max="2.5" step="0.05" value="1"></div></div>
@@ -620,7 +643,7 @@ html.anim .rv.in .w>span{transform:none}
     <h2>Tiempo cerca de una masa y E = mc²</h2>
     <div class="split">
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Tiempo cerca de una masa</h3><div class="inst-a"><span class="tag">Simulador 10</span></div></div>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Tiempo cerca de una masa</h3><div class="inst-a"><span class="tag">Simulador 11</span></div></div>
         <select id="td-sel" aria-label="Elegí un cuerpo">
           <option value="earth">Superficie de la Tierra</option>
           <option value="sun">Superficie del Sol</option>
@@ -636,7 +659,7 @@ html.anim .rv.in .w>span{transform:none}
         <p class="hint">√(1 − 2GM / rc²): dilatación gravitacional del tiempo (solución de Schwarzschild).</p>
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>E = mc²</h3><div class="inst-a"><span class="tag">Simulador 11</span></div></div>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>E = mc²</h3><div class="inst-a"><span class="tag">Simulador 12</span></div></div>
         <div class="ctrls"><div class="ctl"><label for="E-m">Masa convertida en energía <output id="E-mv"></output></label><input type="range" id="E-m" min="-3" max="6" step="0.05" value="0"></div></div>
         <div class="reads">
           <div class="read hi"><small>Energía</small><b id="E-J"></b></div>
@@ -664,6 +687,9 @@ html.anim .rv.in .w>span{transform:none}
       <li>Ashby, N. (2003). Relativity in the Global Positioning System. <i>Living Reviews in Relativity</i>, 6, 1.</li>
       <li>Abbott, B. P. et al. (LIGO y Virgo) (2016). Observation of Gravitational Waves from a Binary Black Hole Merger. <i>Physical Review Letters</i>, 116, 061102.</li>
       <li>Hawking, S. (1988). <i>Historia del tiempo: del Big Bang a los agujeros negros</i>. Crítica.</li>
+      <li><b>Fuentes del Tópico 4:</b> OpenStax. <i>Astronomía</i>, «24.3 Pruebas de Relatividad General». LibreTexts Español. espanol.libretexts.org</li>
+      <li>Crowell, B. <i>Relatividad General</i>, «1.2 Pruebas experimentales de la naturaleza del tiempo». LibreTexts Español. espanol.libretexts.org</li>
+      <li>National Geographic España. «El eclipse de 1919 que confirmó la teoría de la relatividad de Einstein». nationalgeographic.com.es</li>
       <li><b>Fuentes argentinas (Tópico 5):</b> Comisión Nacional de Energía Atómica (CNEA). «Sector nuclear». argentina.gob.ar/cnea/sector-nuclear</li>
       <li>Revista de Enseñanza de la Física (2008). Universidad Nacional de Córdoba. Artículo sobre las correcciones relativistas en los satélites GPS. revistas.unc.edu.ar/index.php/revistaEF</li>
       <li>Forte, J. C. «Cinco pasos hacia el Big Bang». <i>Si Muove</i>, revista del Planetario de la Ciudad de Buenos Aires Galileo Galilei. planetario.buenosaires.gob.ar</li>
@@ -716,15 +742,18 @@ La Relatividad General, de 1915, explica la gravedad: la masa y la energía defo
 ¿Qué relación hay entre la gravedad y la relatividad? Para Einstein, la gravedad es una consecuencia de la curvatura del espacio-tiempo.
 [Señalar la malla] El Sol tiene mucha masa y curva el espacio-tiempo. La Tierra se mueve siguiendo esa curva, y por eso orbita alrededor del Sol.
 La diferencia: para Newton la gravedad es una fuerza entre masas y funciona muy bien en lo cotidiano. Einstein la explica como curvatura y así puede explicar fenómenos extremos que Newton no podía.`,
-`Habla: Bruno Rinaldi (25 s)
-¿Cómo se comprobó la Relatividad? Les muestro tres pruebas.
-La primera: Michelson y Morley, en 1887. Buscaban el éter con un interferómetro. Si existía, al girar el aparato las franjas se tenían que correr. [Tocar "Lo que midieron en 1887"] No se movieron.
+`Habla: Bruno Rinaldi (35 s)
+Einstein presentó dos teorías: la Relatividad Especial, en 1905, y la General, en 1915. Las dos hicieron predicciones que se podían comprobar con experimentos. Les muestro dos de las más importantes.
+La primera: Arthur Eddington, en el eclipse solar de 1919. Quiso comprobar si la gravedad del Sol podía desviar la luz de las estrellas. Organizó expediciones para fotografiarlas durante el eclipse, y las fotos mostraron que las estrellas aparecían corridas de lugar, confirmando a Einstein.
 [Tocar "Siguiente prueba"]`,
-`Habla: Bruno Rinaldi (20 s)
-La segunda: la órbita de Mercurio gira 43 segundos de arco por siglo más de lo que explicaba Newton. En 1915 Einstein calculó exactamente 43.
-[Tocar "Siguiente prueba"]`,
-`Habla: Bruno Rinaldi (25 s)
-La tercera: el eclipse de 1919. Eddington fotografió estrellas cerca del Sol. Einstein predecía 1,75 segundos de arco, el doble que Newton. Se midió 1,98 y 1,61: ganó Einstein.`,
+`Habla: Bruno Rinaldi (35 s)
+La segunda: Hafele y Keating, en 1971. Quisieron comprobar si el movimiento y la gravedad afectan el paso del tiempo.
+Llevaron relojes atómicos en aviones alrededor del mundo, hacia el este y hacia el oeste, y los compararon con relojes que quedaron en tierra. [Tocar "Repetir vuelo"]
+El reloj que viajó hacia el este se atrasó 59 nanosegundos y el que viajó hacia el oeste se adelantó 273: casi lo mismo que predecía Einstein.
+
+SI TE PREGUNTAN
+¿Qué es un nanosegundo? Una milmillonésima de segundo.
+¿Por qué uno se atrasa y el otro se adelanta? Porque la Tierra gira hacia el este: el avión que va hacia el este se mueve más rápido y su reloj se atrasa; el que va hacia el oeste se mueve más lento. Además, arriba la gravedad es más débil y el tiempo pasa un poco más rápido.`,
 `Habla: Nicandro González (30 s) — leé el texto de la pantalla
 La Teoría de la Relatividad no quedó en los libros: la usamos todos los días. El GPS del celular funciona porque se corrigen los relojes de los satélites, que marchan un poquito más rápido que los de la Tierra; sin esa corrección se equivocaría unos 11 km por día. Además, la fórmula E = mc² dice que la energía (E) es igual a la masa (m) por la velocidad de la luz (c) al cuadrado: un poquito de masa se convierte en muchísima energía, y así funcionan centrales argentinas como Atucha y Embalse. Pero Einstein no solo cambió la tecnología: también cambió cómo vemos el Universo.
 
@@ -737,6 +766,10 @@ SI TE PREGUNTAN
 ¿Qué es el Big Bang? El comienzo del Universo: todo estaba junto y desde ahí se fue expandiendo.`,
 `Habla: todos (20 s)
 Newton no estaba equivocado: Einstein lo amplió. La gravedad es la forma del espacio-tiempo, se comprobó una y otra vez, y la usamos cada vez que abrimos el GPS. ¡Gracias! ¿Preguntas?`,
+`Anexo: Michelson y Morley (1887). Mostrar solo si hay preguntas.
+Buscaban el éter con un interferómetro. Si existía, las franjas se correrían al girar el aparato. No se movieron: fue la base de la Relatividad Especial.`,
+`Anexo: órbita de Mercurio. Mostrar solo si hay preguntas.
+Su órbita gira 43 segundos de arco por siglo más de lo que explicaba Newton. Einstein calculó exactamente 43.`,
 `Anexo: no se expone. Mostrar solo si hay preguntas o sobra tiempo.
 Arrastrar para agregar planetas: con poca velocidad caen, con la justa orbitan y con mucha escapan.`,
 `Anexo: no se expone. Mostrar solo si hay preguntas o sobra tiempo.
@@ -1021,6 +1054,31 @@ function no3d(id){const v=document.getElementById(id).closest('.view'),ov=v&&v.q
     label(ctx,'Einstein',X(5.3),Y(A0/5.3)-11,COL.sun,'left',10);label(ctx,'Newton',X(7.2),Y(A0/2/7.2)+11,COL.muted,'left',10)});
 })();
 
+/* ---------- Hafele y Keating (3D) ---------- */
+(()=>{let k=0;const DUR=10,E=[-40,-59],W=[275,273];
+  const sg=x=>(x>0?'+':x<0?'−':'')+nf(Math.abs(x),3);
+  function txt(){const f=Math.min(1,k);$('#hk-e').textContent=sg(Math.round(E[1]*f))+' ns'+(f>=1?' (medido)':'');$('#hk-w').textContent=sg(Math.round(W[1]*f))+' ns'+(f>=1?' (medido)':'');$('#hk-st').textContent=f>=1?'Vuelta al mundo completa':'Volando · '+Math.round(f*100)+' %'}
+  $('#hk-again').onclick=()=>{k=0};txt();
+  if(!HAS3){no3d('hk');onFrame('hk',dt=>{k=Math.min(1,k+dt/DUR);txt()});return}
+  const o=T3('hk',{th:.2,ph:.95,rad:4.2,auto:.06,phMin:.2,phMax:2.9});o.light();const S=o.scene;
+  const eM=new THREE.MeshStandardMaterial({roughness:.85});S.add(new THREE.Mesh(new THREE.SphereGeometry(1,48,32),eM));
+  const gM=new THREE.LineBasicMaterial({transparent:true,opacity:.4});
+  for(const lat of[-60,-30,0,30,60]){const r=Math.cos(lat*Math.PI/180)*1.004,l=new THREE.Line(ringGeo(),gM);l.scale.set(r,1,r);l.position.y=Math.sin(lat*Math.PI/180)*1.004;S.add(l)}
+  for(let lon=0;lon<180;lon+=30){const l=new THREE.Line(ringGeo(),gM);l.rotation.order='YXZ';l.rotation.y=lon*Math.PI/180;l.rotation.x=Math.PI/2;l.scale.setScalar(1.004);S.add(l)}
+  const P=(lat,lon,r)=>{const a=lat*Math.PI/180,b=lon*Math.PI/180;return new THREE.Vector3(r*Math.cos(a)*Math.cos(b),r*Math.sin(a),-r*Math.cos(a)*Math.sin(b))};
+  const L0=-77,R1=1.07,latE=40,latW=33;
+  const route=(lat,mat)=>{const l=new THREE.Line(ringGeo(),mat);const r=R1*Math.cos(lat*Math.PI/180);l.scale.set(r,1,r);l.position.y=R1*Math.sin(lat*Math.PI/180);S.add(l)};
+  const rEM=new THREE.LineBasicMaterial({transparent:true,opacity:.55}),rWM=new THREE.LineBasicMaterial({transparent:true,opacity:.55});route(latE,rEM);route(latW,rWM);
+  const pEM=new THREE.MeshBasicMaterial(),pWM=new THREE.MeshBasicMaterial(),gcM=new THREE.MeshBasicMaterial();
+  const pE=new THREE.Mesh(new THREE.SphereGeometry(.045,14,10),pEM),pW=new THREE.Mesh(new THREE.SphereGeometry(.045,14,10),pWM),gc=new THREE.Mesh(new THREE.BoxGeometry(.06,.06,.06),gcM);S.add(pE,pW,gc);
+  gc.position.copy(P(38.9,L0,1.02));o.orb.th=Math.atan2(gc.position.x,gc.position.z);o.home0.th=o.orb.th;
+  o.label('Hacia el este',()=>pE.position.clone().add(new THREE.Vector3(0,.16,0)));o.label('Hacia el oeste',()=>pW.position.clone().add(new THREE.Vector3(0,-.16,0)));o.label('Reloj en tierra',()=>gc.position.clone().multiplyScalar(1.12),'hi');
+  orbitCtl(o);
+  function recolor(){S.background=C3('deep');eM.color=C3('ray');gM.color=C3('bg');rEM.color=C3('mass');rWM.color=C3('sun');pEM.color=C3('mass');pWM.color=C3('sun');gcM.color=C3('text')}
+  redraws.push(recolor);recolor();
+  let seen=0;onFrame('hk',dt=>{const now=performance.now();if(now-seen>1500)k=0;seen=now;k=Math.min(1,k+dt/DUR);const d=360*k;pE.position.copy(P(latE,L0+d,R1));pW.position.copy(P(latW,L0-d,R1));txt();o.frame(dt)});
+})();
+
 /* ---------- 7. GPS en 3D ---------- */
 (()=>{const hi=$('#gps-h');const GMe=3.986004e14,Re=6.371e6,MAX=36000;let ht=20200,hd=20200,simT=0,lastOrb=0;
   function upd(keep){ht=+hi.value;const r=Re+ht*1e3,v=Math.sqrt(GMe/r),sr=-(v*v/(2*c*c))*86400e6,gr=(GMe/(c*c))*(1/Re-1/r)*86400e6,net=sr+gr;
@@ -1155,14 +1213,14 @@ const sizeStage=()=>root.style.setProperty('--sh',stage.clientHeight+'px');new R
 const times=slides.map(s=>+s.dataset.time||0),starts=times.map((_,i)=>times.slice(0,i).reduce((a,b)=>a+b,0)),TOTAL=times.reduce((a,b)=>a+b,0);
 const nMain=slides.filter(x=>!x.dataset.annex).length;
 const dots=$('#dots');slides.forEach((s,i)=>{const b=document.createElement('button');b.className=s.dataset.annex?'ax':'';b.setAttribute('aria-label',s.dataset.title);b.innerHTML=`<span>${s.dataset.title}</span>`;b.onclick=()=>go(i);dots.appendChild(b)});
-const notesEl=$('#notes'),ntext=$('#ntext');const noteFor=i=>store.get('rel7-note-'+i)??NOTES[i];
+const notesEl=$('#notes'),ntext=$('#ntext');const noteFor=i=>store.get('rel8-note-'+i)??NOTES[i];
 function go(i){i=clamp(i,0,slides.length-1);slides[i].scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})}
 function setCur(i){if(i!==cur)sfx.whoosh();cur=i;const s=slides[i];$('#count').textContent=s.dataset.annex?'Anexo '+(i-nMain+1)+' / '+(slides.length-nMain):(i+1)+' / '+nMain;$('#stitle').textContent=s.dataset.title;
   [...dots.children].forEach((b,k)=>b.classList.toggle('on',k===i));ntext.textContent=noteFor(i);$('#nhead').textContent='Guion · '+s.dataset.title+(times[i]?' · '+times[i]+' s':'');
   $('#pmark').style.left=(Math.min(starts[i],TOTAL)/TOTAL*100)+'%';try{history.replaceState(null,'','#s'+i)}catch(e){}tick()}
 let pend=false;function detect(){const mid=stage.scrollTop+stage.clientHeight*.4;let k=0;slides.forEach((s,i)=>{if(s.offsetTop<=mid)k=i});if(k!==cur)setCur(k)}
 stage.addEventListener('scroll',()=>{if(!pend){pend=true;requestAnimationFrame(()=>{pend=false;detect()})}},{passive:true});
-ntext.addEventListener('input',()=>store.set('rel7-note-'+cur,ntext.innerText));
+ntext.addEventListener('input',()=>store.set('rel8-note-'+cur,ntext.innerText));
 $$('.xn').forEach(b=>b.onclick=()=>go(slides.findIndex(x=>x.dataset.x===b.dataset.go)));$$('.nextx').forEach(b=>b.onclick=()=>go(slides.indexOf(b.closest('.slide'))+1));
 $('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);$('#cue').onclick=()=>go(1);
 const mq=matchMedia('(prefers-color-scheme: dark)'),isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
