@@ -9,27 +9,27 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,opsz,wght@0,8..60,500;1,8..60,500&display=swap">
 <style>
-/* Layout: mazo de diapositivas; columna de texto + panel-instrumento; barra fija abajo.
-   Superficies planas sin degradados, esquinas de 4px, naranja como único acento. */
+/* Layout: página de scroll con secciones a pantalla completa (scroll-snap); texto + panel-instrumento;
+   barra de control fija abajo. Superficies planas, esquinas de 4px, naranja como único acento. */
 :root{
   --bg:#faf9f5; --surface:#ffffff; --surface2:#f2f0e9; --deep:#f5f3ed; --line:#e3dfd4;
   --text:#1f1e1d; --muted:#6b675f; --sun:#d97757; --sun-ink:#ffffff; --mass:#b4532f;
-  --ray:#3f6f80; --ok:#5d8a4c; --soft:#f6e5db; --space:#1c1b1a; --star:#f0eee6;
+  --ray:#3f6f80; --ok:#5d8a4c; --soft:#f6e5db; --space:#1c1b1a; --star:#f0eee6; --paper:#fbfaf6;
   --display:"Source Serif 4",Georgia,"Times New Roman",serif;
   --body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
   --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
-  --r:4px;
+  --r:4px; --ez:cubic-bezier(.16,1,.3,1);
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#262624; --surface:#30302e; --surface2:#1f1e1d; --deep:#1f1e1d; --line:#46443f;
   --text:#f0eee6; --muted:#a8a59b; --sun:#e3875f; --sun-ink:#1f1e1d; --mass:#f0a07c;
-  --ray:#8fbacb; --ok:#9cc48a; --soft:#3b2c24; color-scheme:dark}}
+  --ray:#8fbacb; --ok:#9cc48a; --soft:#3b2c24; --paper:#ece9e1; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#262624; --surface:#30302e; --surface2:#1f1e1d; --deep:#1f1e1d; --line:#46443f;
   --text:#f0eee6; --muted:#a8a59b; --sun:#e3875f; --sun-ink:#1f1e1d; --mass:#f0a07c;
-  --ray:#8fbacb; --ok:#9cc48a; --soft:#3b2c24; color-scheme:dark}
+  --ray:#8fbacb; --ok:#9cc48a; --soft:#3b2c24; --paper:#ece9e1; color-scheme:dark}
 html,body{height:100%}
 body{background:var(--bg);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.55;overflow:hidden}
 *{box-sizing:border-box}
@@ -38,89 +38,146 @@ button,input,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--sun);outline-offset:2px}
 .ic{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;flex:none;display:block}
 
+/* ---------- estructura de scroll ---------- */
 .deck{position:fixed;inset:0;display:flex;flex-direction:column}
-.stage{position:relative;flex:1;min-height:0}
-.slide{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;opacity:0;visibility:hidden;transition:opacity .3s ease,visibility .3s;
-  padding-top:calc(env(safe-area-inset-top,0px) + 32px);padding-bottom:32px;
+.stage{position:relative;flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;overscroll-behavior:contain}
+@media (max-width:880px){.stage{scroll-snap-type:y proximity}}
+.slide{min-height:var(--sh,100%);scroll-snap-align:start;display:flex;flex-direction:column;justify-content:center;position:relative;
+  padding-top:calc(env(safe-area-inset-top,0px) + 56px);padding-bottom:56px;
   padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.slide.active{opacity:1;visibility:visible}
-.wrap{max-width:1220px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
-.split{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:36px;align-items:start}
+.slide+.slide{border-top:1px solid var(--line)}
+.wrap{width:100%;max-width:1220px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+.split{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:40px;align-items:start}
 .split>*{min-width:0}
-@media (max-width:880px){.split{grid-template-columns:minmax(0,1fr);gap:22px}}
+@media (max-width:880px){.split{grid-template-columns:minmax(0,1fr);gap:24px}.slide{padding-top:calc(env(safe-area-inset-top,0px) + 36px);padding-bottom:40px}}
 
+/* ---------- tipografía ---------- */
 .eyebrow{font-family:var(--mono);font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:var(--sun);display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .eyebrow span+span{color:var(--muted)}
 .eyebrow span+span::before{content:"/";margin-right:12px;color:var(--line)}
 h1,h2,h3{text-wrap:balance;margin:0;line-height:1.1}
 h1,h2{font-family:var(--display);font-weight:500;letter-spacing:-.015em}
-h2{font-size:clamp(1.75rem,3.3vw,2.75rem)}
+h2{font-size:clamp(1.8rem,3.4vw,2.9rem)}
 h3{font-family:var(--body);font-size:.98rem;font-weight:600;display:flex;align-items:center;gap:8px}
 h3 .ic{color:var(--sun);width:17px;height:17px}
+h3.ph{font-family:var(--display);font-weight:500;font-size:1.5rem}
 p{margin:0;max-width:62ch}
 .lead{font-size:clamp(1.02rem,1.5vw,1.2rem)}
-.stack{display:flex;flex-direction:column;gap:14px}
-ul.pts{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;max-width:62ch}
+.stack{display:flex;flex-direction:column;gap:16px}
+ul.pts{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px;max-width:62ch}
 ul.pts li{padding-left:20px;position:relative}
 ul.pts li::before{content:"";position:absolute;left:2px;top:.66em;width:6px;height:6px;background:var(--sun)}
-.eq{font-family:var(--mono);background:var(--soft);border-radius:var(--r);padding:10px 14px;display:inline-block;align-self:flex-start;color:var(--text);font-size:1rem}
-sup{font-size:.7em;line-height:0}
+.hint{font-size:.8rem;color:var(--muted)}
+.dim{color:var(--muted)}
 
-.inst{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:12px}
-.inst-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:10px;border-bottom:1px solid var(--line)}
-.tag{font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-canvas{display:block;width:100%;max-width:100%;background:var(--deep);border-radius:2px;touch-action:none}
-.ar-16-10{aspect-ratio:16/10}.ar-16-9{aspect-ratio:16/9}.ar-4-3{aspect-ratio:4/3}.ar-wide{aspect-ratio:2.4/1}.ar-1{aspect-ratio:1/1}
-@media (max-width:560px){.ar-16-10,.ar-16-9{aspect-ratio:4/3.4}.ar-wide{aspect-ratio:16/10}}
-.ctrls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 18px}
-.ctl{display:flex;flex-direction:column;gap:2px;min-width:0}
-.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:.84rem;color:var(--muted)}
-.ctl label output{font-family:var(--mono);color:var(--text);font-variant-numeric:tabular-nums;text-align:right}
-input[type=range]{width:100%;accent-color:var(--sun)}
-.btns{display:flex;flex-wrap:wrap;gap:8px}
-.btn{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:6px 11px;cursor:pointer;font-size:.86rem;line-height:1.3}
+/* ---------- fórmulas tipografiadas ---------- */
+.formula{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;display:flex;flex-direction:column;gap:14px;justify-content:center}
+.fx{font-family:var(--display);font-style:italic;font-size:clamp(1.9rem,3vw,2.5rem);display:flex;align-items:center;gap:.22em;line-height:1;color:var(--text)}
+.fx .op{font-style:normal;color:var(--muted)}
+.fx sub,.fx sup{font-size:.5em;font-style:normal}
+.fx sup{line-height:0;vertical-align:.9em}
+.frac{display:inline-flex;flex-direction:column;align-items:center;gap:.12em}
+.frac>span{padding:0 .16em}
+.frac .num{border-bottom:1.5px solid currentColor;padding-bottom:.1em}
+.fx.sm{font-size:1.5rem}
+.legend{margin:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 16px;font-size:.8rem}
+.legend div{display:flex;flex-direction:column;gap:1px}
+.legend dt{font-family:var(--mono);color:var(--sun);font-size:.8rem}
+.legend dd{margin:0;color:var(--muted)}
+
+/* ---------- láminas (imágenes) ---------- */
+.plate{margin:0;display:flex;flex-direction:column;gap:8px;cursor:zoom-in}
+.pf{position:relative;aspect-ratio:4/3;overflow:hidden;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r)}
+.pf img{width:100%;height:100%;object-fit:cover;display:block;filter:grayscale(1) sepia(.28) contrast(1.06);transform:scale(1.03);transition:filter .6s ease,transform 1.2s var(--ez)}
+.plate:hover .pf img{filter:none;transform:scale(1.07)}
+.pf.paper{background:var(--paper)}
+.pf.paper img{object-fit:contain;padding:14px;mix-blend-mode:multiply;transform:none;filter:grayscale(1) sepia(.2) contrast(1.1)}
+.plate:hover .pf.paper img{transform:none;filter:none}
+.pf::after{content:attr(data-fig);position:absolute;left:0;top:0;background:var(--sun);color:var(--sun-ink);font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;padding:3px 8px;text-transform:uppercase}
+.plate figcaption{font-size:.78rem;color:var(--muted);max-width:52ch}
+.media-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:14px;align-items:stretch}
+@media (max-width:520px){.media-row{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- instrumentos ---------- */
+.inst{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:flex;flex-direction:column;gap:14px}
+.inst-h{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:12px;border-bottom:1px solid var(--line)}
+.inst-a{display:flex;align-items:center;gap:6px}
+.tag{font-family:var(--mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-left:6px}
+canvas{display:block;width:100%;max-width:100%;background:var(--deep);border-radius:2px;touch-action:none;user-select:none;-webkit-user-select:none}
+.ar-16-10{aspect-ratio:16/10}.ar-16-9{aspect-ratio:16/9}.ar-wide{aspect-ratio:2.6/1}.ar-1{aspect-ratio:1/1}
+@media (max-width:560px){.ar-16-10,.ar-16-9{aspect-ratio:4/3.4}.ar-wide{aspect-ratio:16/9}}
+.ctrls{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px 20px}
+.ctl{display:flex;flex-direction:column;gap:4px;min-width:0}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:.82rem;color:var(--muted)}
+.ctl label output{font-family:var(--mono);color:var(--text);font-size:.8rem;font-variant-numeric:tabular-nums;text-align:right}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;cursor:pointer;margin:0;--p:50%}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:linear-gradient(to right,var(--sun) var(--p),var(--line) var(--p))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;margin-top:-6px;border-radius:50%;background:var(--surface);border:2px solid var(--sun);transition:transform .15s}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.2)}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--line)}
+input[type=range]::-moz-range-progress{height:4px;border-radius:2px;background:var(--sun)}
+input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--surface);border:2px solid var(--sun)}
+.seg{display:inline-flex;flex-wrap:wrap;gap:2px;padding:2px;background:var(--surface2);border:1px solid var(--line);border-radius:var(--r);align-self:flex-start;max-width:100%}
+.seg button{border:0;background:none;padding:5px 10px;border-radius:2px;cursor:pointer;font-size:.82rem;color:var(--muted);white-space:nowrap;transition:background .2s,color .2s}
+.seg button:hover{color:var(--text)}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--sun);box-shadow:0 0 0 1px var(--line)}
+.btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:6px 11px;cursor:pointer;font-size:.84rem;line-height:1.3;transition:border-color .2s,color .2s}
 .btn .ic{width:16px;height:16px}
 .btn:hover{border-color:var(--sun);color:var(--sun)}
 .btn[aria-pressed=true]{background:var(--sun);color:var(--sun-ink);border-color:var(--sun)}
-select{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:6px 10px;max-width:100%}
-.reads{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.ib{width:32px;height:32px;padding:0;justify-content:center}
+select{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:7px 10px;max-width:100%}
+.reads{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .read{background:var(--surface);padding:9px 11px;min-width:0}
-.read b{display:block;font-family:var(--mono);font-weight:500;font-size:1.02rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
-.read small{color:var(--muted);font-size:.75rem}
-.read.hi b{color:var(--sun)}
-.read.ray b{color:var(--ray)}
-.read.neg b{color:var(--mass)}
-.hint{font-size:.8rem;color:var(--muted)}
+.read b{display:block;font-family:var(--mono);font-weight:500;font-size:1rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.read small{color:var(--muted);font-size:.74rem}
+.read.hi b{color:var(--sun)}.read.ray b{color:var(--ray)}.read.neg b{color:var(--mass)}
+.cmp{display:flex;flex-direction:column;gap:8px;font-size:.8rem;color:var(--muted)}
+.cmp div{display:grid;grid-template-columns:64px minmax(0,1fr);gap:10px;align-items:center}
+.cmp i{display:block;height:8px;background:var(--sun);transition:width .8s var(--ez)}
+.cmp div:first-child i{background:var(--line)}
 
-figure{margin:0;display:flex;flex-direction:column;gap:6px}
-figure img{border-radius:2px;display:block;width:100%;height:auto;cursor:zoom-in;background:#fff;border:1px solid var(--line)}
-figcaption{font-size:.78rem;color:var(--muted)}
-.figs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+/* ---------- pestañas ---------- */
+.tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 0;margin-right:24px;cursor:pointer;display:flex;gap:8px;align-items:baseline;color:var(--muted);white-space:nowrap;font-size:.95rem;transition:color .2s,border-color .3s}
+.tabs button .y{font-family:var(--mono);font-size:.8rem}
+.tabs button:hover{color:var(--text)}
+.tabs button[aria-selected=true]{color:var(--text);border-bottom-color:var(--sun)}
+.tabs button[aria-selected=true] .y{color:var(--sun)}
+.tabpanel{animation:fadeup .6s var(--ez)}
+@keyframes fadeup{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 
-.tl{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;border-top:1px solid var(--line)}
-.tl li{padding:12px 14px 12px 0;display:flex;flex-direction:column;gap:3px;border-bottom:1px solid var(--line);position:relative}
-.tl li::before{content:"";position:absolute;top:-4px;left:0;width:7px;height:7px;background:var(--sun)}
-.tl .y{font-family:var(--mono);color:var(--sun);font-size:.95rem;font-weight:500}
-.tl .t{font-size:.9rem}
-.tl .k{font-size:.68rem;color:var(--muted);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
+/* ---------- línea de tiempo y cierre ---------- */
+.tl-line{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
+.concl{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.concl div{background:var(--surface);padding:20px;display:flex;flex-direction:column;gap:8px}
+.concl b{font-family:var(--display);font-weight:500;font-size:1.35rem;color:var(--sun)}
+.biblio{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:9px;max-width:80ch;font-size:.95rem}
+.biblio li::marker{color:var(--sun);font-family:var(--mono);font-size:.85em}
 
-.cover{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:48px;align-items:center;min-height:100%;max-width:1220px;margin:0 auto}
+/* ---------- portada ---------- */
+.cover{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:56px;align-items:center;width:100%;max-width:1220px;margin:0 auto}
 .cover>*{min-width:0}
-@media (max-width:880px){.cover{grid-template-columns:minmax(0,1fr);gap:24px;align-items:start}}
+@media (max-width:880px){.cover{grid-template-columns:minmax(0,1fr);gap:28px}}
 .cover-text{display:flex;flex-direction:column;gap:18px}
-.cover-text h1{font-size:clamp(2.6rem,6.6vw,5.4rem);line-height:1.02;max-width:14ch}
+.cover-text h1{font-size:clamp(2.6rem,6.4vw,5.4rem);line-height:1.02;max-width:14ch}
 .cover-text h1 em{font-style:italic;color:var(--sun)}
 .cover-fig{display:flex;flex-direction:column;gap:8px}
-.cover-fig canvas{background:var(--space);max-height:62vh;aspect-ratio:1/1;margin:0 auto}
+.cover-fig canvas{background:var(--space);aspect-ratio:1/1;max-height:60vh;margin:0 auto;cursor:crosshair;touch-action:pan-y}
 .who{display:flex;flex-wrap:wrap;gap:8px}
 .who span{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:4px 12px;font-size:.9rem}
 .who [contenteditable]{border-style:dashed;min-width:6ch}
 .meta{font-family:var(--mono);font-size:.78rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px;border-top:1px solid var(--line);padding-top:14px}
+.cue{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);background:none;border:0;padding:0;cursor:pointer;align-self:flex-start}
+.cue .ic{color:var(--sun);animation:bob 1.8s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(5px)}}
 
+/* ---------- imágenes agregadas ---------- */
 .adds{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px solid var(--line);padding-top:14px}
 .user-media{display:flex;flex-wrap:wrap;gap:10px}
-.um{position:relative;width:120px}
-.um img{width:120px;height:90px;object-fit:cover;border-radius:2px;cursor:zoom-in;background:var(--surface2);display:block}
+.um{position:relative;width:128px}
+.um img{width:128px;height:96px;object-fit:cover;border-radius:var(--r);border:1px solid var(--line);cursor:zoom-in;background:var(--surface2);display:block}
 .um button{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}
 .um button .ic{width:14px;height:14px}
 .addbtn{display:inline-flex;align-items:center;gap:6px;cursor:pointer;border:1px dashed var(--line);border-radius:var(--r);padding:6px 12px;font-size:.84rem;color:var(--muted);position:relative}
@@ -128,49 +185,58 @@ figcaption{font-size:.78rem;color:var(--muted)}
 .addbtn:hover{color:var(--sun);border-color:var(--sun)}
 .addbtn input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
 
+/* ---------- barra, puntos y guion ---------- */
 .prog{height:2px;background:var(--line);position:relative}
 .prog i{position:absolute;left:0;top:0;bottom:0;background:var(--sun)}
-.prog b{position:absolute;top:-3px;width:2px;height:8px;background:var(--text)}
+.prog b{position:absolute;top:-3px;width:2px;height:8px;background:var(--text);transition:left .5s var(--ez)}
 .bar{display:flex;align-items:center;gap:6px;background:var(--surface);border-top:1px solid var(--line);
   padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));
   padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
-.ib{width:36px;height:36px;padding:0;justify-content:center}
+.bar .ib{width:36px;height:36px}
 .where{flex:1;min-width:0;display:flex;gap:12px;align-items:baseline;overflow:hidden;padding:0 6px}
-.where #count{font-family:var(--mono);color:var(--sun);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:.88rem}
-.where #stitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:.88rem}
+#count{font-family:var(--mono);color:var(--sun);font-variant-numeric:tabular-nums;white-space:nowrap;font-size:.88rem}
+#stitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:.88rem}
 .timer{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-variant-numeric:tabular-nums}
 #tbtn{height:36px}
 #tdelta{font-size:.74rem;color:var(--muted);white-space:nowrap}
 .sep{width:1px;height:22px;background:var(--line);margin:0 2px}
-@media (max-width:600px){#tdelta,#fsbtn,#themebtn,.sep{display:none}.where #stitle{display:none}}
-
+@media (max-width:600px){#tdelta,#fsbtn,#themebtn,.sep,#stitle{display:none}}
+.dots{position:fixed;right:max(14px,env(safe-area-inset-right,0px));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:8px;z-index:5}
+.dots button{width:8px;height:8px;padding:0;border:0;background:var(--line);cursor:pointer;transition:height .4s var(--ez),background .3s;position:relative}
+.dots button.on{height:26px;background:var(--sun)}
+.dots button.ax{width:6px;margin-left:1px}
+.dots button span{position:absolute;right:18px;top:50%;transform:translateY(-50%);white-space:nowrap;font-size:.75rem;background:var(--surface);border:1px solid var(--line);padding:2px 8px;border-radius:var(--r);opacity:0;pointer-events:none;transition:opacity .2s}
+.dots button:hover span,.dots button:focus-visible span{opacity:1}
+@media (max-width:1340px){.dots{display:none}}
 .notes{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:calc(64px + env(safe-area-inset-bottom,0px));
   max-width:760px;margin:0 auto;background:var(--surface);border:1px solid var(--line);border-top:2px solid var(--sun);border-radius:var(--r);padding:12px 16px;z-index:20;max-height:45vh;overflow:auto}
 .notes .nh{font-family:var(--mono);font-size:.72rem;color:var(--sun);text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .notes .nh span+span{color:var(--muted)}
 #ntext{margin-top:8px;outline:none;font-size:1rem;line-height:1.6;white-space:pre-wrap}
-.lightbox{position:fixed;inset:0;background:var(--bg);z-index:30;display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
-.lightbox img{max-width:100%;max-height:100%;border:1px solid var(--line);background:#fff}
+.lightbox{position:fixed;inset:0;background:var(--bg);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:85%;border:1px solid var(--line);background:#fff}
+.lightbox p{color:var(--muted);font-size:.85rem;text-align:center}
 
-.biblio{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:9px;max-width:80ch;font-size:.95rem}
-.biblio li::marker{color:var(--sun);font-family:var(--mono);font-size:.85em}
-.concl{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
-.concl div{background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:8px}
-.concl b{font-family:var(--display);font-weight:500;font-size:1.3rem;color:var(--sun)}
-.tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
-.tabs button{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 16px 10px 0;margin-right:16px;cursor:pointer;display:flex;gap:8px;align-items:baseline;color:var(--muted);white-space:nowrap;font-size:.95rem}
-.tabs button .y{font-family:var(--mono);font-size:.8rem}
-.tabs button:hover{color:var(--text)}
-.tabs button[aria-selected=true]{color:var(--text);border-bottom-color:var(--sun)}
-.tabs button[aria-selected=true] .y{color:var(--sun)}
-h3.ph{font-family:var(--display);font-weight:500;font-size:1.45rem}
-.tl-line{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
-@media (prefers-reduced-motion:reduce){.slide{transition:none}}
+/* ---------- animaciones de entrada y salida ---------- */
+html.anim .rv{opacity:0;transform:translate3d(0,40px,0);transition:opacity .8s var(--ez) calc(var(--i,0)*70ms),transform 1s var(--ez) calc(var(--i,0)*70ms)}
+html.anim .rv.up{transform:translate3d(0,-40px,0)}
+html.anim .inst.rv{transform:translate3d(0,56px,0) scale(.97)}
+html.anim .inst.rv.up{transform:translate3d(0,-56px,0) scale(.97)}
+html.anim .rv.in{opacity:1;transform:none}
+html.anim .plate.rv .pf{clip-path:inset(0 0 100% 0);transition:clip-path 1.1s var(--ez) calc(var(--i,0)*70ms + 120ms)}
+html.anim .plate.rv.in .pf{clip-path:inset(0)}
+html.anim h1.rv,html.anim h2.rv{opacity:1;transform:none}
+.w{display:inline-block;overflow:hidden;vertical-align:bottom;padding-bottom:.08em;margin-bottom:-.08em}
+.w>span{display:inline-block}
+html.anim .rv .w>span{transform:translateY(110%);transition:transform 1s var(--ez) calc(var(--j,0)*45ms)}
+html.anim .rv.in .w>span{transform:none}
+@media (prefers-reduced-motion:reduce){.cue .ic,.tabpanel{animation:none}}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-<symbol id="i-left" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
-<symbol id="i-right" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+<symbol id="i-left" viewBox="0 0 24 24"><path d="m18 15-6-6-6 6"/></symbol>
+<symbol id="i-right" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+<symbol id="i-down" viewBox="0 0 24 24"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></symbol>
 <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4.5v15l13-7.5z"/></symbol>
 <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14"/><path d="M16 5v14"/></symbol>
 <symbol id="i-reset" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></symbol>
@@ -183,80 +249,98 @@ h3.ph{font-family:var(--display);font-weight:500;font-size:1.45rem}
 <symbol id="i-sim" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></symbol>
 <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></symbol>
 <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
-<symbol id="i-orbit" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><path d="M10.4 21.9a10 10 0 0 0 9.94-15.1"/><path d="M13.5 2.1a10 10 0 0 0-9.86 15.1"/></symbol>
-<symbol id="i-rotate" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></symbol>
+<symbol id="i-bolt" viewBox="0 0 24 24"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></symbol>
 </svg>
+
 <div class="deck">
 <main class="stage" id="stage">
+
+<!-- PORTADA -->
 <section class="slide" data-time="20" data-title="Portada">
-  <div class="cover"><div class="cover-text">
-    <div class="eyebrow"><span>Unidad N°7</span><span>Universo, su estructura y teorías</span></div>
-    <h1>De la manzana al <em>espacio-tiempo</em></h1>
-    <p class="lead">Gravedad, Teoría de la Relatividad y los experimentos que la comprobaron.</p>
-    <p class="dim tl-line">1687 Newton · 1887 Michelson y Morley · 1905 y 1915 Einstein · 1919 el eclipse · hoy, el GPS</p>
-    <div class="who"><span>Bruno</span><span>Titi</span><span>Titonte</span><span contenteditable="true" spellcheck="false" id="yo" title="Tocá para escribir tu nombre">Tu nombre</span></div>
-    <div class="meta"><span>Física · Trabajo de investigación y exposición</span><span>Prof. Aldana Salinero Spitale</span><span>Noviembre 2026</span></div>
+  <div class="cover">
+    <div class="cover-text">
+      <div class="eyebrow"><span>Unidad N°7</span><span>Universo, su estructura y teorías</span></div>
+      <h1>De la manzana al <em>espacio-tiempo</em></h1>
+      <p class="lead">Gravedad, Teoría de la Relatividad y los experimentos que la comprobaron.</p>
+      <p class="tl-line">1687 Newton · 1887 Michelson y Morley · 1905 y 1915 Einstein · 1919 el eclipse · hoy, el GPS</p>
+      <div class="who"><span>Bruno</span><span>Titi</span><span>Titonte</span><span contenteditable="true" spellcheck="false" id="yo" title="Tocá para escribir tu nombre">Tu nombre</span></div>
+      <div class="meta"><span>Física · Trabajo de investigación y exposición</span><span>Prof. Aldana Salinero Spitale</span><span>Noviembre 2026</span></div>
+      <button class="cue" id="cue"><svg class="ic"><use href="#i-down"/></svg>Deslizá para empezar</button>
     </div>
-    <div class="cover-fig"><canvas id="hero" aria-label="Simulación de lente gravitacional: las estrellas del fondo se desvían alrededor de una masa"></canvas><p class="hint">Lente gravitacional calculada con la ecuación de lente puntual: la luz de las estrellas se curva alrededor de la masa central y forma el anillo de Einstein.</p></div>
+    <div class="cover-fig">
+      <canvas id="hero" aria-label="Lente gravitacional: las estrellas del fondo se desvían alrededor de una masa que sigue al puntero"></canvas>
+      <p class="hint">Lente gravitacional calculada con la ecuación de lente puntual. Mové el puntero sobre la imagen para mover la masa.</p>
+    </div>
   </div>
 </section>
 
+<!-- GRAVEDAD -->
 <section class="slide" data-time="45" data-title="Gravedad">
   <div class="wrap">
     <div class="eyebrow"><span>Tópico 1</span><span>Gravedad</span></div>
     <div class="split">
       <div class="stack">
         <h2>¿Qué es la gravedad?</h2>
-        <p>Es el fenómeno por el cual los cuerpos con masa se atraen entre sí, con más intensidad cuanto más masivos son. Es una de las <b>cuatro interacciones fundamentales</b> de la materia, también llamada gravitación o interacción gravitatoria.</p>
+        <p>Es el fenómeno por el cual los cuerpos con masa se atraen entre sí, con más intensidad cuanto más masivos son. Es una de las <b>cuatro interacciones fundamentales</b> de la materia.</p>
         <p>Newton la explicó con la <b>Ley de Gravitación Universal</b>: todos los cuerpos con masa se atraen.</p>
-        <div class="figs">
-          <figure><img src="img/manzana.jpg" alt="Ilustración de Newton bajo el manzano viendo caer una manzana"><figcaption>La misma fuerza que hace caer la manzana mantiene a la Luna en órbita.</figcaption></figure>
-          <figure><img src="img/formula.jpg" alt="Fórmula F = G m1 m2 / r² con sus partes señaladas"><figcaption>G = 6,674 × 10⁻¹¹ N·m²/kg²</figcaption></figure>
+        <div class="media-row">
+          <figure class="plate"><div class="pf" data-fig="Fig. 1"><img src="img/manzana.jpg" alt="Ilustración de Newton bajo el manzano viendo caer una manzana" style="object-position:38% 50%"></div><figcaption>La fuerza que hace caer la manzana es la misma que mantiene a la Luna en órbita.</figcaption></figure>
+          <div class="formula">
+            <div class="fx" role="img" aria-label="F igual a G por m1 por m2, dividido r al cuadrado"><span>F</span><span class="op">=</span><span>G</span><span class="frac"><span class="num">m<sub>1</sub> m<sub>2</sub></span><span>r<sup>2</sup></span></span></div>
+            <dl class="legend">
+              <div><dt>F</dt><dd>fuerza de atracción (N)</dd></div>
+              <div><dt>G</dt><dd>6,674 × 10⁻¹¹ N·m²/kg²</dd></div>
+              <div><dt>m₁, m₂</dt><dd>masas de los cuerpos (kg)</dd></div>
+              <div><dt>r</dt><dd>distancia entre ellos (m)</dd></div>
+            </dl>
+          </div>
         </div>
       </div>
-      <div class="inst" id="gcalc">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Calculadora de Newton</h3><span class="tag">Simulador 1</span></div>
-        <div class="btns" id="g-presets">
-          <button class="btn" data-p="tl">Tierra – Luna</button>
-          <button class="btn" data-p="ts">Tierra – Sol</button>
-          <button class="btn" data-p="pt">Persona – Tierra</button>
-          <button class="btn" data-p="pp">Dos personas a 1 m</button>
+      <div class="inst">
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Calculadora de Newton</h3><div class="inst-a"><span class="tag">Simulador 1</span></div></div>
+        <div class="seg" id="g-presets" role="group" aria-label="Ejemplos">
+          <button data-v="tl">Tierra – Luna</button><button data-v="ts">Tierra – Sol</button><button data-v="pt">Persona – Tierra</button><button data-v="pp">Dos personas a 1 m</button>
         </div>
+        <canvas id="gviz" class="ar-wide" aria-label="Dos cuerpos con flechas de fuerza. Arrastrá un cuerpo para cambiar la distancia"></canvas>
         <div class="ctrls">
-          <div class="ctl"><label for="g-m1">Masa 1 (m₁) <output id="o-m1"></output></label><input type="range" id="g-m1" min="0" max="31" step="0.01"></div>
-          <div class="ctl"><label for="g-m2">Masa 2 (m₂) <output id="o-m2"></output></label><input type="range" id="g-m2" min="0" max="31" step="0.01"></div>
-          <div class="ctl"><label for="g-r">Distancia (r) <output id="o-r"></output></label><input type="range" id="g-r" min="-1" max="12" step="0.01"></div>
+          <div class="ctl"><label for="g-m1">Masa 1 <output id="o-m1"></output></label><input type="range" id="g-m1" min="0" max="31" step="0.01"></div>
+          <div class="ctl"><label for="g-m2">Masa 2 <output id="o-m2"></output></label><input type="range" id="g-m2" min="0" max="31" step="0.01"></div>
+          <div class="ctl"><label for="g-r">Distancia <output id="o-r"></output></label><input type="range" id="g-r" min="-1" max="12" step="0.01"></div>
         </div>
-        <canvas id="gviz" class="ar-wide" aria-label="Dos cuerpos con flechas de fuerza proporcionales"></canvas>
         <div class="reads">
           <div class="read hi"><small>Fuerza de atracción</small><b id="g-F"></b></div>
           <div class="read"><small>Equivale al peso de</small><b id="g-W"></b></div>
-          <div class="read ray"><small>Si duplicás r, la fuerza pasa a</small><b id="g-F2"></b></div>
+          <div class="read ray"><small>Con el doble de distancia</small><b id="g-F2"></b></div>
         </div>
-        <p class="hint">Ley de la inversa del cuadrado: el doble de distancia da la cuarta parte de fuerza.</p>
       </div>
     </div>
   </div>
 </section>
 
+<!-- RELATIVIDAD ESPECIAL -->
 <section class="slide" data-time="45" data-title="Relatividad Especial">
   <div class="wrap">
     <div class="eyebrow"><span>Tópico 2</span><span>Teoría de la Relatividad · 1905</span></div>
     <div class="split">
       <div class="stack">
         <h2>Relatividad Especial: el tiempo no es igual para todos</h2>
-        <p>Einstein partió de dos ideas: las leyes de la física son las mismas para todos los observadores que se mueven a velocidad constante, y <b>la velocidad de la luz es siempre c ≈ 300.000 km/s</b>.</p>
+        <p>Einstein partió de dos ideas: las leyes de la física son las mismas para todos los que se mueven a velocidad constante, y <b>la velocidad de la luz es siempre c ≈ 300.000 km/s</b>.</p>
         <ul class="pts">
           <li><b>Dilatación del tiempo:</b> un reloj en movimiento marcha más lento.</li>
           <li><b>Contracción de longitudes:</b> los objetos se acortan en la dirección del movimiento.</li>
           <li><b>Masa y energía son equivalentes:</b> E = mc².</li>
         </ul>
-        <div class="eq">γ = 1 / √(1 − v²/c²)</div>
-        <p class="hint">En el reloj de luz, el fotón de la nave recorre una diagonal más larga. Como c no cambia, cada tic tarda más.</p>
+        <div class="formula" style="align-self:flex-start">
+          <div class="fx sm" role="img" aria-label="gamma igual a 1 dividido la raíz de 1 menos v al cuadrado sobre c al cuadrado"><span>γ</span><span class="op">=</span><span class="frac"><span class="num">1</span><span>√(1 − v²/c²)</span></span></div>
+          <p class="hint">Factor de Lorentz: cuánto se estira el tiempo.</p>
+        </div>
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Reloj de luz</h3><span class="tag">Simulador 2</span></div>
-        <canvas id="clock" class="ar-16-10" aria-label="Dos relojes de luz, uno quieto y otro en una nave en movimiento"></canvas>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Reloj de luz</h3><div class="inst-a"><button class="btn ib" id="c-play" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><button class="btn ib" id="c-reset" aria-label="Reiniciar contadores"><svg class="ic"><use href="#i-reset"/></svg></button><span class="tag">Simulador 2</span></div></div>
+        <canvas id="clock" class="ar-16-10" aria-label="Dos relojes de luz: uno quieto en la Tierra y otro en una nave en movimiento"></canvas>
+        <div class="seg" id="c-presets" role="group" aria-label="Velocidad de la nave">
+          <button data-v="0">Quieta</button><button data-v="0.5">0,5 c</button><button data-v="0.8">0,8 c</button><button data-v="0.87">0,87 c</button><button data-v="0.99">0,99 c</button>
+        </div>
         <div class="ctrls"><div class="ctl"><label for="c-b">Velocidad de la nave <output id="c-bv"></output></label><input type="range" id="c-b" min="0" max="0.99" step="0.01" value="0.8"></div></div>
         <div class="reads">
           <div class="read hi"><small>Factor de Lorentz γ</small><b id="c-g"></b></div>
@@ -268,34 +352,32 @@ h3.ph{font-family:var(--display);font-weight:500;font-size:1.45rem}
   </div>
 </section>
 
+<!-- RELATIVIDAD GENERAL -->
 <section class="slide" data-time="45" data-title="Gravedad y Relatividad">
   <div class="wrap">
     <div class="eyebrow"><span>Tópico 3</span><span>Relación entre gravedad y Relatividad · 1915</span></div>
     <div class="split">
       <div class="stack">
         <h2>Relatividad General: la gravedad es curvatura</h2>
-        <p>Para Einstein la gravedad no es una fuerza a distancia. <b>La masa y la energía curvan el espacio-tiempo</b>, y los cuerpos (y la luz) siguen el camino más recto posible en ese espacio curvo.</p>
+        <p>Para Einstein la gravedad no es una fuerza a distancia. <b>La masa y la energía curvan el espacio-tiempo</b>, y los cuerpos, y también la luz, siguen el camino más recto posible en ese espacio curvo.</p>
         <ul class="pts">
-          <li>Con campos débiles, la Relatividad General da los mismos resultados que Newton: Newton es un caso particular.</li>
+          <li>Con campos débiles da los mismos resultados que Newton: Newton es un caso particular.</li>
           <li>Con campos intensos predice cosas nuevas: la luz se desvía, el tiempo pasa más lento cerca de una masa, existen agujeros negros y ondas gravitacionales.</li>
         </ul>
-        
+        <p class="hint">La lámina es una analogía en 2D: la curvatura real es del espacio y del tiempo juntos, en 4 dimensiones.</p>
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Lámina del espacio-tiempo</h3><span class="tag">Simulador 3 · tocá para agregar</span></div>
-        <canvas id="sheet" class="ar-16-10" aria-label="Malla del espacio-tiempo deformada por masas"></canvas>
-        <div class="btns">
-          <button class="btn" id="s-mode-m" aria-pressed="true"><svg class="ic"><use href="#i-plus"/></svg>Tocar agrega masa</button>
-          <button class="btn" id="s-mode-p" aria-pressed="false">Tocar lanza una partícula</button>
-          <button class="btn" id="s-clear"><svg class="ic"><use href="#i-trash"/></svg>Limpiar</button>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Lámina del espacio-tiempo</h3><div class="inst-a"><button class="btn" id="s-light"><svg class="ic"><use href="#i-bolt"/></svg>Lanzar partícula</button><button class="btn ib" id="s-clear" aria-label="Limpiar"><svg class="ic"><use href="#i-trash"/></svg></button><span class="tag">Simulador 3</span></div></div>
+        <canvas id="sheet" class="ar-16-10" aria-label="Malla del espacio-tiempo deformada por masas. Tocá para agregar masas y arrastrá para lanzar partículas"></canvas>
+        <div class="btns"><span class="hint">Tamaño de la masa nueva</span>
+          <div class="seg" id="s-size" role="group" aria-label="Tamaño de la masa"><button data-v="2">Luna</button><button data-v="4">Planeta</button><button data-v="7">Estrella</button></div>
         </div>
-        <div class="ctrls"><div class="ctl"><label for="s-m">Masa a agregar <output id="s-mv"></output></label><input type="range" id="s-m" min="1" max="10" step="0.5" value="4"></div></div>
-        <p class="hint">Es una analogía en 2D: la curvatura real es del espacio y del tiempo juntos, en 4 dimensiones.</p>
       </div>
     </div>
   </div>
 </section>
 
+<!-- EXPERIMENTOS -->
 <section class="slide" data-time="70" data-title="Experimentos">
   <div class="wrap">
     <div class="eyebrow"><span>Tópico 4</span><span>Experimentos históricos para comprobar la Relatividad</span></div>
@@ -305,72 +387,92 @@ h3.ph{font-family:var(--display);font-weight:500;font-size:1.45rem}
       <button role="tab" id="tab-me" aria-controls="pan-me" aria-selected="false"><span class="y">1915</span>Órbita de Mercurio</button>
       <button role="tab" id="tab-ed" aria-controls="pan-ed" aria-selected="false"><span class="y">1919</span>Eclipse de Eddington</button>
     </div>
+
     <div class="tabpanel" id="pan-mm" role="tabpanel" aria-labelledby="tab-mm">
-      <div class="split"><div class="stack"><h3 class="ph">Buscando el éter</h3><p>Buscaban el <b>éter</b>, el supuesto medio por el que viajaba la luz, con un <b>interferómetro</b>. Si existía, al girar el aparato las franjas se correrían 0,4. <b>No se movieron.</b> Fue la base de la Relatividad Especial.</p><figure><img src="img/michelson.jpg" alt="Esquema del interferómetro de Michelson-Morley: fuente de luz, espejo semiplateado, dos espejos y detector" style="max-width:300px"><figcaption>Equipo de Michelson-Morley: la luz se divide, recorre dos brazos y se recombina.</figcaption></figure></div>
-      <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Interferómetro</h3><span class="tag">Simulador 4</span></div>
-        <canvas id="mm" class="ar-16-10" aria-label="Interferómetro girando, franjas de interferencia y gráfico del corrimiento"></canvas>
-        <div class="btns">
-          <button class="btn" id="mm-e" aria-pressed="true">Predicción con éter</button>
-          <button class="btn" id="mm-r" aria-pressed="false">Resultado real (1887)</button>
-          <button class="btn" id="mm-play" aria-pressed="true"><svg class="ic"><use href="#i-rotate"/></svg>Girar aparato</button>
+      <div class="split">
+        <div class="stack">
+          <h3 class="ph">Buscando el éter</h3>
+          <p>Buscaban el <b>éter</b>, el supuesto medio por el que viajaba la luz, con un <b>interferómetro</b>. Si existía, al girar el aparato las franjas se correrían 0,4. <b>No se movieron.</b> Fue la base de la Relatividad Especial.</p>
+          <figure class="plate" style="max-width:340px"><div class="pf paper" data-fig="Fig. 2"><img src="img/michelson.jpg" alt="Esquema del interferómetro de Michelson-Morley: fuente de luz, espejo semiplateado, dos espejos y detector"></div><figcaption>La luz se divide, recorre dos brazos perpendiculares y se recombina en el detector.</figcaption></figure>
         </div>
-        <div class="ctrls"><div class="ctl"><label for="mm-v">Velocidad de la Tierra respecto del éter <output id="mm-vv"></output></label><input type="range" id="mm-v" min="0" max="60" step="1" value="30"></div></div>
-        <div class="reads">
-          <div class="read hi"><small>Corrimiento esperado (pico a pico)</small><b id="mm-exp"></b></div>
-          <div class="read ray"><small>Corrimiento medido</small><b>&lt; 0,02 franjas</b></div>
+        <div class="inst">
+          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Interferómetro</h3><div class="inst-a"><button class="btn ib" id="mm-play" aria-label="Pausar giro"><svg class="ic"><use href="#i-pause"/></svg></button><span class="tag">Simulador 4</span></div></div>
+          <canvas id="mm" class="ar-16-10" aria-label="Interferómetro que gira, franjas de interferencia y gráfico del corrimiento. Arrastrá el aparato para girarlo"></canvas>
+          <div class="seg" id="mm-mode" role="group" aria-label="Escenario"><button data-v="e">Si existiera el éter</button><button data-v="r">Lo que midieron en 1887</button></div>
+          <div class="ctrls"><div class="ctl"><label for="mm-v">Velocidad de la Tierra respecto del éter <output id="mm-vv"></output></label><input type="range" id="mm-v" min="0" max="60" step="1" value="30"></div></div>
+          <div class="reads">
+            <div class="read hi"><small>Corrimiento esperado</small><b id="mm-exp"></b></div>
+            <div class="read ray"><small>Corrimiento medido</small><b>&lt; 0,02 franjas</b></div>
+          </div>
+          <p class="hint">ΔN = 2Lv² / (λc²), con brazos de L = 11 m (luz reflejada varias veces) y λ = 500 nm.</p>
         </div>
-        <p class="hint">ΔN = 2Lv² / (λc²) con brazos de L = 11 m (luz reflejada varias veces) y λ = 500 nm.</p>
       </div>
-      </div></div>
+    </div>
+
     <div class="tabpanel" id="pan-me" role="tabpanel" aria-labelledby="tab-me" hidden>
-      <div class="split"><div class="stack"><h3 class="ph">43″ que Newton no explicaba</h3><p>La órbita de Mercurio gira lentamente. Los otros planetas explicaban casi todo ese giro, pero <b>sobraban 43″ por siglo</b>. En 1915 la Relatividad General dio exactamente ese valor.</p><p class="hint">Pruebas posteriores: Pound y Rebka (1959), relojes atómicos en aviones de Hafele y Keating (1971), ondas gravitacionales de LIGO (2015).</p></div>
-      <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Precesión del perihelio de Mercurio</h3><span class="tag">Simulador 5</span></div>
-        <canvas id="merc" class="ar-16-10" aria-label="Órbita de Mercurio que gira lentamente formando una roseta"></canvas>
-        <div class="ctrls"><div class="ctl"><label for="m-x">Exageración del efecto <output id="m-xv"></output></label><input type="range" id="m-x" min="3" max="6" step="0.1" value="5"></div></div>
-        <div class="reads">
-          <div class="read hi"><small>Calculado con Relatividad</small><b id="m-gr"></b></div>
-          <div class="read"><small>Por los otros planetas (Newton)</small><b>≈ 532″ / siglo</b></div>
-          <div class="read ray"><small>Siglos simulados</small><b id="m-c">0</b></div>
+      <div class="split">
+        <div class="stack">
+          <h3 class="ph">43″ que Newton no explicaba</h3>
+          <p>La órbita de Mercurio gira lentamente. Los otros planetas explicaban casi todo ese giro, pero <b>sobraban 43″ por siglo</b>. En 1915 la Relatividad General dio exactamente ese valor.</p>
+          <p class="hint">Pruebas posteriores: Pound y Rebka (1959), relojes atómicos en aviones de Hafele y Keating (1971), ondas gravitacionales de LIGO (2015).</p>
         </div>
-        <p class="hint">Δφ = 6πGM / (c²a(1 − e²)) por órbita, con a = 57,9 millones de km y e = 0,2056.</p>
+        <div class="inst">
+          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Perihelio de Mercurio</h3><div class="inst-a"><button class="btn ib" id="m-play" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><button class="btn ib" id="m-reset" aria-label="Reiniciar"><svg class="ic"><use href="#i-reset"/></svg></button><span class="tag">Simulador 5</span></div></div>
+          <canvas id="merc" class="ar-16-10" aria-label="Órbita de Mercurio que gira lentamente formando una roseta"></canvas>
+          <div class="btns"><span class="hint">Exagerar el efecto</span>
+            <div class="seg" id="m-x" role="group" aria-label="Exageración"><button data-v="3">× 1.000</button><button data-v="4">× 10.000</button><button data-v="5">× 100.000</button><button data-v="6">× 1.000.000</button></div>
+          </div>
+          <div class="reads">
+            <div class="read hi"><small>Calculado con Relatividad</small><b id="m-gr"></b></div>
+            <div class="read"><small>Por otros planetas (Newton)</small><b>≈ 532″ / siglo</b></div>
+            <div class="read ray"><small>Siglos simulados</small><b id="m-c">0</b></div>
+          </div>
+          <p class="hint">Δφ = 6πGM / (c²a(1 − e²)) por vuelta, con a = 57,9 millones de km y e = 0,2056.</p>
+        </div>
       </div>
-      </div></div>
+    </div>
+
     <div class="tabpanel" id="pan-ed" role="tabpanel" aria-labelledby="tab-ed" hidden>
-      <div class="split"><div class="stack"><h3 class="ph">La luz se curva cerca del Sol</h3><p>Einstein predijo que el Sol desviaría la luz de las estrellas. <b>Eddington</b> lo midió en el eclipse del 29 de mayo de 1919, en Sobral (Brasil) y Príncipe (África). El resultado fue <b>compatible con Einstein</b>: el doble de lo que daba Newton.</p><figure><img src="img/sobral.jpg" alt="Telescopios de la expedición de Sobral, Brasil, 1919, bajo un cobertizo de madera"><figcaption>Telescopios de la expedición a Sobral, Brasil, 1919.</figcaption></figure></div>
-      <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Desviación de la luz por el Sol</h3><span class="tag">Simulador 6</span></div>
-        <canvas id="edd" class="ar-16-9" aria-label="Rayo de luz de una estrella que se curva al pasar cerca del Sol"></canvas>
-        <div class="ctrls"><div class="ctl"><label for="e-b">Distancia del rayo al centro del Sol <output id="e-bv"></output></label><input type="range" id="e-b" min="1" max="10" step="0.1" value="1"></div></div>
-        <div class="reads">
-          <div class="read hi"><small>Einstein (4GM / c²b)</small><b id="e-gr"></b></div>
-          <div class="read"><small>Newton (la mitad)</small><b id="e-nw"></b></div>
+      <div class="split">
+        <div class="stack">
+          <h3 class="ph">La luz se curva cerca del Sol</h3>
+          <p>Einstein predijo que el Sol desviaría la luz de las estrellas. <b>Eddington</b> lo midió en el eclipse del 29 de mayo de 1919, en Sobral (Brasil) y Príncipe (África). El resultado fue <b>compatible con Einstein</b>: el doble de lo que daba Newton.</p>
+          <figure class="plate"><div class="pf" data-fig="Fig. 3"><img src="img/sobral.jpg" alt="Telescopios de la expedición de Sobral, Brasil, 1919, bajo un cobertizo de madera"></div><figcaption>Telescopios de la expedición a Sobral, Brasil, 1919.</figcaption></figure>
         </div>
-        <canvas id="eddc" class="ar-wide" aria-label="Gráfico de desviación según la distancia, con las mediciones de 1919"></canvas>
-        <p class="hint">Ángulo dibujado exagerado 12.000 veces. ″ = segundo de arco (1/3600 de grado).</p>
+        <div class="inst">
+          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Desviación de la luz</h3><div class="inst-a"><span class="tag">Simulador 6</span></div></div>
+          <canvas id="edd" class="ar-16-9" aria-label="Rayo de luz de una estrella que se curva al pasar cerca del Sol. Arrastrá para alejar el rayo"></canvas>
+          <div class="ctrls"><div class="ctl"><label for="e-b">Distancia del rayo al centro del Sol <output id="e-bv"></output></label><input type="range" id="e-b" min="1" max="10" step="0.1" value="1"></div></div>
+          <div class="reads">
+            <div class="read hi"><small>Einstein (4GM / c²b)</small><b id="e-gr"></b></div>
+            <div class="read"><small>Newton (la mitad)</small><b id="e-nw"></b></div>
+          </div>
+          <canvas id="eddc" class="ar-wide" aria-label="Gráfico de la desviación según la distancia, con las mediciones de 1919"></canvas>
+          <p class="hint">Ángulo dibujado 12.000 veces más grande. ″ = segundo de arco (1/3600 de grado).</p>
+        </div>
       </div>
-      </div></div>
+    </div>
   </div>
 </section>
 
+<!-- SOCIEDAD -->
 <section class="slide" data-time="55" data-title="Sociedad y Universo">
   <div class="wrap">
     <div class="eyebrow"><span>Tópico 5</span><span>Incidencia en la sociedad y en la concepción del Universo</span></div>
-    <h2>Del laboratorio al celular y al Big Bang</h2>
     <div class="split">
       <div class="stack">
+        <h2>Del laboratorio al celular y al Big Bang</h2>
         <ul class="pts">
           <li><b>GPS:</b> sin correcciones relativistas, la ubicación del celular se equivocaría unos 11 km por día.</li>
           <li><b>Energía:</b> E = mc² explica la energía nuclear (Atucha y Embalse) y la tomografía PET.</li>
           <li><b>El Universo:</b> la Relatividad General llevó al Universo en expansión, al Big Bang y a los agujeros negros, observados en 2015 y 2019.</li>
           <li><b>Una nueva visión:</b> el espacio y el tiempo dejaron de ser absolutos.</li>
         </ul>
-        
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Relojes de los satélites GPS</h3><span class="tag">Simulador 7</span></div>
-        <canvas id="gps" class="ar-16-10" aria-label="Tierra y satélite en órbita a la altura elegida"></canvas>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Relojes de los satélites GPS</h3><div class="inst-a"><span class="tag">Simulador 7</span></div></div>
+        <canvas id="gps" class="ar-16-10" aria-label="Tierra y satélite en órbita. Arrastrá el satélite para cambiar la altura"></canvas>
+        <div class="seg" id="gps-p" role="group" aria-label="Órbitas reales"><button data-v="400">Estación Espacial · 400 km</button><button data-v="20200">GPS · 20.200 km</button><button data-v="35786">Geoestacionario · 35.786 km</button></div>
         <div class="ctrls"><div class="ctl"><label for="gps-h">Altura de la órbita <output id="gps-hv"></output></label><input type="range" id="gps-h" min="400" max="36000" step="100" value="20200"></div></div>
         <div class="reads">
           <div class="read neg"><small>Por velocidad (Especial)</small><b id="gps-sr"></b></div>
@@ -378,12 +480,12 @@ h3.ph{font-family:var(--display);font-weight:500;font-size:1.45rem}
           <div class="read hi"><small>Adelanto neto por día</small><b id="gps-net"></b></div>
           <div class="read hi"><small>Error de posición por día</small><b id="gps-err"></b></div>
         </div>
-        <p class="hint">Los satélites GPS orbitan a 20.200 km. Sus relojes se fabrican atrasados a propósito para compensar este efecto.</p>
       </div>
     </div>
   </div>
 </section>
 
+<!-- CONCLUSIÓN -->
 <section class="slide" data-time="20" data-title="Conclusión">
   <div class="wrap">
     <div class="eyebrow"><span>Conclusión</span></div>
@@ -391,13 +493,14 @@ h3.ph{font-family:var(--display);font-weight:500;font-size:1.45rem}
     <div class="concl">
       <div><b>Gravedad</b><p>Para Newton, una fuerza entre masas. Para Einstein, la curvatura del espacio-tiempo.</p></div>
       <div><b>Relatividad</b><p>El tiempo y el espacio dependen del movimiento y de la gravedad. La luz es el límite.</p></div>
-      <div><b>Comprobación</b><p>Michelson-Morley, el eclipse de 1919, Mercurio, relojes atómicos y LIGO la confirmaron.</p></div>
+      <div><b>Comprobación</b><p>Michelson-Morley, Mercurio, el eclipse de 1919, relojes atómicos y LIGO la confirmaron.</p></div>
       <div><b>Sociedad</b><p>Hoy la usamos sin darnos cuenta: cada vez que abrimos el GPS del celular.</p></div>
     </div>
     <p class="lead">¡Gracias! ¿Preguntas?</p>
   </div>
 </section>
 
+<!-- ANEXO: ÓRBITAS -->
 <section class="slide" data-annex="1" data-time="0" data-title="Anexo · Órbitas">
   <div class="wrap">
     <div class="eyebrow"><span>Anexo</span><span>Para profundizar · Gravedad</span></div>
@@ -406,61 +509,59 @@ h3.ph{font-family:var(--display);font-weight:500;font-size:1.45rem}
         <h2>La misma ley arma el Sistema Solar</h2>
         <p>Con poca velocidad un planeta cae hacia la estrella; con la justa queda en órbita; con demasiada, escapa. Las órbitas son elipses, como describió Kepler.</p>
         <ul class="pts">
-          <li>Arrastrá sobre el simulador para <b>agregar un planeta</b>: el largo de la flecha es su velocidad.</li>
+          <li>Arrastrá sobre el simulador para <b>agregar un planeta</b>. La línea punteada muestra su trayectoria antes de soltarlo.</li>
           <li>Velocidad circular: v = √(GM / r). Velocidad de escape: √2 veces más.</li>
-          <li>Newton explicaba <i>cómo</i> se mueven, pero no <i>por qué</i> la masa atrae a distancia. Esa pregunta la respondió Einstein.</li>
         </ul>
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Simulador de órbitas</h3><span class="tag">Simulador 8 · arrastrá para agregar</span></div>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Simulador de órbitas</h3><div class="inst-a"><button class="btn ib" id="o-circ" aria-label="Agregar planeta en órbita circular"><svg class="ic"><use href="#i-plus"/></svg></button><button class="btn ib" id="o-clear" aria-label="Limpiar"><svg class="ic"><use href="#i-trash"/></svg></button><span class="tag">Simulador 8</span></div></div>
         <canvas id="orbit" class="ar-16-10" aria-label="Simulador de órbitas: arrastrá para lanzar planetas"></canvas>
-        <div class="ctrls">
-          <div class="ctl"><label for="o-M">Masa de la estrella <output id="o-Mv"></output></label><input type="range" id="o-M" min="0.4" max="2.5" step="0.05" value="1"></div>
-        </div>
-        <div class="btns">
-          <button class="btn" id="o-circ"><svg class="ic"><use href="#i-orbit"/></svg>Planeta en órbita circular</button>
-          <button class="btn" id="o-esc"><svg class="ic"><use href="#i-plus"/></svg>Planeta con velocidad de escape</button>
-          <button class="btn" id="o-clear"><svg class="ic"><use href="#i-trash"/></svg>Limpiar</button>
-        </div>
-        <div class="reads"><div class="read"><small>Planetas en órbita</small><b id="o-n">0</b></div><div class="read"><small>Chocaron con la estrella</small><b id="o-hit">0</b></div><div class="read"><small>Escaparon</small><b id="o-out">0</b></div></div>
+        <div class="ctrls"><div class="ctl"><label for="o-M">Masa de la estrella <output id="o-Mv"></output></label><input type="range" id="o-M" min="0.4" max="2.5" step="0.05" value="1"></div></div>
+        <div class="reads"><div class="read"><small>En órbita</small><b id="o-n">0</b></div><div class="read"><small>Chocaron</small><b id="o-hit">0</b></div><div class="read"><small>Escaparon</small><b id="o-out">0</b></div></div>
       </div>
     </div>
   </div>
 </section>
 
+<!-- ANEXO: TIEMPO Y ENERGÍA -->
 <section class="slide" data-annex="1" data-time="0" data-title="Anexo · Tiempo y energía">
   <div class="wrap">
     <div class="eyebrow"><span>Anexo</span><span>Para profundizar · Relatividad</span></div>
     <h2>Tiempo cerca de una masa y E = mc²</h2>
-    <div class="split"><div class="stack"><div class="inst">
-          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Tiempo cerca de una masa</h3><span class="tag">Simulador 9</span></div>
-          <select id="td-sel" aria-label="Elegí un cuerpo">
-            <option value="earth">Superficie de la Tierra</option>
-            <option value="sun">Superficie del Sol</option>
-            <option value="wd">Enana blanca (Sirio B)</option>
-            <option value="ns" selected>Estrella de neutrones</option>
-            <option value="bh">Cerca de un agujero negro (1,5 × horizonte)</option>
-          </select>
-          <div class="reads">
-            <div class="read hi"><small>Si lejos pasa 1 año, ahí pasan</small><b id="td-a"></b></div>
-            <div class="read ray"><small>Diferencia por año</small><b id="td-d"></b></div>
-          </div>
-          <p class="hint">√(1 − 2GM / rc²): dilatación gravitacional del tiempo (solución de Schwarzschild).</p>
-        </div></div><div class="inst">
-          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>E = mc²</h3><span class="tag">Simulador 10</span></div>
-          <div class="ctrls"><div class="ctl"><label for="E-m">Masa convertida en energía <output id="E-mv"></output></label><input type="range" id="E-m" min="-3" max="6" step="0.05" value="0"></div></div>
-          <div class="reads">
-            <div class="read hi"><small>Energía</small><b id="E-J"></b></div>
-            <div class="read"><small>Equivale a TNT</small><b id="E-t"></b></div>
-            <div class="read ray"><small>Bombas de Hiroshima (≈15 kt)</small><b id="E-h"></b></div>
-          </div>
-        </div></div>
+    <div class="split">
+      <div class="inst">
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Tiempo cerca de una masa</h3><div class="inst-a"><span class="tag">Simulador 9</span></div></div>
+        <select id="td-sel" aria-label="Elegí un cuerpo">
+          <option value="earth">Superficie de la Tierra</option>
+          <option value="sun">Superficie del Sol</option>
+          <option value="wd">Enana blanca (Sirio B)</option>
+          <option value="ns" selected>Estrella de neutrones</option>
+          <option value="bh">Cerca de un agujero negro (1,5 × horizonte)</option>
+        </select>
+        <div class="cmp"><div><span>Lejos</span><i style="width:100%"></i></div><div><span>Ahí</span><i id="td-bar"></i></div></div>
+        <div class="reads">
+          <div class="read hi"><small>Si lejos pasa 1 año, ahí pasan</small><b id="td-a"></b></div>
+          <div class="read ray"><small>Diferencia por año</small><b id="td-d"></b></div>
+        </div>
+        <p class="hint">√(1 − 2GM / rc²): dilatación gravitacional del tiempo (solución de Schwarzschild).</p>
+      </div>
+      <div class="inst">
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>E = mc²</h3><div class="inst-a"><span class="tag">Simulador 10</span></div></div>
+        <div class="ctrls"><div class="ctl"><label for="E-m">Masa convertida en energía <output id="E-mv"></output></label><input type="range" id="E-m" min="-3" max="6" step="0.05" value="0"></div></div>
+        <div class="reads">
+          <div class="read hi"><small>Energía</small><b id="E-J"></b></div>
+          <div class="read"><small>Equivale a TNT</small><b id="E-t"></b></div>
+          <div class="read ray"><small>Bombas de Hiroshima (≈15 kt)</small><b id="E-h"></b></div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
+<!-- ANEXO: BIBLIOGRAFÍA -->
 <section class="slide" data-annex="1" data-time="0" data-title="Anexo · Bibliografía">
   <div class="wrap">
-    <div class="eyebrow"><span>Fuentes y bibliografía consultada</span></div>
+    <div class="eyebrow"><span>Anexo</span><span>Fuentes y bibliografía consultada</span></div>
     <h2>Bibliografía</h2>
     <ol class="biblio">
       <li>Newton, I. (1687). <i>Philosophiæ Naturalis Principia Mathematica</i>. Londres.</li>
@@ -473,15 +574,16 @@ h3.ph{font-family:var(--display);font-weight:500;font-size:1.45rem}
       <li>Ashby, N. (2003). Relativity in the Global Positioning System. <i>Living Reviews in Relativity</i>, 6, 1.</li>
       <li>Abbott, B. P. et al. (LIGO y Virgo) (2016). Observation of Gravitational Waves from a Binary Black Hole Merger. <i>Physical Review Letters</i>, 116, 061102.</li>
       <li>Hawking, S. (1988). <i>Historia del tiempo: del Big Bang a los agujeros negros</i>. Crítica.</li>
-      <li>Geoenciclopedia. Gravedad: fórmula de la Ley de Gravitación Universal.</li>
+      <li>Geoenciclopedia. Gravedad: Ley de Gravitación Universal.</li>
     </ol>
   </div>
 </section>
+
 </main>
 <div class="prog" aria-hidden="true"><i id="pbar"></i><b id="pmark"></b></div>
 <nav class="bar" aria-label="Controles de la exposición">
-  <button class="btn ib" id="prev" aria-label="Diapositiva anterior"><svg class="ic"><use href="#i-left"/></svg></button>
-  <button class="btn ib" id="next" aria-label="Diapositiva siguiente"><svg class="ic"><use href="#i-right"/></svg></button>
+  <button class="btn ib" id="prev" aria-label="Sección anterior"><svg class="ic"><use href="#i-left"/></svg></button>
+  <button class="btn ib" id="next" aria-label="Sección siguiente"><svg class="ic"><use href="#i-right"/></svg></button>
   <div class="where"><span id="count"></span><span id="stitle"></span></div>
   <div class="timer"><span id="tdelta"></span><button class="btn" id="tbtn" aria-label="Iniciar o pausar el cronómetro"><svg class="ic"><use id="tico" href="#i-play"/></svg><span id="ttime">5:00</span></button><button class="btn ib" id="treset" aria-label="Reiniciar cronómetro"><svg class="ic"><use href="#i-reset"/></svg></button></div>
   <span class="sep"></span>
@@ -490,12 +592,13 @@ h3.ph{font-family:var(--display);font-weight:500;font-size:1.45rem}
   <button class="btn ib" id="fsbtn" aria-label="Pantalla completa"><svg class="ic"><use href="#i-max"/></svg></button>
 </nav>
 </div>
+<nav class="dots" id="dots" aria-label="Secciones"></nav>
 
 <aside class="notes" id="notes" hidden>
   <div class="nh"><span id="nhead"></span><span>Editable · se guarda en este navegador</span></div>
   <div id="ntext" contenteditable="true" spellcheck="false"></div>
 </aside>
-<div class="lightbox" id="lb" hidden><img id="lbimg" alt=""></div>
+<div class="lightbox" id="lb" hidden><img id="lbimg" alt=""><p id="lbcap"></p></div>
 
 <script>
 /* ---------- Guion (≈ 5 minutos) ---------- */
@@ -507,22 +610,22 @@ La gravedad es la atracción entre cuerpos con masa. Es una de las cuatro intera
 Newton la explicó con esta ley: la fuerza crece con las masas y baja con el cuadrado de la distancia.
 [Tocar "Tierra – Luna"] Entre la Tierra y la Luna: 2 × 10²⁰ newtons.
 [Tocar "Dos personas a 1 m"] Entre dos personas, casi nada.
-[Mover la distancia] El doble de distancia da la cuarta parte de fuerza.`,
+[Arrastrar un cuerpo para alejarlo] El doble de distancia da la cuarta parte de fuerza.`,
 `Habla: Bruno (45 s)
 En 1905 Einstein propuso la Relatividad Especial: la velocidad de la luz es la misma para todos los observadores.
-Miren el reloj de luz: en la nave, la luz hace una diagonal más larga, entonces cada tic tarda más. El tiempo en la nave pasa más lento.
-[Subir a 0,99c] Al 99 % de la luz, un año en la nave son siete en la Tierra. De esta teoría sale también E = mc².`,
+Miren el reloj de luz: en la nave, la luz hace una diagonal más larga, entonces cada tic tarda más. El tiempo en la nave pasa más lento: miren cómo se atrasa su contador.
+[Tocar "0,99 c"] Al 99 % de la luz, un año en la nave son siete en la Tierra. De esta teoría sale también E = mc².`,
 `Habla: ___ (45 s)
 En 1915, la Relatividad General une gravedad y relatividad: la masa curva el espacio-tiempo, y los cuerpos, y hasta la luz, siguen esa curva.
-[Tocar para agregar una masa; cambiar a "lanza una partícula" y tocar] Es una analogía en dos dimensiones.
+[Tocar la malla para agregar una masa. Arrastrar desde un lugar vacío para lanzar una partícula] Es una analogía en dos dimensiones.
 Para campos débiles da lo mismo que Newton, pero predice más: la luz se desvía y el tiempo pasa más lento cerca de una masa.`,
 `Habla: Bruno (70 s)
 ¿Cómo se comprobó?
-[Pestaña 1887] Michelson y Morley buscaban el éter con un interferómetro. Si existía, las franjas se correrían al girar el aparato. [Tocar "Resultado real"] No se movieron.
+[Pestaña 1887] Michelson y Morley buscaban el éter con un interferómetro. Si existía, las franjas se correrían al girar el aparato. [Tocar "Lo que midieron en 1887"] No se movieron.
 [Pestaña 1915] La órbita de Mercurio gira 43 segundos de arco por siglo más de lo que explicaba Newton. Einstein calculó exactamente 43.
 [Pestaña 1919] Eddington fotografió estrellas durante un eclipse. Einstein predecía 1,75 segundos de arco, el doble que Newton. Se midió 1,98 y 1,61: ganó Einstein.`,
 `Habla: ___ (55 s)
-¿Y en la vida diaria? El GPS. Los relojes de los satélites se atrasan 7 microsegundos por día por su velocidad y se adelantan 45 por estar lejos de la gravedad terrestre. Neto: 38 microsegundos por día. Sin corregirlo, el GPS se equivocaría 11 km por día.
+¿Y en la vida diaria? El GPS. [Tocar "GPS"] Los relojes de los satélites se atrasan 7 microsegundos por día por su velocidad y se adelantan 45 por estar lejos de la gravedad terrestre. Neto: 38 microsegundos por día. Sin corregirlo, el GPS se equivocaría 11 km por día.
 Además, E = mc² explica la energía nuclear, y la Relatividad General nos dio un Universo en expansión, el Big Bang y los agujeros negros.`,
 `Habla: todos (20 s)
 Newton no estaba equivocado: Einstein lo amplió. La gravedad es la forma del espacio-tiempo, se comprobó una y otra vez, y la usamos cada vez que abrimos el GPS. ¡Gracias! ¿Preguntas?`,
@@ -533,289 +636,342 @@ En una estrella de neutrones, mientras afuera pasa un año, ahí pasan unos 9,7 
 `Anexo: bibliografía para el informe.`
 ];
 
+/* ---------- utilidades ---------- */
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
-const slides=$$('.slide');let cur=0;
-const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const COL={};const redraws=[];function refreshCol(){for(const k of['sun','ray','mass','text','muted','line','deep','ok','bg','surface','space','star'])COL[k]=css('--'+k);redraws.forEach(f=>f())}refreshCol();
+const root=document.documentElement,stage=$('#stage'),slides=$$('.slide');let cur=0;
+const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;if(!RM)root.classList.add('anim');
+const css=n=>getComputedStyle(root).getPropertyValue(n).trim();
+const COL={},redraws=[];function refreshCol(){for(const k of['sun','ray','mass','text','muted','line','deep','ok','bg','surface','space','star'])COL[k]=css('--'+k);redraws.forEach(f=>f())}refreshCol();
 const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return`rgba(${n>>16},${n>>8&255},${n&255},${a})`};
-const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
 const nf=(x,d=3)=>x.toLocaleString('es-AR',{maximumSignificantDigits:d});
-function sci(x,d=3){if(!isFinite(x))return'∞';if(x===0)return'0';let e=Math.floor(Math.log10(Math.abs(x)));if(e>=-3&&e<6)return nf(x,d);let m=+(x/10**e).toPrecision(d);if(Math.abs(m)>=10){m/=10;e++}return nf(m,d)+' × 10<sup>'+e+'</sup>'}
-const G=6.674e-11,c=299792458;
+const SUP={'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+function sci(x,d=3){if(!isFinite(x))return'∞';if(x===0)return'0';let e=Math.floor(Math.log10(Math.abs(x)));if(e>=-3&&e<6)return nf(x,d);let m=+(x/10**e).toPrecision(d);if(Math.abs(m)>=10){m/=10;e++}return nf(m,d)+' × 10'+String(e).replace(/./g,ch=>SUP[ch])}
+const G=6.674e-11,c=299792458,clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const ease=(a,b,dt,k=8)=>a+(b-a)*(1-Math.exp(-k*dt));
+function paint(r){r.style.setProperty('--p',((r.value-r.min)/(r.max-r.min)*100)+'%')}
+function setR(r,v){r.value=v;paint(r)}
+document.addEventListener('input',e=>{if(e.target.type==='range')paint(e.target)});
+function seg(el,on){const bs=[...el.querySelectorAll('button')];const set=v=>bs.forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===String(v)));bs.forEach(b=>b.addEventListener('click',()=>{set(b.dataset.v);on(b.dataset.v)}));return set}
+function playBtn(btn,get,set){btn.addEventListener('click',()=>{set(!get());btn.querySelector('use').setAttribute('href',get()?'#i-pause':'#i-play');btn.setAttribute('aria-label',get()?'Pausar':'Reanudar')})}
 
-/* ---------- Canvas helper + bucle ---------- */
-function cv(id){const el=document.getElementById(id),ctx=el.getContext('2d'),o={el,ctx,w:300,h:150};
+/* ---------- canvas, bucle y gestos ---------- */
+function cv(id){const el=document.getElementById(id),ctx=el.getContext('2d'),o={el,ctx,w:300,h:150,hA:1,touched:false,active:null};
   const fit=()=>{const r=el.getBoundingClientRect();if(r.width<2||r.height<2)return;const d=Math.min(2,window.devicePixelRatio||1);el.width=Math.round(r.width*d);el.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0);o.w=r.width;o.h=r.height;if(o.onfit)o.onfit()};
   new ResizeObserver(fit).observe(el);fit();return o}
-const loops=[];function onFrame(id,fn){const el=document.getElementById(id);loops.push({el,i:slides.indexOf(el.closest('.slide')),fn})}
+const loops=[],vis=new Set();
+function onFrame(id,fn){const el=document.getElementById(id);loops.push({el,i:slides.indexOf(el.closest('.slide')),fn})}
+const visIO=new IntersectionObserver(es=>es.forEach(e=>{const i=slides.indexOf(e.target);e.isIntersecting?vis.add(i):vis.delete(i)}),{root:stage});slides.forEach(s=>visIO.observe(s));
 function pos(o,e){const r=o.el.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]}
-function arrow(ctx,x1,y1,x2,y2,col,w=2){ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();const a=Math.atan2(y2-y1,x2-x1),s=7+w;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-s*Math.cos(a-.45),y2-s*Math.sin(a-.45));ctx.lineTo(x2-s*Math.cos(a+.45),y2-s*Math.sin(a+.45));ctx.fill()}
-function glow(ctx,x,y,r,col){ctx.fillStyle=rgba(col,.18);ctx.beginPath();ctx.arc(x,y,r*2,0,7);ctx.fill();ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
-function label(ctx,t,x,y,col=COL.muted,align='left',size=12){ctx.fillStyle=col;ctx.font=`${size}px "IBM Plex Mono", monospace`;ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillText(t,x,y)}
+function interact(o,{down,move,up,hover}){
+  o.el.addEventListener('pointerdown',e=>{const p=pos(o,e),a=down?down(p,e):null;if(a!=null&&a!==false){o.active=a;o.touched=true;o.el.setPointerCapture(e.pointerId);o.el.style.cursor='grabbing';e.preventDefault()}});
+  o.el.addEventListener('pointermove',e=>{const p=pos(o,e);if(o.active){move&&move(p,o.active)}else if(hover)o.el.style.cursor=hover(p)||''});
+  const end=e=>{if(o.active){const a=o.active;o.active=null;o.el.style.cursor='';up&&up(pos(o,e),a)}};
+  o.el.addEventListener('pointerup',end);o.el.addEventListener('pointercancel',end)}
+function label(ctx,t,x,y,col=COL.muted,align='left',size=11,font='"JetBrains Mono", monospace'){ctx.fillStyle=col;ctx.font=`${size}px ${font}`;ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillText(t,x,y)}
+function pill(ctx,t,x,y,col=COL.text,align='center',alpha=1){ctx.save();ctx.globalAlpha=alpha;ctx.font='11px "JetBrains Mono", monospace';const w=ctx.measureText(t).width+14,h=20;const x0=align==='center'?x-w/2:align==='right'?x-w:x;ctx.fillStyle=COL.surface;ctx.strokeStyle=COL.line;ctx.lineWidth=1;ctx.fillRect(x0,y-h/2,w,h);ctx.strokeRect(x0+.5,y-h/2+.5,w-1,h-1);label(ctx,t,x0+7,y,col,'left',11);ctx.restore()}
+function hint(o,dt,t){o.hA=ease(o.hA,o.touched?0:1,dt,3);if(o.hA>.02)pill(o.ctx,t,10,o.h-16,COL.muted,'left',o.hA)}
+function arrow(ctx,x1,y1,x2,y2,col,w=2){ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();const a=Math.atan2(y2-y1,x2-x1),s=6+w*1.5;ctx.beginPath();ctx.moveTo(x2+Math.cos(a)*2,y2+Math.sin(a)*2);ctx.lineTo(x2-s*Math.cos(a-.42),y2-s*Math.sin(a-.42));ctx.lineTo(x2-s*Math.cos(a+.42),y2-s*Math.sin(a+.42));ctx.closePath();ctx.fill()}
+function disc(ctx,x,y,r,col,halo=.16){if(halo>0){ctx.fillStyle=rgba(col,halo);ctx.beginPath();ctx.arc(x,y,r+Math.max(4,r*.45),0,7);ctx.fill()}ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
+function trail(ctx,pts,col,w=1.5,maxA=.8,map){const n=pts.length;if(n<2)return;ctx.lineWidth=w;ctx.lineCap='round';const chunk=Math.max(2,Math.ceil(n/14));for(let i=0;i<n-1;i+=chunk){ctx.strokeStyle=rgba(col,maxA*((i+chunk)/n));ctx.beginPath();for(let j=i;j<=Math.min(n-1,i+chunk);j++){const p=map?map(pts[j]):pts[j];j===i?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1])}ctx.stroke()}}
 
-/* ---------- 0. Lente gravitacional (portada) ---------- */
-(()=>{const o=cv('hero'),ctx=o.ctx;let stars=[];const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function seed(){stars=[];const n=Math.round(o.w*o.h/1500);for(let i=0;i<n;i++)stars.push({x:(Math.random()-.5)*o.w*1.4,y:(Math.random()-.5)*o.h*1.4,b:.35+Math.random()*.65,s:.5+Math.random()*1.1})}
+/* ---------- Portada: lente gravitacional ---------- */
+(()=>{const o=cv('hero'),ctx=o.ctx;let stars=[],L={x:0,y:0},T={x:0,y:0};
+  function seed(){stars=[];const n=Math.round(o.w*o.h/1400);for(let i=0;i<n;i++)stars.push({x:(Math.random()-.5)*o.w*1.6,y:(Math.random()-.5)*o.h*1.6,b:.35+Math.random()*.65,s:.5+Math.random()*1.1})}
   o.onfit=seed;seed();
-  onFrame('hero',dt=>{const w=o.w,h=o.h,cx=w/2,cy=h/2,tE=Math.min(w,h)*.17;
-    ctx.fillStyle=COL.space;ctx.fillRect(0,0,w,h);const sp=rm?4:14;
-    for(const s of stars){s.x-=sp*dt*s.s;if(s.x<-w*.7)s.x+=w*1.4;
-      const b=Math.hypot(s.x,s.y)||.01,u=b/tE,ux=s.x/b,uy=s.y/b;
-      const tp=(b+Math.sqrt(b*b+4*tE*tE))/2,tm=(b-Math.sqrt(b*b+4*tE*tE))/2;
-      const base=(u*u+2)/(2*u*Math.sqrt(u*u+4));const mp=base+.5,mm=Math.abs(base-.5);
+  o.el.addEventListener('pointermove',e=>{const p=pos(o,e);T={x:clamp(p[0]-o.w/2,-o.w*.3,o.w*.3),y:clamp(p[1]-o.h/2,-o.h*.3,o.h*.3)}});
+  o.el.addEventListener('pointerleave',()=>T={x:0,y:0});
+  onFrame('hero',dt=>{const w=o.w,h=o.h;L.x=ease(L.x,T.x,dt,3);L.y=ease(L.y,T.y,dt,3);const cx=w/2+L.x,cy=h/2+L.y,tE=Math.min(w,h)*.17;
+    ctx.fillStyle=COL.space;ctx.fillRect(0,0,w,h);const sp=RM?3:14;
+    for(const s of stars){s.x-=sp*dt*s.s;if(s.x<-w*.8)s.x+=w*1.6;
+      const bx=s.x-L.x,by=s.y-L.y,b=Math.hypot(bx,by)||.01,u=b/tE,ux=bx/b,uy=by/b,q=Math.sqrt(b*b+4*tE*tE);
+      const tp=(b+q)/2,tm=(b-q)/2,base=(u*u+2)/(2*u*Math.sqrt(u*u+4)),mp=base+.5,mm=Math.abs(base-.5);
       ctx.fillStyle=rgba(COL.star,Math.min(1,s.b*Math.sqrt(mp)*.85));ctx.beginPath();ctx.arc(cx+ux*tp,cy+uy*tp,Math.min(4,.9*Math.sqrt(mp)*s.s),0,7);ctx.fill();
       if(mm>.04){ctx.fillStyle=rgba('#e3875f',Math.min(.9,s.b*Math.sqrt(mm)));ctx.beginPath();ctx.arc(cx+ux*tm,cy+uy*tm,Math.min(3,.9*Math.sqrt(mm)*s.s),0,7);ctx.fill()}}
-    ctx.strokeStyle=rgba('#e3875f',.45);ctx.lineWidth=1;ctx.setLineDash([3,5]);ctx.beginPath();ctx.arc(cx,cy,tE,0,7);ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle='#000';ctx.beginPath();ctx.arc(cx,cy,tE*.28,0,7);ctx.fill();
-    ctx.strokeStyle='#e3875f';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,tE*.28+1,0,7);ctx.stroke();
-    label(ctx,'anillo de Einstein',cx+tE*.74,cy+tE*.78,'#e3875f','left',11)});
+    ctx.strokeStyle=rgba('#e3875f',.4);ctx.lineWidth=1;ctx.setLineDash([3,5]);ctx.beginPath();ctx.arc(cx,cy,tE,0,7);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#000';ctx.beginPath();ctx.arc(cx,cy,tE*.28,0,7);ctx.fill();ctx.strokeStyle='#e3875f';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,tE*.28+1,0,7);ctx.stroke();
+    label(ctx,'anillo de Einstein',cx+tE*.74,cy+tE*.8,'#e3875f','left',11)});
 })();
 
 /* ---------- 1. Calculadora de Newton ---------- */
-(()=>{const m1=$('#g-m1'),m2=$('#g-m2'),r=$('#g-r');const o=cv('gviz'),ctx=o.ctx;
+(()=>{const m1=$('#g-m1'),m2=$('#g-m2'),r=$('#g-r'),o=cv('gviz'),ctx=o.ctx;
   const P={tl:[5.972e24,7.342e22,3.844e8],ts:[5.972e24,1.989e30,1.496e11],pt:[70,5.972e24,6.371e6],pp:[70,70,1]};
-  const unit=(x,u)=>sci(x)+' '+u;
-  function dist(x){return x>=1000?sci(x/1000)+' km':sci(x)+' m'}
-  let F=0;
-  function upd(){const a=10**+m1.value,b=10**+m2.value,d=10**+r.value;F=G*a*b/(d*d);
-    $('#o-m1').innerHTML=unit(a,'kg');$('#o-m2').innerHTML=unit(b,'kg');$('#o-r').innerHTML=dist(d);
-    $('#g-F').innerHTML=unit(F,'N');$('#g-W').innerHTML=unit(F/9.81,'kg');$('#g-F2').innerHTML=unit(F/4,'N');draw()}
-  function draw(){const w=o.w,h=o.h;ctx.clearRect(0,0,w,h);const a=+m1.value,b=+m2.value;
-    const ra=6+a*.9,rb=6+b*.9;const x1=w*.22,x2=w*.78,y=h*.5;
-    ctx.strokeStyle=COL.line;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x1,y+h*.36);ctx.lineTo(x2,y+h*.36);ctx.stroke();ctx.setLineDash([]);
-    label(ctx,'r',w/2,y+h*.36-9,COL.muted,'center');
-    glow(ctx,x1,y,Math.min(ra,h*.3),COL.sun);glow(ctx,x2,y,Math.min(rb,h*.3),COL.ray);
-    const L=Math.max(10,Math.min(w*.2,(Math.log10(F)+12)*5));
-    arrow(ctx,x1+Math.min(ra,h*.3)+4,y,x1+Math.min(ra,h*.3)+4+L,y,COL.mass,3);arrow(ctx,x2-Math.min(rb,h*.3)-4,y,x2-Math.min(rb,h*.3)-4-L,y,COL.mass,3);
-    label(ctx,'m₁',x1,y-h*.38,COL.text,'center');label(ctx,'m₂',x2,y-h*.38,COL.text,'center');
-    label(ctx,'misma fuerza, sentidos opuestos (3ª ley)',w/2,h*.1,COL.muted,'center',11)}
-  function set(k){const p=P[k];m1.value=Math.log10(p[0]);m2.value=Math.log10(p[1]);r.value=Math.log10(p[2]);upd()}
-  $$('#g-presets button').forEach(b=>b.onclick=()=>set(b.dataset.p));[m1,m2,r].forEach(i=>i.oninput=upd);o.onfit=draw;redraws.push(draw);set('tl');
+  let F=1,D={a:24,b:22,r:8.6,F:20};
+  const dist=x=>x>=1000?sci(x/1000)+' km':sci(x)+' m';
+  function upd(keep){const a=10**+m1.value,b=10**+m2.value,d=10**+r.value;F=G*a*b/(d*d);
+    $('#o-m1').textContent=sci(a)+' kg';$('#o-m2').textContent=sci(b)+' kg';$('#o-r').textContent=dist(d);
+    $('#g-F').textContent=sci(F)+' N';$('#g-W').textContent=sci(F/9.81)+' kg';$('#g-F2').textContent=sci(F/4)+' N';if(!keep)setP('')}
+  const setP=seg($('#g-presets'),k=>{const p=P[k];setR(m1,Math.log10(p[0]));setR(m2,Math.log10(p[1]));setR(r,Math.log10(p[2]));upd(true)});
+  [m1,m2,r].forEach(i=>i.addEventListener('input',()=>upd()));
+  const geo=()=>{const w=o.w,h=o.h,cx=w/2,sep=w*.22+(D.r+1)/13*w*.56,R=l=>5+Math.max(0,l)/31*h*.16;return{w,h,cx,cy:h*.44,sep,x1:cx-sep/2,x2:cx+sep/2,r1:R(D.a),r2:R(D.b)}};
+  const on=(p,g)=>Math.abs(p[1]-g.cy)<Math.max(g.r1,g.r2)+22&&(Math.abs(p[0]-g.x1)<g.r1+18||Math.abs(p[0]-g.x2)<g.r2+18);
+  interact(o,{down:p=>on(p,geo())?1:null,move:p=>{const g=geo();const sep=clamp(2*Math.abs(p[0]-g.cx),g.w*.22,g.w*.78);setR(r,clamp((sep-g.w*.22)/(g.w*.56)*13-1,-1,12));D.r=+r.value;upd()},hover:p=>on(p,geo())?'ew-resize':''});
+  onFrame('gviz',dt=>{D.a=ease(D.a,+m1.value,dt);D.b=ease(D.b,+m2.value,dt);if(!o.active)D.r=ease(D.r,+r.value,dt);D.F=ease(D.F,Math.log10(F),dt);
+    const g=geo(),{w,h}=g;ctx.clearRect(0,0,w,h);
+    const yd=h*.84;ctx.strokeStyle=COL.muted;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(g.x1,yd);ctx.lineTo(g.x2,yd);ctx.moveTo(g.x1,yd-5);ctx.lineTo(g.x1,yd+5);ctx.moveTo(g.x2,yd-5);ctx.lineTo(g.x2,yd+5);ctx.stroke();
+    pill(ctx,'r = '+dist(10**D.r),g.cx,yd,COL.text);
+    disc(ctx,g.x1,g.cy,g.r1,COL.sun);disc(ctx,g.x2,g.cy,g.r2,COL.ray);
+    const gap=Math.max(0,g.sep-g.r1-g.r2-28),Lr=clamp((D.F+35)/90,0,1)*Math.min(w*.18,gap/2);
+    if(Lr>4){arrow(ctx,g.x1+g.r1+8,g.cy,g.x1+g.r1+8+Lr,g.cy,COL.mass,2.5);arrow(ctx,g.x2-g.r2-8,g.cy,g.x2-g.r2-8-Lr,g.cy,COL.mass,2.5)}
+    label(ctx,'m₁',g.x1,g.cy-g.r1-16,COL.text,'center',12);label(ctx,'m₂',g.x2,g.cy-g.r2-16,COL.text,'center',12);
+    label(ctx,'F = '+sci(10**D.F)+' N',w-12,14,COL.mass,'right',12);
+    hint(o,dt,'Arrastrá un cuerpo para cambiar la distancia')});
+  $('#g-presets [data-v="tl"]').click();
 })();
 
-/* ---------- 2. Simulador de órbitas ---------- */
-(()=>{const o=cv('orbit'),ctx=o.ctx;const GM0=.24;let GM=GM0,P=[],drag=null,ci=0,hits=0,outs=0;
-  const cols=['ray','ok','mass','sun','text'];
-  const S=()=>Math.min(o.w,o.h)*.46;const toW=(x,y)=>[(x-o.w/2)/S(),(y-o.h/2)/S()];const toS=(x,y)=>[o.w/2+x*S(),o.h/2+y*S()];
-  function add(x,y,vx,vy){P.push({x,y,vx,vy,c:cols[ci++%cols.length],tr:[]});if(P.length>14)P.shift()}
-  function circ(r,a,f=1){const v=Math.sqrt(GM/r)*f;add(r*Math.cos(a),r*Math.sin(a),-v*Math.sin(a),v*Math.cos(a))}
-  function reset(){P=[];hits=0;outs=0;circ(.42,0);circ(.8,Math.PI,.78)}
-  reset();
-  $('#o-circ').onclick=()=>circ(.3+Math.random()*.6,Math.random()*6.28);
-  $('#o-esc').onclick=()=>circ(.5,Math.random()*6.28,Math.SQRT2*1.01);
-  $('#o-clear').onclick=()=>{P=[];hits=0;outs=0};
-  const mi=$('#o-M');mi.oninput=()=>{GM=GM0*+mi.value;$('#o-Mv').textContent=nf(+mi.value,2)+' ×'};mi.oninput();
-  o.el.addEventListener('pointerdown',e=>{o.el.setPointerCapture(e.pointerId);const p=pos(o,e);drag={a:p,b:p}});
-  o.el.addEventListener('pointermove',e=>{if(drag)drag.b=pos(o,e)});
-  o.el.addEventListener('pointerup',()=>{if(!drag)return;const[a,b]=[toW(...drag.a),toW(...drag.b)];const r=Math.hypot(a[0],a[1]);if(r>.07)add(a[0],a[1],(b[0]-a[0])*1.3,(b[1]-a[1])*1.3);drag=null});
-  onFrame('orbit',dt=>{const n=20,h=dt/n;
-    for(const p of P){for(let i=0;i<n;i++){let r2=p.x*p.x+p.y*p.y,r=Math.sqrt(r2),k=-GM/(r2*r);p.vx+=k*p.x*h/2;p.vy+=k*p.y*h/2;p.x+=p.vx*h;p.y+=p.vy*h;r2=p.x*p.x+p.y*p.y;r=Math.sqrt(r2);k=-GM/(r2*r);p.vx+=k*p.x*h/2;p.vy+=k*p.y*h/2}
-      p.tr.push([p.x,p.y]);if(p.tr.length>420)p.tr.shift()}
-    P=P.filter(p=>{const r=Math.hypot(p.x,p.y);if(r<.055){hits++;return false}if(r>3.5){outs++;return false}return true});
-    const w=o.w,hh=o.h;ctx.clearRect(0,0,w,hh);ctx.strokeStyle=COL.line;ctx.lineWidth=1;for(let r=.25;r<1.6;r+=.25){const s=toS(0,0);ctx.beginPath();ctx.arc(s[0],s[1],r*S(),0,7);ctx.stroke()}
-    const s0=toS(0,0);glow(ctx,s0[0],s0[1],6+5*Math.sqrt(GM/GM0),COL.sun);
-    for(const p of P){ctx.strokeStyle=rgba(COL[p.c],.6);ctx.lineWidth=1.5;ctx.beginPath();p.tr.forEach((q,i)=>{const s=toS(q[0],q[1]);i?ctx.lineTo(s[0],s[1]):ctx.moveTo(s[0],s[1])});ctx.stroke();const s=toS(p.x,p.y);ctx.fillStyle=COL[p.c];ctx.beginPath();ctx.arc(s[0],s[1],4.5,0,7);ctx.fill()}
-    if(drag){glow(ctx,drag.a[0],drag.a[1],4,COL.ray);arrow(ctx,drag.a[0],drag.a[1],drag.b[0],drag.b[1],COL.sun,2);const[a]=[toW(...drag.a)];const r=Math.hypot(a[0],a[1]);const vc=Math.sqrt(GM/r),v=Math.hypot(drag.b[0]-drag.a[0],drag.b[1]-drag.a[1])/S()*1.3;label(ctx,'v = '+nf(v/vc,2)+' × v circular',drag.b[0]+8,drag.b[1]-10,COL.sun)}
-    else if(!P.length)label(ctx,'Arrastrá para lanzar un planeta',w/2,hh*.12,COL.muted,'center');
-    $('#o-n').textContent=P.length;$('#o-hit').textContent=hits;$('#o-out').textContent=outs});
+/* ---------- 2. Reloj de luz ---------- */
+(()=>{const o=cv('clock'),ctx=o.ctx,bi=$('#c-b');let bt=+bi.value,b=bt,pr=0,pm=0,xm=0,tr=[],nR=0,nM=0,fR=0,fM=0,run=true,lastX=0;
+  function upd(){bt=+bi.value;const g=1/Math.sqrt(1-bt*bt);$('#c-bv').textContent=nf(bt,2)+' c · '+Math.round(bt*299792).toLocaleString('es-AR')+' km/s';$('#c-g').textContent=nf(g,4);$('#c-y').textContent=nf(g,3)+' años en la Tierra';$('#c-l').textContent=nf(100/g,3)+' m'}
+  const setS=seg($('#c-presets'),v=>{setR(bi,+v);upd()});bi.addEventListener('input',()=>{upd();setS(String(+bi.value))});upd();setS('0.8');
+  playBtn($('#c-play'),()=>run,v=>run=v);$('#c-reset').onclick=()=>{pr=pm=0;nR=nM=0;tr=[]};
+  const tri=p=>{p%=2;return p<1?p:2-p};
+  function mirror(x,y,flash){if(flash>0){ctx.fillStyle=rgba(COL.sun,.35*flash);ctx.fillRect(x-30,y-6,60,12)}ctx.strokeStyle=COL.text;ctx.lineWidth=3;ctx.lineCap='butt';ctx.beginPath();ctx.moveTo(x-22,y);ctx.lineTo(x+22,y);ctx.stroke()}
+  onFrame('clock',dt=>{b=ease(b,bt,dt,2.5);const g=1/Math.sqrt(1-b*b),w=o.w,h=o.h,lane=h/2,L=Math.max(30,lane-66),cc=L*1.5,x0=90,span=Math.max(80,w-x0-60);
+    if(run){pr+=cc*dt/L;pm+=cc*dt/(g*L);xm+=b*cc*dt}
+    const k1=Math.floor(pr/2),k2=Math.floor(pm/2);if(k1>nR){nR=k1;fR=1}if(k2>nM){nM=k2;fM=1}fR=Math.max(0,fR-dt*4);fM=Math.max(0,fM-dt*4);
+    ctx.clearRect(0,0,w,h);ctx.strokeStyle=COL.line;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,lane+.5);ctx.lineTo(w,lane+.5);ctx.stroke();
+    const t1=36;label(ctx,'TIERRA · reloj en reposo',14,14,COL.muted);label(ctx,String(nR),w-14,18,COL.sun,'right',22);label(ctx,'tics',w-14,38,COL.muted,'right',10);
+    ctx.setLineDash([2,4]);ctx.strokeStyle=rgba(COL.sun,.35);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x0-30,t1);ctx.lineTo(x0-30,t1+L);ctx.stroke();ctx.setLineDash([]);
+    mirror(x0-30,t1,0);mirror(x0-30,t1+L,fR);disc(ctx,x0-30,t1+L-tri(pr)*L,3.5,COL.sun);
+    const t2=lane+36,xp=x0+(xm%span);if(xp<lastX)tr=[];lastX=xp;const al=clamp(Math.min(xp-x0,x0+span-xp)/30,.12,1);
+    label(ctx,'NAVE · v = '+nf(b,2)+'c, vista desde la Tierra',14,lane+14,COL.muted);label(ctx,String(nM),w-14,lane+18,COL.ray,'right',22);label(ctx,'tics',w-14,lane+38,COL.muted,'right',10);
+    const yp=t2+L-tri(pm)*L;tr.push([xp,yp]);if(tr.length>500)tr.shift();ctx.globalAlpha=al;trail(ctx,tr,COL.ray,1.5,.75);
+    ctx.strokeStyle=COL.line;ctx.lineWidth=1;ctx.strokeRect(xp-34,t2-12,68,L+24);mirror(xp,t2,0);mirror(xp,t2+L,fM);disc(ctx,xp,yp,3.5,COL.ray);
+    if(b>.02)arrow(ctx,xp-20,t2-22,xp-20+16+b*28,t2-22,COL.muted,1.5);ctx.globalAlpha=1});
 })();
 
-/* ---------- 3. Reloj de luz ---------- */
-(()=>{const o=cv('clock'),ctx=o.ctx,bi=$('#c-b');let beta=.8,t=0,trail=[],lastX=0;
-  function upd(){beta=+bi.value;const g=1/Math.sqrt(1-beta*beta);$('#c-bv').textContent=nf(beta,2)+' c ('+Math.round(beta*299792).toLocaleString('es-AR')+' km/s)';
-    $('#c-g').textContent=g.toFixed(3).replace('.',',');$('#c-y').textContent=nf(g,3)+' años en la Tierra';$('#c-l').textContent=nf(100/g,3)+' m';t=0;trail=[]}
-  bi.oninput=upd;upd();
-  function clockAt(x,top,L,frac,col){ctx.strokeStyle=COL.text;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-22,top);ctx.lineTo(x+22,top);ctx.moveTo(x-22,top+L);ctx.lineTo(x+22,top+L);ctx.stroke();glow(ctx,x,top+L-frac*L,3.5,col)}
-  onFrame('clock',dt=>{t+=dt;const w=o.w,h=o.h,lane=h/2,L=Math.max(30,lane-62),cc=L*1.6,g=1/Math.sqrt(1-beta*beta);ctx.clearRect(0,0,w,h);
-    const tri=p=>{p%=2;return p<1?p:2-p};
-    // reposo
-    const t1=24,t2=lane+24;label(ctx,'RELOJ EN LA TIERRA (quieto)',14,12,COL.muted);
-    const ticks1=Math.floor(t*cc/(2*L));clockAt(60,t1,L,tri(t*cc/L),COL.sun);label(ctx,ticks1+' tics',100,t1+L/2,COL.sun,'left',14);
-    // movimiento
-    label(ctx,'RELOJ EN LA NAVE, visto desde la Tierra (v = '+nf(beta,2)+'c)',14,lane+12,COL.muted);
-    const span=Math.max(60,w-120),xm=60+((beta*cc*t)%span);if(xm<lastX)trail=[];lastX=xm;
-    const fy=tri(t*cc/(g*L)),ym=t2+L-fy*L;trail.push([xm,ym]);if(trail.length>600)trail.shift();
-    ctx.strokeStyle=rgba(COL.ray,.7);ctx.lineWidth=1.5;ctx.beginPath();trail.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.stroke();
-    clockAt(xm,t2,L,fy,COL.ray);const ticks2=Math.floor(t*cc/(2*L*g));label(ctx,ticks2+' tics',Math.min(w-60,xm+30),t2+L/2,COL.ray,'left',14);
-    ctx.strokeStyle=COL.line;ctx.beginPath();ctx.moveTo(0,lane);ctx.lineTo(w,lane);ctx.stroke()});
-})();
-
-/* ---------- 4. Lámina del espacio-tiempo ---------- */
-(()=>{const o=cv('sheet'),ctx=o.ctx,mi=$('#s-m');let M=[{x:0,y:0,m:5}],Pt=[],mode='m';const K=.06,S2=.015;
-  mi.oninput=()=>$('#s-mv').textContent=mi.value;mi.oninput();
-  const setMode=m=>{mode=m;$('#s-mode-m').setAttribute('aria-pressed',m==='m');$('#s-mode-p').setAttribute('aria-pressed',m==='p')};
-  $('#s-mode-m').onclick=()=>setMode('m');$('#s-mode-p').onclick=()=>setMode('p');$('#s-clear').onclick=()=>{M=[];Pt=[]};
+/* ---------- 3. Lámina del espacio-tiempo ---------- */
+(()=>{const o=cv('sheet'),ctx=o.ctx;let M=[{x:0,y:0,m:0,mt:5}],Pt=[],size=4;const K=.06,S2=.015;
+  seg($('#s-size'),v=>size=+v)('4');
   const z=(x,y)=>{let s=0;for(const q of M){const dx=x-q.x,dy=y-q.y;s-=q.m*K/Math.sqrt(dx*dx+dy*dy+S2)}return s};
-  const pr=(x,y)=>{const ax=o.w*.44,ay=o.h*.3,cy=o.h*.36;return[o.w/2+x*ax,cy+y*ay+Math.min(o.h*.55,-z(x,y)*o.h*.11)]};
-  o.el.addEventListener('pointerdown',e=>{const[px,py]=pos(o,e);const x=(px-o.w/2)/(o.w*.44),y=(py-o.h*.36)/(o.h*.3);if(Math.abs(x)>1.05||Math.abs(y)>1.05)return;
-    if(mode==='m'){M.push({x,y,m:+mi.value});if(M.length>6)M.shift()}else{Pt.push({x:-1,y,vx:.55,vy:0,tr:[]});if(Pt.length>8)Pt.shift()}});
-  onFrame('sheet',dt=>{const n=12,h=dt/n;
-    for(const p of Pt){for(let i=0;i<n;i++){let ax=0,ay=0;for(const q of M){const dx=p.x-q.x,dy=p.y-q.y,d2=dx*dx+dy*dy+S2,k=q.m*K*.5/(d2*Math.sqrt(d2));ax-=k*dx;ay-=k*dy}p.vx+=ax*h;p.vy+=ay*h;p.x+=p.vx*h;p.y+=p.vy*h}
-      p.tr.push([p.x,p.y]);if(p.tr.length>260)p.tr.shift()}
-    Pt=Pt.filter(p=>Math.abs(p.x)<1.4&&Math.abs(p.y)<1.4&&!M.some(q=>Math.hypot(p.x-q.x,p.y-q.y)<.035));
-    const w=o.w;ctx.clearRect(0,0,w,o.h);const N=22,R=40;ctx.lineWidth=1;
-    for(let k=0;k<=N;k++){for(const dir of[0,1]){ctx.beginPath();for(let j=0;j<=R;j++){const a=-1+2*k/N,b=-1+2*j/R;const[x,y]=dir?[a,b]:[b,a];const s=pr(x,y);j?ctx.lineTo(s[0],s[1]):ctx.moveTo(s[0],s[1])}ctx.strokeStyle=rgba(COL.ray,.45);ctx.stroke()}}
-    for(const q of M){const s=pr(q.x,q.y);glow(ctx,s[0],s[1]-4-q.m,4+q.m*1.3,COL.sun)}
-    for(const p of Pt){ctx.strokeStyle=COL.mass;ctx.lineWidth=2;ctx.beginPath();p.tr.forEach((q,i)=>{const s=pr(q[0],q[1]);i?ctx.lineTo(s[0],s[1]):ctx.moveTo(s[0],s[1])});ctx.stroke();const s=pr(p.x,p.y);glow(ctx,s[0],s[1],3,COL.mass)}
-    label(ctx,mode==='m'?'Tocá la malla para agregar una masa':'Tocá para lanzar una partícula desde la izquierda',w/2,14,COL.muted,'center')});
-  // dilatación gravitacional
-  const B={earth:[5.972e24,6.371e6],sun:[1.989e30,6.957e8],wd:[2.02e30,5.84e6],ns:[2.785e30,1.2e4],bh:null};
-  const sel=$('#td-sel');function td(){const k=sel.value;const f=k==='bh'?Math.sqrt(1-1/1.5):Math.sqrt(1-2*G*B[k][0]/(B[k][1]*c*c));const yr=365.25*86400,diff=(1-f)*yr;
-    let a;if(f>.999)a='1 año − '+(diff<1?nf(diff*1000,3)+' ms':nf(diff,3)+' s');else a=nf(f*12,3)+' meses';
-    $('#td-a').textContent=a;$('#td-d').textContent=diff<1?nf(diff*1000,3)+' milisegundos':diff<3600?nf(diff,3)+' segundos':diff<86400*2?nf(diff/3600,3)+' horas':nf(diff/86400,3)+' días'}
-  sel.onchange=td;td();
+  const gm=()=>({ax:o.w*.44,ay:o.h*.3,cy:o.h*.34});
+  const dep=(x,y)=>Math.min(o.h*.55,-z(x,y)*o.h*.11);
+  const pr=(x,y)=>{const g=gm();return[o.w/2+x*g.ax,g.cy+y*g.ay+dep(x,y)]};
+  const un=(px,py)=>{const g=gm();let x=(px-o.w/2)/g.ax,y=(py-g.cy)/g.ay;for(let i=0;i<6;i++)y=.5*y+.5*(py-g.cy-dep(x,y))/g.ay;return[x,y]};
+  const mc=q=>{const s=pr(q.x,q.y);return[s[0],s[1]-4-q.m,6+q.m*1.4]};
+  const hitM=p=>M.find(q=>{if(q.mt<=0)return false;const m=mc(q);return Math.hypot(p[0]-m[0],p[1]-m[1])<m[2]+10});
+  function acc(x,y){let ax=0,ay=0;for(const q of M){const dx=x-q.x,dy=y-q.y,d2=dx*dx+dy*dy+S2,k=q.m*K*.5/(d2*Math.sqrt(d2));ax-=k*dx;ay-=k*dy}return[ax,ay]}
+  function step(p,h){const a=acc(p.x,p.y);p.vx+=a[0]*h;p.vy+=a[1]*h;p.x+=p.vx*h;p.y+=p.vy*h}
+  const launch=(x,y,vx,vy)=>{Pt.push({x,y,vx,vy,tr:[]});if(Pt.length>10)Pt.shift()};
+  $('#s-light').onclick=()=>launch(-1,(Math.random()-.5)*1.1,.75,0);
+  $('#s-clear').onclick=()=>{M.forEach(q=>q.mt=0);Pt=[]};
+  interact(o,{down:p=>{const q=hitM(p);if(q)return{q};const w0=un(...p);if(Math.abs(w0[0])>1.08||Math.abs(w0[1])>1.08)return null;return{n:p,w:w0,cur:p}},
+    move:(p,a)=>{if(a.q){const[x,y]=un(p[0],p[1]+4+a.q.m);a.q.x=clamp(x,-1,1);a.q.y=clamp(y,-1,1)}else a.cur=p},
+    up:(p,a)=>{if(a.q)return;const[x,y]=a.w;if(Math.hypot(p[0]-a.n[0],p[1]-a.n[1])<8){M.push({x,y,m:0,mt:size});const live=M.filter(q=>q.mt>0);if(live.length>5)live[0].mt=0}else{const w1=un(...p);launch(x,y,(w1[0]-x)*1.5,(w1[1]-y)*1.5)}},
+    hover:p=>hitM(p)?'grab':'crosshair'});
+  onFrame('sheet',dt=>{for(const q of M)q.m=ease(q.m,q.mt,dt,6);M=M.filter(q=>q.mt>0||q.m>.03);
+    const n=10,h=dt/n;for(const p of Pt){for(let i=0;i<n;i++)step(p,h);p.tr.push([p.x,p.y]);if(p.tr.length>240)p.tr.shift()}
+    Pt=Pt.filter(p=>Math.abs(p.x)<1.4&&Math.abs(p.y)<1.4&&!M.some(q=>q.m>.5&&Math.hypot(p.x-q.x,p.y-q.y)<.035));
+    const w=o.w;ctx.clearRect(0,0,w,o.h);const N=22,R=44;ctx.lineWidth=1;
+    for(let k=0;k<=N;k++)for(const dir of[0,1]){ctx.beginPath();for(let j=0;j<=R;j++){const a=-1+2*k/N,bb=-1+2*j/R,[x,y]=dir?[a,bb]:[bb,a],s=pr(x,y);j?ctx.lineTo(s[0],s[1]):ctx.moveTo(s[0],s[1])}ctx.strokeStyle=rgba(COL.ray,k%(N/2)===0?.7:.38);ctx.stroke()}
+    for(const p of Pt){trail(ctx,p.tr,COL.mass,2,.9,q=>pr(q[0],q[1]));const s=pr(p.x,p.y);disc(ctx,s[0],s[1],3,COL.mass,.25)}
+    for(const q of M){const m=mc(q);disc(ctx,m[0],m[1],4+q.m*1.4,COL.sun,.2)}
+    const a=o.active;if(a&&a.n){const d=Math.hypot(a.cur[0]-a.n[0],a.cur[1]-a.n[1]);if(d>8){const w1=un(...a.cur),p={x:a.w[0],y:a.w[1],vx:(w1[0]-a.w[0])*1.5,vy:(w1[1]-a.w[1])*1.5};
+      ctx.setLineDash([3,5]);ctx.strokeStyle=rgba(COL.mass,.8);ctx.lineWidth=1.5;ctx.beginPath();let s=pr(p.x,p.y);ctx.moveTo(s[0],s[1]);
+      for(let i=0;i<180;i++){for(let j=0;j<3;j++)step(p,1/180);if(Math.abs(p.x)>1.3||Math.abs(p.y)>1.3)break;s=pr(p.x,p.y);ctx.lineTo(s[0],s[1])}ctx.stroke();ctx.setLineDash([]);
+      disc(ctx,a.n[0],a.n[1],3.5,COL.mass,.25);arrow(ctx,a.n[0],a.n[1],a.cur[0],a.cur[1],COL.mass,1.5)}}
+    hint(o,dt,'Tocá: agregar masa · Arrastrá: lanzar partícula · Arrastrá una masa: moverla')});
 })();
 
-/* ---------- 5. Michelson-Morley ---------- */
-(()=>{const o=cv('mm'),ctx=o.ctx;let th=0,play=true,ether=true,v=30;const L=11,lam=5e-7;
-  const amp=()=>L*(v*1e3)**2/(lam*c*c);
-  const real=a=>.004*Math.sin(3*a+1)+.003*Math.sin(5*a+.4);
-  const N=a=>ether?amp()*Math.cos(2*a):real(a);
-  const vi=$('#mm-v');vi.oninput=()=>{v=+vi.value;$('#mm-vv').textContent=v+' km/s';$('#mm-exp').textContent=nf(2*amp(),2)+' franjas'};vi.oninput();
-  const sm=e=>{ether=e;$('#mm-e').setAttribute('aria-pressed',e);$('#mm-r').setAttribute('aria-pressed',!e)};$('#mm-e').onclick=()=>sm(true);$('#mm-r').onclick=()=>sm(false);
-  $('#mm-play').onclick=e=>{play=!play;e.currentTarget.setAttribute('aria-pressed',play)};
-  onFrame('mm',dt=>{if(play)th=(th+dt*.45)%(2*Math.PI);const w=o.w,h=o.h;ctx.clearRect(0,0,w,h);const narrow=w<520;
-    const A=narrow?{x:0,y:0,w:w,h:h*.5}:{x:0,y:0,w:w*.5,h:h},F=narrow?{x:12,y:h*.53,w:w-24,h:h*.16}:{x:w*.54,y:18,w:w*.43,h:h*.3},Gr=narrow?{x:12,y:h*.74,w:w-24,h:h*.24}:{x:w*.54,y:h*.46,w:w*.43,h:h*.48};
-    // viento de éter
-    ctx.globalAlpha=ether?.55:.15;for(let i=0;i<4;i++){const y=A.y+A.h*(.15+.23*i);arrow(ctx,A.x+A.w-10,y,A.x+A.w-60,y,COL.muted,1.2)}ctx.globalAlpha=1;
-    label(ctx,ether?'viento de éter (supuesto)':'no hay viento de éter',A.x+A.w-10,A.y+10,COL.muted,'right',11);
-    const cx=A.x+A.w/2,cy=A.y+A.h/2,R=Math.min(A.w,A.h)*.34;ctx.save();ctx.translate(cx,cy);ctx.rotate(th);
-    ctx.fillStyle=rgba(COL.ray,.08);ctx.strokeStyle=COL.line;ctx.beginPath();ctx.arc(0,0,R*1.35,0,7);ctx.fill();ctx.stroke();
-    ctx.strokeStyle=rgba(COL.sun,.8);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-R,0);ctx.lineTo(R,0);ctx.moveTo(0,0);ctx.lineTo(0,-R);ctx.moveTo(0,0);ctx.lineTo(0,R);ctx.stroke();
-    ctx.fillStyle=COL.sun;ctx.fillRect(-R-12,-8,14,16);ctx.fillStyle=COL.text;ctx.fillRect(R-2,-14,5,28);ctx.fillRect(-14,-R-2,28,5);ctx.fillStyle=COL.ray;ctx.fillRect(-7,R-4,14,14);
+/* ---------- 4. Michelson-Morley ---------- */
+(()=>{const o=cv('mm'),ctx=o.ctx;let th=.3,play=true,et=1,f=1,v=30,lay=null,dash=0;const L=11,lam=5e-7;
+  const amp=()=>L*(v*1e3)**2/(lam*c*c),real=a=>.004*Math.sin(3*a+1)+.003*Math.sin(5*a+.4),N=a=>f*amp()*Math.cos(2*a)+(1-f)*real(a);
+  const vi=$('#mm-v');vi.addEventListener('input',()=>{v=+vi.value;$('#mm-vv').textContent=v+' km/s';$('#mm-exp').textContent=nf(2*amp(),2)+' franjas'});vi.dispatchEvent(new Event('input'));
+  seg($('#mm-mode'),k=>et=k==='e'?1:0)('e');playBtn($('#mm-play'),()=>play,x=>play=x);
+  const inA=p=>lay&&Math.hypot(p[0]-lay.cx,p[1]-lay.cy)<lay.R*1.4;
+  interact(o,{down:p=>inA(p)?{a0:Math.atan2(p[1]-lay.cy,p[0]-lay.cx)-th}:null,move:(p,s)=>{th=Math.atan2(p[1]-lay.cy,p[0]-lay.cx)-s.a0},hover:p=>inA(p)?'grab':''});
+  onFrame('mm',dt=>{f=ease(f,et,dt,3);if(play&&!o.active)th+=dt*.4;th=(th%(2*Math.PI)+2*Math.PI)%(2*Math.PI);dash-=dt*40;
+    const w=o.w,h=o.h,nar=w<520;ctx.clearRect(0,0,w,h);
+    const A=nar?{x:0,y:0,w:w,h:h*.5}:{x:0,y:0,w:w*.5,h:h},F=nar?{x:12,y:h*.54,w:w-24,h:h*.14}:{x:w*.54,y:24,w:w*.43,h:h*.28},Gr=nar?{x:12,y:h*.76,w:w-24,h:h*.22}:{x:w*.54,y:h*.46,w:w*.43,h:h*.48};
+    const cx=A.x+A.w/2,cy=A.y+A.h/2+6,R=Math.min(A.w,A.h)*.33;lay={cx,cy,R};
+    ctx.globalAlpha=.15+.45*f;for(let i=0;i<4;i++){const y=A.y+A.h*(.16+.22*i);arrow(ctx,A.x+A.w-12,y,A.x+A.w-52,y,COL.muted,1.2)}ctx.globalAlpha=1;
+    label(ctx,f>.5?'viento de éter (supuesto)':'sin viento de éter',A.x+A.w-12,A.y+10,COL.muted,'right',10);
+    ctx.save();ctx.translate(cx,cy);ctx.rotate(th);
+    ctx.fillStyle=rgba(COL.ray,.07);ctx.strokeStyle=COL.line;ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,0,R*1.32,0,7);ctx.fill();ctx.stroke();
+    ctx.strokeStyle=rgba(COL.sun,.9);ctx.lineWidth=2;ctx.setLineDash([6,6]);ctx.lineDashOffset=dash;ctx.beginPath();ctx.moveTo(-R,0);ctx.lineTo(R,0);ctx.moveTo(0,0);ctx.lineTo(0,-R);ctx.moveTo(0,0);ctx.lineTo(0,R);ctx.stroke();ctx.setLineDash([]);ctx.lineDashOffset=0;
+    ctx.fillStyle=COL.sun;ctx.fillRect(-R-14,-8,14,16);ctx.fillStyle=COL.text;ctx.fillRect(R-1,-14,5,28);ctx.fillRect(-14,-R-4,28,5);ctx.fillStyle=COL.ray;ctx.fillRect(-7,R-2,14,12);
     ctx.save();ctx.rotate(-Math.PI/4);ctx.fillStyle=rgba(COL.text,.7);ctx.fillRect(-14,-2,28,4);ctx.restore();ctx.restore();
     label(ctx,'θ = '+Math.round(th*180/Math.PI)+'°',A.x+10,A.y+A.h-12,COL.text,'left',12);
-    // franjas
-    const n=N(th),P=F.w/5;for(let x=0;x<F.w;x+=2){const I=Math.cos(Math.PI*((x-F.w/2)/P-n))**2;ctx.fillStyle=rgba(COL.ray,I*.95);ctx.fillRect(F.x+x,F.y,2,F.h)}
-    ctx.strokeStyle=COL.sun;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(F.x+F.w/2,F.y-4);ctx.lineTo(F.x+F.w/2,F.y+F.h+4);ctx.stroke();ctx.setLineDash([]);
-    label(ctx,'corrimiento: '+(n>=0?'+':'')+n.toFixed(3).replace('.',',')+' franjas',F.x,F.y+F.h+11,COL.text,'left',11);
-    // gráfico
-    const ym=Math.max(.05,amp()*1.25),gx=a=>Gr.x+a/(2*Math.PI)*Gr.w,gy=val=>Gr.y+Gr.h/2-val/ym*Gr.h/2;
-    ctx.strokeStyle=COL.line;ctx.lineWidth=1;ctx.strokeRect(Gr.x,Gr.y,Gr.w,Gr.h);ctx.beginPath();ctx.moveTo(Gr.x,gy(0));ctx.lineTo(Gr.x+Gr.w,gy(0));ctx.stroke();
-    ctx.strokeStyle=COL.sun;ctx.setLineDash([5,4]);ctx.lineWidth=1.5;ctx.beginPath();for(let i=0;i<=120;i++){const a=i/120*2*Math.PI,val=amp()*Math.cos(2*a);i?ctx.lineTo(gx(a),gy(val)):ctx.moveTo(gx(a),gy(val))}ctx.stroke();ctx.setLineDash([]);
-    if(!ether){ctx.strokeStyle=COL.ray;ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<=120;i++){const a=i/120*2*Math.PI;i?ctx.lineTo(gx(a),gy(real(a))):ctx.moveTo(gx(a),gy(real(a)))}ctx.stroke()}
-    glow(ctx,gx(th),gy(n),3.5,ether?COL.sun:COL.ray);
-    label(ctx,'+'+nf(ym,2),Gr.x+4,Gr.y+9,COL.muted,'left',10);label(ctx,'−'+nf(ym,2),Gr.x+4,Gr.y+Gr.h-9,COL.muted,'left',10);
-    label(ctx,'- - predicción con éter',Gr.x+Gr.w-4,Gr.y+9,COL.sun,'right',10);if(!ether)label(ctx,'— medido',Gr.x+Gr.w-4,Gr.y+22,COL.ray,'right',10);
-    label(ctx,'ángulo de giro 0° → 360°',Gr.x+Gr.w/2,Gr.y+Gr.h-9,COL.muted,'center',10)});
+    const n=N(th),P=F.w/5;for(let x=0;x<F.w;x+=2){const I=Math.cos(Math.PI*((x-F.w/2)/P-n))**2;ctx.fillStyle=rgba(COL.ray,.08+I*.85);ctx.fillRect(F.x+x,F.y,2,F.h)}
+    ctx.strokeStyle=COL.sun;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(F.x+F.w/2,F.y-5);ctx.lineTo(F.x+F.w/2,F.y+F.h+5);ctx.stroke();
+    label(ctx,'FRANJAS DE INTERFERENCIA',F.x,F.y-12,COL.muted,'left',10);label(ctx,(n>=0?'+':'')+n.toFixed(3).replace('.',',')+' franjas',F.x+F.w,F.y+F.h+12,COL.text,'right',11);
+    const ym=Math.max(.05,amp()*1.3),gx=a=>Gr.x+a/(2*Math.PI)*Gr.w,gy=val=>Gr.y+Gr.h/2-val/ym*Gr.h/2;
+    ctx.strokeStyle=COL.line;ctx.lineWidth=1;ctx.strokeRect(Gr.x+.5,Gr.y+.5,Gr.w,Gr.h);ctx.beginPath();ctx.moveTo(Gr.x,gy(0));ctx.lineTo(Gr.x+Gr.w,gy(0));ctx.stroke();
+    ctx.strokeStyle=rgba(COL.sun,.55);ctx.setLineDash([4,4]);ctx.lineWidth=1.5;ctx.beginPath();for(let i=0;i<=120;i++){const a=i/120*2*Math.PI;i?ctx.lineTo(gx(a),gy(amp()*Math.cos(2*a))):ctx.moveTo(gx(a),gy(amp()*Math.cos(2*a)))}ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle=f>.5?COL.sun:COL.ray;ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<=120;i++){const a=i/120*2*Math.PI;i?ctx.lineTo(gx(a),gy(N(a))):ctx.moveTo(gx(a),gy(N(a)))}ctx.stroke();
+    disc(ctx,gx(th),gy(n),4,f>.5?COL.sun:COL.ray,.25);
+    label(ctx,'+'+nf(ym,2),Gr.x+5,Gr.y+10,COL.muted,'left',10);label(ctx,'−'+nf(ym,2),Gr.x+5,Gr.y+Gr.h-10,COL.muted,'left',10);label(ctx,'giro 0° → 360°',Gr.x+Gr.w-5,Gr.y+Gr.h-10,COL.muted,'right',10);
+    hint(o,dt,'Arrastrá el aparato para girarlo')});
+})();
+
+/* ---------- 5. Mercurio ---------- */
+(()=>{const o=cv('merc'),ctx=o.ctx;const GMs=1.32712e20,a=5.7909e10,e=.2056,Tday=87.969,dphi=6*Math.PI*GMs/(c*c*a*(1-e*e)),perCent=dphi*(36525/Tday)*206264.806;
+  $('#m-gr').textContent=nf(perCent,4)+'″ / siglo';let X=1e5,Mn=0,om=0,orbits=0,tr=[],peri=[],run=true;const Tsim=2.4;
+  seg($('#m-x'),v=>X=10**+v)('5');playBtn($('#m-play'),()=>run,v=>run=v);$('#m-reset').onclick=()=>{Mn=0;om=0;orbits=0;tr=[];peri=[]};
+  onFrame('merc',dt=>{const w=o.w,h=o.h,Ap=Math.min(w,h)*.44/(1+e),cx=w/2,cy=h/2;
+    if(run){Mn+=2*Math.PI*dt/Tsim;om+=dphi*X*dt/Tsim;const k=Math.floor(Mn/(2*Math.PI));if(k>orbits){orbits=k;peri.push(om);if(peri.length>400)peri.shift()}}
+    const Mm=Mn%(2*Math.PI);let E=Mm;for(let i=0;i<8;i++)E-=(E-e*Math.sin(E)-Mm)/(1-e*Math.cos(E));
+    const nu=2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2),Math.sqrt(1-e)*Math.cos(E/2)),r=Ap*(1-e*Math.cos(E));
+    const px=cx+r*Math.cos(nu+om),py=cy-r*Math.sin(nu+om);if(run){tr.push([px,py]);if(tr.length>1800)tr.shift()}
+    ctx.clearRect(0,0,w,h);trail(ctx,tr,COL.ray,1,.55);
+    const rp=Ap*(1-e);for(const q of peri)disc(ctx,cx+rp*Math.cos(q),cy-rp*Math.sin(q),1.6,COL.mass,0);
+    ctx.strokeStyle=COL.line;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+rp*1.2,cy);ctx.stroke();
+    if(om>0){ctx.strokeStyle=COL.mass;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,rp*.55,0,-Math.min(om,6.28),true);ctx.stroke()}
+    const pp=[cx+rp*Math.cos(om),cy-rp*Math.sin(om)];ctx.setLineDash([3,4]);ctx.strokeStyle=COL.mass;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(pp[0],pp[1]);ctx.stroke();ctx.setLineDash([]);
+    label(ctx,'perihelio',pp[0]+8,pp[1]-10,COL.mass);disc(ctx,cx,cy,7,COL.sun);disc(ctx,px,py,3.5,COL.ray);
+    label(ctx,'giro acumulado (exagerado): '+nf(om*180/Math.PI,3)+'°',12,14,COL.muted);
+    $('#m-c').textContent=nf(orbits/(36525/Tday),3)});
 })();
 
 /* ---------- 6. Eddington ---------- */
-(()=>{const o=cv('edd'),ctx=o.ctx,oc=cv('eddc'),cc2=oc.ctx,bi=$('#e-b');let b=1;const A0=4*G*1.989e30/(c*c*6.957e8)*206264.806;// ″ en el borde
-  function upd(){b=+bi.value;$('#e-bv').textContent=nf(b,2)+' radios solares';$('#e-gr').textContent=nf(A0/b,3)+'″';$('#e-nw').textContent=nf(A0/2/b,3)+'″';drawC()}
-  function drawC(){const w=oc.w,h=oc.h,ctx=cc2;ctx.clearRect(0,0,w,h);const L=38,Rt=w-10,T=10,B=h-24,X=x=>L+(x-1)/9*(Rt-L),Y=y=>B-y/2.4*(B-T);
-    ctx.strokeStyle=COL.line;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(L,T);ctx.lineTo(L,B);ctx.lineTo(Rt,B);ctx.stroke();
-    for(const y of[0,1,2]){label(ctx,y+'″',L-6,Y(y),COL.muted,'right',10)}for(const x of[1,4,7,10])label(ctx,x+' R☉',X(x),B+12,COL.muted,'center',10);
-    const curve=(k,col,dash)=>{ctx.strokeStyle=col;ctx.setLineDash(dash);ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<=90;i++){const x=1+9*i/90;i?ctx.lineTo(X(x),Y(k/x)):ctx.moveTo(X(x),Y(k/x))}ctx.stroke();ctx.setLineDash([])};
-    curve(A0,COL.sun,[]);curve(A0/2,COL.muted,[5,4]);
-    const pt=(v,e,col,t,dx)=>{ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(X(1)+dx,Y(v-e));ctx.lineTo(X(1)+dx,Y(v+e));ctx.stroke();ctx.fillStyle=col;ctx.beginPath();ctx.arc(X(1)+dx,Y(v),3.5,0,7);ctx.fill();label(ctx,t,X(1)+dx+8,Y(v),col,'left',10)};
-    pt(1.98,.12,COL.ray,'Sobral 1,98″',6);pt(1.61,.30,COL.ok,'Príncipe 1,61″',30);
-    ctx.strokeStyle=rgba(COL.text,.4);ctx.beginPath();ctx.moveTo(X(b),T);ctx.lineTo(X(b),B);ctx.stroke();
-    label(ctx,'Einstein',X(5.2),Y(A0/5.2)-10,COL.sun,'left',10);label(ctx,'Newton',X(7),Y(A0/2/7)+10,COL.muted,'left',10)}
-  bi.oninput=upd;oc.onfit=drawC;redraws.push(drawC);upd();
-  let t=0;onFrame('edd',dt=>{t+=dt;const w=o.w,h=o.h;ctx.clearRect(0,0,w,h);const cy=h*.62,cx=w*.5,Rs=h*.05,E=[30,cy];
-    const P=[cx,cy-b*Rs];const alpha=A0/b/206264.806*12000;
-    const d=[P[0]-E[0],P[1]-E[1]],dl=Math.hypot(...d),u=[d[0]/dl,d[1]/dl];
-    const rot=(v,a)=>[v[0]*Math.cos(a)-v[1]*Math.sin(a),v[0]*Math.sin(a)+v[1]*Math.cos(a)];
-    const ur=rot(u,alpha);const k=(w-40-P[0])/ur[0];const S=[P[0]+ur[0]*k,P[1]+ur[1]*k];const k2=(w-40-E[0])/u[0];const Ap=[E[0]+u[0]*k2,E[1]+u[1]*k2];
-    // estrellas fondo
-    ctx.fillStyle=rgba(COL.text,.28);for(let i=0;i<40;i++){const x=(i*97.3)%w,y=(i*53.7)%(h*.9);ctx.fillRect(x,y,1.2,1.2)}
+(()=>{const o=cv('edd'),ctx=o.ctx,oc=cv('eddc'),c2=oc.ctx,bi=$('#e-b');let bt=1,b=1,t=0;const A0=4*G*1.989e30/(c*c*6.957e8)*206264.806;
+  function upd(){bt=+bi.value;$('#e-bv').textContent=nf(bt,2)+' radios solares';$('#e-gr').textContent=nf(A0/bt,3)+'″';$('#e-nw').textContent=nf(A0/2/bt,3)+'″'}
+  bi.addEventListener('input',upd);upd();
+  const geo=()=>({cx:o.w*.5,cy:o.h*.66,Rs:o.h*.05});
+  const setB=p=>{const g=geo();setR(bi,clamp((g.cy-p[1])/g.Rs,1,10));upd()};
+  interact(o,{down:p=>{setB(p);return 1},move:setB,hover:()=>'ns-resize'});
+  onFrame('edd',dt=>{t+=dt;b=ease(b,bt,dt,6);const w=o.w,h=o.h,{cx,cy,Rs}=geo(),E=[30,cy],P=[cx,cy-b*Rs],al=A0/b/206264.806*12000;ctx.clearRect(0,0,w,h);
+    const d=[P[0]-E[0],P[1]-E[1]],dl=Math.hypot(...d),u=[d[0]/dl,d[1]/dl],rot=(v,a)=>[v[0]*Math.cos(a)-v[1]*Math.sin(a),v[0]*Math.sin(a)+v[1]*Math.cos(a)];
+    const ur=rot(u,al),k1=(w-40-P[0])/ur[0],S=[P[0]+ur[0]*k1,P[1]+ur[1]*k1],k2=(w-40-E[0])/u[0],Ap=[E[0]+u[0]*k2,E[1]+u[1]*k2];
+    ctx.fillStyle=rgba(COL.text,.25);for(let i=0;i<46;i++)ctx.fillRect((i*97.3)%w,(i*53.7)%(h*.92),1.3,1.3);
+    ctx.strokeStyle=rgba(COL.sun,.22);ctx.lineWidth=8;ctx.beginPath();ctx.arc(cx,cy,Rs+5,0,7);ctx.stroke();
     ctx.fillStyle='#141413';ctx.beginPath();ctx.arc(cx,cy,Rs,0,7);ctx.fill();ctx.strokeStyle=COL.sun;ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,Rs,0,7);ctx.stroke();
-    ctx.strokeStyle=rgba(COL.sun,.25);ctx.lineWidth=6;ctx.beginPath();ctx.arc(cx,cy,Rs+4,0,7);ctx.stroke();label(ctx,'Sol eclipsado',cx,cy+Rs+16,COL.sun,'center',11);
+    label(ctx,'Sol eclipsado',cx,cy+Rs+18,COL.sun,'center');
     ctx.strokeStyle=COL.muted;ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(P[0],P[1]);ctx.lineTo(Ap[0],Ap[1]);ctx.stroke();ctx.setLineDash([]);
     ctx.strokeStyle=COL.ray;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(S[0],S[1]);ctx.lineTo(P[0],P[1]);ctx.lineTo(E[0],E[1]);ctx.stroke();
-    const f=(t*.35)%1;const ph=f<.5?[S[0]+(P[0]-S[0])*f*2,S[1]+(P[1]-S[1])*f*2]:[P[0]+(E[0]-P[0])*(f-.5)*2,P[1]+(E[1]-P[1])*(f-.5)*2];glow(ctx,ph[0],ph[1],2.5,COL.ray);
-    glow(ctx,S[0],S[1],4,COL.text);label(ctx,'posición real',S[0]-8,S[1]+14,COL.text,'right',11);
-    glow(ctx,Ap[0],Ap[1],4,COL.ray);label(ctx,'posición aparente',Ap[0]-8,Ap[1]-14,COL.ray,'right',11);
-    ctx.fillStyle=COL.ok;ctx.beginPath();ctx.arc(E[0],E[1],6,0,7);ctx.fill();label(ctx,'Tierra',E[0],E[1]+16,COL.ok,'center',11)});
+    for(let k=0;k<3;k++){const f=(t*.3+k/3)%1,ph=f<.5?[S[0]+(P[0]-S[0])*f*2,S[1]+(P[1]-S[1])*f*2]:[P[0]+(E[0]-P[0])*(f-.5)*2,P[1]+(E[1]-P[1])*(f-.5)*2];disc(ctx,ph[0],ph[1],2.5,COL.ray,.3)}
+    disc(ctx,S[0],S[1],4,COL.text,.15);label(ctx,'posición real',S[0]-10,S[1]+14,COL.text,'right');
+    disc(ctx,Ap[0],Ap[1],4,COL.ray,.2);label(ctx,'posición aparente',Ap[0]-10,Ap[1]-14,COL.ray,'right');
+    disc(ctx,E[0],E[1],6,COL.ok,.2);label(ctx,'Tierra',E[0],E[1]+18,COL.ok,'center');
+    hint(o,dt,'Arrastrá hacia arriba o abajo para alejar el rayo')});
+  onFrame('eddc',()=>{const w=oc.w,h=oc.h,ctx=c2;ctx.clearRect(0,0,w,h);const Lm=40,Rt=w-12,T=12,B=h-24,X=x=>Lm+(x-1)/9*(Rt-Lm),Y=y=>B-y/2.4*(B-T);
+    ctx.strokeStyle=COL.line;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(Lm,T);ctx.lineTo(Lm,B);ctx.lineTo(Rt,B);ctx.stroke();
+    for(const y of[0,1,2])label(ctx,y+'″',Lm-6,Y(y),COL.muted,'right',10);for(const x of[1,4,7,10])label(ctx,x+' R☉',X(x),B+13,COL.muted,'center',10);
+    const curve=(k,col,dash)=>{ctx.strokeStyle=col;ctx.setLineDash(dash);ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<=90;i++){const x=1+9*i/90;i?ctx.lineTo(X(x),Y(k/x)):ctx.moveTo(X(x),Y(k/x))}ctx.stroke();ctx.setLineDash([])};
+    curve(A0,COL.sun,[]);curve(A0/2,COL.muted,[5,4]);
+    const pt=(v,er,col,tx,dx)=>{ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(X(1)+dx,Y(v-er));ctx.lineTo(X(1)+dx,Y(v+er));ctx.stroke();disc(ctx,X(1)+dx,Y(v),3.5,col,0);label(ctx,tx,X(1)+dx+8,Y(v),col,'left',10)};
+    pt(1.98,.12,COL.ray,'Sobral 1,98″',6);pt(1.61,.30,COL.ok,'Príncipe 1,61″',30);
+    ctx.strokeStyle=rgba(COL.text,.35);ctx.beginPath();ctx.moveTo(X(b),T);ctx.lineTo(X(b),B);ctx.stroke();disc(ctx,X(b),Y(A0/b),4,COL.sun,.25);
+    label(ctx,'Einstein',X(5.3),Y(A0/5.3)-11,COL.sun,'left',10);label(ctx,'Newton',X(7.2),Y(A0/2/7.2)+11,COL.muted,'left',10)});
 })();
 
-/* ---------- 7. Mercurio ---------- */
-(()=>{const o=cv('merc'),ctx=o.ctx,xi=$('#m-x');const GMs=1.32712e20,a=5.7909e10,e=.2056,Tday=87.969;
-  const dphi=6*Math.PI*GMs/(c*c*a*(1-e*e)),perCent=dphi*(36525/Tday)*206264.806;$('#m-gr').textContent=nf(perCent,4)+'″ / siglo';
-  let X=1e5,t=0,om=0,orbits=0,tr=[],peris=[];const Tsim=2.2;
-  xi.oninput=()=>{X=10**+xi.value;$('#m-xv').innerHTML='× '+sci(X,2);t=0;om=0;orbits=0;tr=[]};xi.oninput();
-  onFrame('merc',dt=>{t+=dt;const w=o.w,h=o.h;ctx.clearRect(0,0,w,h);const Ap=Math.min(w,h)*.44/(1+e),cx=w*.5,cy=h*.5;
-    const Mn=2*Math.PI*(t/Tsim);const nOrb=Math.floor(t/Tsim);if(nOrb>orbits){orbits=nOrb;}om=dphi*X*(t/Tsim);
-    let E=Mn;for(let i=0;i<8;i++)E-=(E-e*Math.sin(E)-Mn)/(1-e*Math.cos(E));
-    const nu=2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2),Math.sqrt(1-e)*Math.cos(E/2)),r=Ap*(1-e*Math.cos(E));
-    const px=cx+r*Math.cos(nu+om),py=cy-r*Math.sin(nu+om);tr.push([px,py]);if(tr.length>2500)tr.shift();
-    ctx.strokeStyle=rgba(COL.ray,.4);ctx.lineWidth=1;ctx.beginPath();tr.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.stroke();
-    const rp=Ap*(1-e);const pp=[cx+rp*Math.cos(om),cy-rp*Math.sin(om)];
-    ctx.strokeStyle=COL.mass;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(pp[0],pp[1]);ctx.stroke();ctx.setLineDash([]);
-    ctx.strokeStyle=COL.muted;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+rp*1.15,cy);ctx.stroke();
-    label(ctx,'perihelio',pp[0]+6,pp[1]-10,COL.mass,'left',11);
-    glow(ctx,cx,cy,7,COL.sun);glow(ctx,px,py,3.5,COL.ray);
-    const cent=orbits/(36525/Tday);$('#m-c').textContent=nf(cent,3);
-    label(ctx,'giro acumulado (exagerado): '+nf(om*180/Math.PI,3)+'°',12,14,COL.muted,'left',11)});
+/* ---------- 7. GPS ---------- */
+(()=>{const o=cv('gps'),ctx=o.ctx,hi=$('#gps-h');const GMe=3.986004e14,Re=6.371e6,MAX=36000;let ht=20200,hd=20200,ang=0;
+  function upd(keep){ht=+hi.value;const r=Re+ht*1e3,v=Math.sqrt(GMe/r),sr=-(v*v/(2*c*c))*86400e6,gr=(GMe/(c*c))*(1/Re-1/r)*86400e6,net=sr+gr;
+    $('#gps-hv').textContent=ht.toLocaleString('es-AR')+' km';$('#gps-sr').textContent=nf(sr,3)+' µs';$('#gps-gr').textContent='+'+nf(gr,3)+' µs';
+    $('#gps-net').textContent=(net>0?'+':'')+nf(net,3)+' µs';$('#gps-err').textContent=nf(Math.abs(net)*1e-6*c/1000,3)+' km';if(!keep)setP('')}
+  const setP=seg($('#gps-p'),v=>{setR(hi,Math.min(MAX,+v));upd(true)});hi.addEventListener('input',()=>upd());upd(true);setP('20200');
+  const geo=()=>{const cx=o.w/2,cy=o.h/2,sc=Math.min(o.w,o.h)*.46/(Re+MAX*1e3);return{cx,cy,sc,re:Re*sc,ro:(Re+hd*1e3)*sc}};
+  const sat=g=>[g.cx+g.ro*Math.cos(ang),g.cy+g.ro*Math.sin(ang)];
+  const onSat=p=>{const g=geo(),s=sat(g);return Math.hypot(p[0]-s[0],p[1]-s[1])<22};
+  interact(o,{down:p=>onSat(p)?1:null,move:p=>{const g=geo();const r=Math.hypot(p[0]-g.cx,p[1]-g.cy)/g.sc;setR(hi,clamp(Math.round((r-Re)/1e5)*100,400,MAX));hd=+hi.value;upd()},hover:p=>onSat(p)?'grab':''});
+  onFrame('gps',dt=>{if(!o.active)hd=ease(hd,ht,dt,5);const g=geo(),r=Re+hd*1e3,T=2*Math.PI*Math.sqrt(r**3/GMe);if(!o.active)ang+=dt*2*Math.PI/6*((Re+20200e3)/r)**1.5;
+    const w=o.w,h=o.h;ctx.clearRect(0,0,w,h);
+    for(const [km,name] of [[400,'EEI'],[20200,'GPS'],[35786,'GEO']]){const rr=(Re+km*1e3)*g.sc;ctx.strokeStyle=COL.line;ctx.setLineDash([2,4]);ctx.lineWidth=1;ctx.beginPath();ctx.arc(g.cx,g.cy,rr,0,7);ctx.stroke();ctx.setLineDash([]);if(km>1000)label(ctx,name,g.cx+rr*.707+4,g.cy-rr*.707-4,COL.muted,'left',10)}
+    ctx.strokeStyle=rgba(COL.sun,.5);ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(g.cx,g.cy,g.ro,0,7);ctx.stroke();
+    ctx.fillStyle=COL.ray;ctx.beginPath();ctx.arc(g.cx,g.cy,g.re,0,7);ctx.fill();label(ctx,'Tierra',g.cx,g.cy,COL.bg,'center',11);
+    const s=sat(g);ctx.save();ctx.translate(s[0],s[1]);ctx.rotate(ang+Math.PI/2);ctx.fillStyle=COL.sun;ctx.fillRect(-4,-4,8,8);ctx.fillStyle=COL.text;ctx.fillRect(-15,-1.5,9,3);ctx.fillRect(6,-1.5,9,3);ctx.restore();
+    if(!o.touched){ctx.strokeStyle=rgba(COL.sun,.45);ctx.lineWidth=1;ctx.beginPath();ctx.arc(s[0],s[1],14+3*Math.sin(performance.now()/300),0,7);ctx.stroke()}
+    label(ctx,'Período: '+nf(T/3600,3)+' h',12,14,COL.muted);label(ctx,'Velocidad: '+nf(Math.sqrt(GMe/r)/1000,3)+' km/s',12,30,COL.muted);
+    hint(o,dt,'Arrastrá el satélite para cambiar la altura')});
 })();
 
-/* ---------- 8. GPS ---------- */
-(()=>{const o=cv('gps'),ctx=o.ctx,hi=$('#gps-h');const GMe=3.986004e14,Re=6.371e6;let hk=20200,t=0;
-  function upd(){hk=+hi.value;const r=Re+hk*1e3,v=Math.sqrt(GMe/r);const sr=-(v*v/(2*c*c))*86400e6,gr=(GMe/(c*c))*(1/Re-1/r)*86400e6,net=sr+gr;
-    $('#gps-hv').textContent=hk.toLocaleString('es-AR')+' km';$('#gps-sr').textContent=(sr>0?'+':'')+nf(sr,3)+' µs';$('#gps-gr').textContent='+'+nf(gr,3)+' µs';
-    $('#gps-net').textContent=(net>0?'+':'')+nf(net,3)+' µs';$('#gps-err').textContent=nf(Math.abs(net)*1e-6*c/1000,3)+' km'}
-  hi.oninput=upd;upd();
-  onFrame('gps',dt=>{const w=o.w,h=o.h;ctx.clearRect(0,0,w,h);const cx=w/2,cy=h/2,maxR=Math.min(w,h)*.45,sc=maxR/(Re+36000e3),re=Re*sc,ro=(Re+hk*1e3)*sc;
-    const r=Re+hk*1e3,T=2*Math.PI*Math.sqrt(r**3/GMe);t+=dt*600/T*2*Math.PI/10;// animación acelerada
-    ctx.fillStyle=COL.ray;ctx.beginPath();ctx.arc(cx,cy,re,0,7);ctx.fill();
-    ctx.strokeStyle=COL.line;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(cx,cy,ro,0,7);ctx.stroke();ctx.setLineDash([]);
-    const sx=cx+ro*Math.cos(t),sy=cy+ro*Math.sin(t);ctx.fillStyle=COL.sun;ctx.fillRect(sx-4,sy-4,8,8);ctx.fillStyle=COL.ray;ctx.fillRect(sx-12,sy-1.5,7,3);ctx.fillRect(sx+5,sy-1.5,7,3);
-    label(ctx,'Tierra',cx,cy,COL.bg,'center',11);label(ctx,'T = '+nf(T/3600,3)+' h',12,14,COL.muted,'left',11);
-    label(ctx,'v = '+nf(Math.sqrt(GMe/r)/1000,3)+' km/s',12,30,COL.muted,'left',11)});
+/* ---------- 8. Órbitas (anexo) ---------- */
+(()=>{const o=cv('orbit'),ctx=o.ctx;const GM0=.24;let GM=GM0,P=[],ci=0,hits=0,outs=0;const cols=['ray','ok','mass','sun','text'];
+  const S=()=>Math.min(o.w,o.h)*.46,toW=(x,y)=>[(x-o.w/2)/S(),(y-o.h/2)/S()],toS=(x,y)=>[o.w/2+x*S(),o.h/2+y*S()];
+  function add(x,y,vx,vy){P.push({x,y,vx,vy,c:cols[ci++%cols.length],tr:[]});if(P.length>14)P.shift()}
+  function circ(r,a,f=1){const v=Math.sqrt(GM/r)*f;add(r*Math.cos(a),r*Math.sin(a),-v*Math.sin(a),v*Math.cos(a))}
+  function step(p,h){let r2=p.x*p.x+p.y*p.y,r=Math.sqrt(r2),k=-GM/(r2*r);p.vx+=k*p.x*h/2;p.vy+=k*p.y*h/2;p.x+=p.vx*h;p.y+=p.vy*h;r2=p.x*p.x+p.y*p.y;r=Math.sqrt(r2);k=-GM/(r2*r);p.vx+=k*p.x*h/2;p.vy+=k*p.y*h/2}
+  circ(.42,0);circ(.8,Math.PI,.78);
+  $('#o-circ').onclick=()=>circ(.3+Math.random()*.6,Math.random()*6.28);$('#o-clear').onclick=()=>{P=[];hits=0;outs=0};
+  const mi=$('#o-M');mi.addEventListener('input',()=>{GM=GM0*+mi.value;$('#o-Mv').textContent=nf(+mi.value,2)+' ×'});mi.dispatchEvent(new Event('input'));
+  interact(o,{down:p=>{const a=toW(...p);return Math.hypot(a[0],a[1])>.07?{a:p,b:p}:null},move:(p,s)=>s.b=p,
+    up:(p,s)=>{const a=toW(...s.a),b=toW(...p);add(a[0],a[1],(b[0]-a[0])*1.3,(b[1]-a[1])*1.3)},hover:()=>'crosshair'});
+  onFrame('orbit',dt=>{const n=20,h=dt/n;for(const p of P){for(let i=0;i<n;i++)step(p,h);p.tr.push([p.x,p.y]);if(p.tr.length>360)p.tr.shift()}
+    P=P.filter(p=>{const r=Math.hypot(p.x,p.y);if(r<.055){hits++;return false}if(r>3.5){outs++;return false}return true});
+    const w=o.w,hh=o.h;ctx.clearRect(0,0,w,hh);const s0=toS(0,0);ctx.strokeStyle=COL.line;ctx.lineWidth=1;for(let r=.25;r<1.6;r+=.25){ctx.beginPath();ctx.arc(s0[0],s0[1],r*S(),0,7);ctx.stroke()}
+    disc(ctx,s0[0],s0[1],6+5*Math.sqrt(GM/GM0),COL.sun);
+    for(const p of P){trail(ctx,p.tr,COL[p.c],1.5,.7,q=>toS(q[0],q[1]));const s=toS(p.x,p.y);disc(ctx,s[0],s[1],4.5,COL[p.c],.2)}
+    const a=o.active;if(a){const A=toW(...a.a),B=toW(...a.b),pp={x:A[0],y:A[1],vx:(B[0]-A[0])*1.3,vy:(B[1]-A[1])*1.3};
+      ctx.setLineDash([3,5]);ctx.strokeStyle=rgba(COL.sun,.8);ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(a.a[0],a.a[1]);
+      for(let i=0;i<260;i++){for(let j=0;j<4;j++)step(pp,1/120);const r=Math.hypot(pp.x,pp.y);if(r<.055||r>3)break;const s=toS(pp.x,pp.y);ctx.lineTo(s[0],s[1])}ctx.stroke();ctx.setLineDash([]);
+      disc(ctx,a.a[0],a.a[1],4.5,COL.sun,.2);arrow(ctx,a.a[0],a.a[1],a.b[0],a.b[1],COL.sun,1.5);
+      const r=Math.hypot(A[0],A[1]);pill(ctx,'v = '+nf(Math.hypot(B[0]-A[0],B[1]-A[1])*1.3/Math.sqrt(GM/r),2)+' × circular',a.b[0]+10,a.b[1]-14,COL.sun,'left')}
+    hint(o,dt,'Arrastrá para lanzar un planeta');
+    $('#o-n').textContent=P.length;$('#o-hit').textContent=hits;$('#o-out').textContent=outs});
 })();
 
-/* ---------- 9. E = mc² ---------- */
-(()=>{const mi=$('#E-m');function upd(){const g=10**+mi.value,kg=g/1000,E=kg*c*c,kt=E/4.184e12;
-  $('#E-mv').innerHTML=g>=1e6?nf(g/1e6,3)+' t':g>=1000?nf(g/1000,3)+' kg':g>=1?nf(g,3)+' g':nf(g*1000,3)+' mg';
-  $('#E-J').innerHTML=sci(E)+' J';$('#E-t').innerHTML=kt>=1000?sci(kt/1000)+' Mt':kt>=1?sci(kt)+' kt':sci(kt*1000)+' t';$('#E-h').innerHTML=sci(kt/15)}
-  mi.oninput=upd;upd()})();
+/* ---------- 9. Tiempo cerca de una masa ---------- */
+(()=>{const B={earth:[5.972e24,6.371e6],sun:[1.989e30,6.957e8],wd:[2.02e30,5.84e6],ns:[2.785e30,1.2e4]},sel=$('#td-sel');
+  function td(){const k=sel.value,f=k==='bh'?Math.sqrt(1-1/1.5):Math.sqrt(1-2*G*B[k][0]/(B[k][1]*c*c)),yr=365.25*86400,diff=(1-f)*yr;
+    $('#td-a').textContent=f>.999?'1 año − '+(diff<1?nf(diff*1000,3)+' ms':nf(diff,3)+' s'):nf(f*12,3)+' meses';
+    $('#td-d').textContent=diff<1?nf(diff*1000,3)+' milisegundos':diff<3600?nf(diff,3)+' segundos':diff<172800?nf(diff/3600,3)+' horas':nf(diff/86400,3)+' días';
+    $('#td-bar').style.width=(f*100)+'%'}
+  sel.onchange=td;td()})();
 
-/* ---------- Imágenes agregadas por el grupo ---------- */
-const lb=$('#lb'),lbimg=$('#lbimg');document.addEventListener('click',e=>{const im=e.target.closest('figure img, .um img');if(im){lbimg.src=im.src;lbimg.alt=im.alt;lb.hidden=false}});lb.onclick=()=>lb.hidden=true;
+/* ---------- 10. E = mc² ---------- */
+(()=>{const mi=$('#E-m');function upd(){const g=10**+mi.value,E=g/1000*c*c,kt=E/4.184e12;
+  $('#E-mv').textContent=g>=1e6?nf(g/1e6,3)+' t':g>=1000?nf(g/1000,3)+' kg':g>=1?nf(g,3)+' g':nf(g*1000,3)+' mg';
+  $('#E-J').textContent=sci(E)+' J';$('#E-t').textContent=kt>=1000?sci(kt/1000)+' Mt':kt>=1?sci(kt)+' kt':sci(kt*1000)+' t';$('#E-h').textContent=sci(kt/15)}
+  mi.addEventListener('input',upd);upd()})();
+
+/* ---------- pestañas ---------- */
+$$('.tabs').forEach(tl=>{const tabs=[...tl.querySelectorAll('[role=tab]')];const sel=t=>tabs.forEach(b=>{const on=b===t;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;document.getElementById(b.getAttribute('aria-controls')).hidden=!on});
+  tabs.forEach((b,k)=>{b.onclick=()=>sel(b);b.onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();e.stopPropagation();const n=tabs[(k+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];sel(n);n.focus()}}});sel(tabs[0])});
+
+/* ---------- imágenes: lightbox y agregadas ---------- */
+const lb=$('#lb'),lbimg=$('#lbimg');
+document.addEventListener('click',e=>{const f=e.target.closest('.plate, .um img');if(!f)return;const im=f.tagName==='IMG'?f:f.querySelector('img');lbimg.src=im.src;lbimg.alt=im.alt;const cap=f.tagName==='IMG'?null:f.querySelector('figcaption');$('#lbcap').textContent=cap?cap.textContent:'';lb.hidden=false});
+lb.onclick=()=>lb.hidden=true;
 slides.forEach((s,i)=>{if(i===0)return;const host=s.querySelector('.wrap');const box=document.createElement('div');box.className='adds';
   box.innerHTML=`<div class="user-media"></div><label class="addbtn"><svg class="ic"><use href="#i-image"/></svg>Agregar imagen<input type="file" accept="image/*" multiple id="add-${i}"></label>`;host.appendChild(box);
-  const list=box.querySelector('.user-media'),key='rel2-img-'+i;let imgs=[];try{imgs=JSON.parse(store.get(key)||'[]')}catch(e){}
-  const render=()=>{list.innerHTML='';imgs.forEach((src,j)=>{const d=document.createElement('div');d.className='um';d.innerHTML=`<img alt="Imagen agregada ${j+1}"><button aria-label="Quitar imagen"><svg class="ic"><use href="#i-x"/></svg></button>`;d.querySelector('img').src=src;d.querySelector('button').onclick=()=>{imgs.splice(j,1);save();render()};list.appendChild(d)})};
+  const list=box.querySelector('.user-media'),key='rel3-img-'+i;let imgs=[];try{imgs=JSON.parse(store.get(key)||'[]')}catch(e){}
+  const render=()=>{list.innerHTML='';imgs.forEach((src,j)=>{const d=document.createElement('div');d.className='um';d.innerHTML=`<img alt="Imagen agregada ${j+1}"><button aria-label="Quitar imagen"><svg class="ic"><use href="#i-x"/></svg></button>`;d.querySelector('img').src=src;d.querySelector('button').onclick=ev=>{ev.stopPropagation();imgs.splice(j,1);save();render()};list.appendChild(d)})};
   const save=()=>{if(!store.set(key,JSON.stringify(imgs)))console.warn('Sin espacio para guardar imágenes; quedan solo en esta sesión.')};
-  box.querySelector('input').onchange=e=>{[...e.target.files].forEach(f=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1200/Math.max(im.width,im.height));const cvs=document.createElement('canvas');cvs.width=im.width*k;cvs.height=im.height*k;cvs.getContext('2d').drawImage(im,0,0,cvs.width,cvs.height);imgs.push(cvs.toDataURL('image/jpeg',.85));save();render()};im.src=r.result};r.readAsDataURL(f)});e.target.value=''};
+  box.querySelector('input').onchange=e=>{[...e.target.files].forEach(f=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1200/Math.max(im.width,im.height)),cvs=document.createElement('canvas');cvs.width=im.width*k;cvs.height=im.height*k;cvs.getContext('2d').drawImage(im,0,0,cvs.width,cvs.height);imgs.push(cvs.toDataURL('image/jpeg',.85));save();render()};im.src=r.result};r.readAsDataURL(f)});e.target.value=''};
   render()});
-
-/* ---------- Nombre en portada ---------- */
 const yo=$('#yo');const yv=store.get('rel-yo');if(yv)yo.textContent=yv;yo.addEventListener('input',()=>store.set('rel-yo',yo.textContent));
 yo.addEventListener('focus',()=>{if(yo.textContent==='Tu nombre'){const r=document.createRange();r.selectNodeContents(yo);const s=getSelection();s.removeAllRanges();s.addRange(r)}});
 
-/* ---------- Navegación, guion y cronómetro ---------- */
+/* ---------- animaciones de entrada y salida ---------- */
+function splitWords(el){let j=0;const walk=n=>{[...n.childNodes].forEach(ch=>{if(ch.nodeType===3){const frag=document.createDocumentFragment();ch.textContent.split(/(\s+)/).forEach(t=>{if(!t)return;if(/^\s+$/.test(t)){frag.appendChild(document.createTextNode(t));return}const w=document.createElement('span');w.className='w';const inn=document.createElement('span');inn.textContent=t;inn.style.setProperty('--j',j++);w.appendChild(inn);frag.appendChild(w)});ch.replaceWith(frag)}else if(ch.nodeType===1)walk(ch)})};walk(el)}
+const RV='.eyebrow, h1, h2, .lead, .tl-line, .who, .meta, .cue, .cover-fig, .stack>p, .stack>h3, ul.pts>li, .plate, .formula, .media-row, .inst, .tabs, .concl>div, .biblio li, .adds';
+slides.forEach(s=>{let k=0;s.querySelectorAll(RV).forEach(el=>{if(el.parentElement.closest('.rv'))return;el.classList.add('rv');el.style.setProperty('--i',Math.min(k++,8));if(/^H[12]$/.test(el.tagName))splitWords(el)})});
+const rvIO=new IntersectionObserver(es=>es.forEach(e=>{const el=e.target;if(e.isIntersecting){el.classList.add('in');el.classList.remove('up')}else{el.classList.remove('in');el.classList.toggle('up',e.boundingClientRect.top<(e.rootBounds?e.rootBounds.top:0))}}),{root:stage,rootMargin:'0px 0px -6% 0px',threshold:.08});
+$$('.rv').forEach(el=>rvIO.observe(el));
+
+/* ---------- navegación por scroll ---------- */
+const sizeStage=()=>root.style.setProperty('--sh',stage.clientHeight+'px');new ResizeObserver(sizeStage).observe(stage);sizeStage();
 const times=slides.map(s=>+s.dataset.time||0),starts=times.map((_,i)=>times.slice(0,i).reduce((a,b)=>a+b,0)),TOTAL=times.reduce((a,b)=>a+b,0);
-const notesEl=$('#notes'),ntext=$('#ntext');
-function noteFor(i){return store.get('rel2-note-'+i)??NOTES[i]}
-function go(i){cur=Math.max(0,Math.min(slides.length-1,i));slides.forEach((s,j)=>{s.classList.toggle('active',j===cur);s.setAttribute('aria-hidden',j!==cur)});
-  const nMain=slides.filter(x=>!x.dataset.annex).length;$('#count').textContent=slides[cur].dataset.annex?'Anexo '+(cur-nMain+1)+' / '+(slides.length-nMain):(cur+1)+' / '+nMain;$('#stitle').textContent=slides[cur].dataset.title;
-  ntext.textContent=noteFor(cur);$('#nhead').textContent='Guion · '+slides[cur].dataset.title+(times[cur]?' · '+times[cur]+' s':'');
-  $('#pmark').style.left=(starts[cur]/TOTAL*100)+'%';try{if(location.hash!=='#s'+cur)history.replaceState(null,'','#s'+cur)}catch(e){}tick()}
-ntext.addEventListener('input',()=>store.set('rel2-note-'+cur,ntext.innerText));
-$('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);
-const root=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
-const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
+const nMain=slides.filter(x=>!x.dataset.annex).length;
+const dots=$('#dots');slides.forEach((s,i)=>{const b=document.createElement('button');b.className=s.dataset.annex?'ax':'';b.setAttribute('aria-label',s.dataset.title);b.innerHTML=`<span>${s.dataset.title}</span>`;b.onclick=()=>go(i);dots.appendChild(b)});
+const notesEl=$('#notes'),ntext=$('#ntext');const noteFor=i=>store.get('rel3-note-'+i)??NOTES[i];
+function go(i){i=clamp(i,0,slides.length-1);slides[i].scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})}
+function setCur(i){cur=i;const s=slides[i];$('#count').textContent=s.dataset.annex?'Anexo '+(i-nMain+1)+' / '+(slides.length-nMain):(i+1)+' / '+nMain;$('#stitle').textContent=s.dataset.title;
+  [...dots.children].forEach((b,k)=>b.classList.toggle('on',k===i));ntext.textContent=noteFor(i);$('#nhead').textContent='Guion · '+s.dataset.title+(times[i]?' · '+times[i]+' s':'');
+  $('#pmark').style.left=(Math.min(starts[i],TOTAL)/TOTAL*100)+'%';try{history.replaceState(null,'','#s'+i)}catch(e){}tick()}
+let pend=false;function detect(){const mid=stage.scrollTop+stage.clientHeight*.4;let k=0;slides.forEach((s,i)=>{if(s.offsetTop<=mid)k=i});if(k!==cur)setCur(k)}
+stage.addEventListener('scroll',()=>{if(!pend){pend=true;requestAnimationFrame(()=>{pend=false;detect()})}},{passive:true});
+ntext.addEventListener('input',()=>store.set('rel3-note-'+cur,ntext.innerText));
+$('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);$('#cue').onclick=()=>go(1);
+const mq=matchMedia('(prefers-color-scheme: dark)'),isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
 function themeUI(){$('#thico').setAttribute('href',isDark()?'#i-sun':'#i-moon');refreshCol()}
 {const t=store.get('rel-theme');if(t)root.dataset.theme=t}themeUI();mq.addEventListener('change',themeUI);
 new MutationObserver(themeUI).observe(root,{attributes:true,attributeFilter:['data-theme']});
 $('#themebtn').onclick=()=>{const t=isDark()?'light':'dark';root.dataset.theme=t;store.set('rel-theme',t)};
 $('#notesbtn').onclick=e=>{notesEl.hidden=!notesEl.hidden;e.currentTarget.setAttribute('aria-pressed',!notesEl.hidden)};
-$('#fsbtn').onclick=()=>{const d=document;(d.fullscreenElement?d.exitFullscreen():d.documentElement.requestFullscreen?.())?.catch?.(()=>{})};
-document.addEventListener('keydown',e=>{if(e.target.isContentEditable||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
-  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();go(cur+1)}else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(cur-1)}else if(e.key==='n'||e.key==='N')$('#notesbtn').click();else if(e.key==='Escape')lb.hidden=true});
+$('#fsbtn').onclick=()=>{const d=document;try{(d.fullscreenElement?d.exitFullscreen():d.documentElement.requestFullscreen?.())?.catch?.(()=>{})}catch(e){}};
+document.addEventListener('keydown',e=>{if(e.target.isContentEditable||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||e.target.getAttribute('role')==='tab')return;
+  if(['ArrowRight','PageDown',' '].includes(e.key)){e.preventDefault();go(cur+1)}else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();go(cur-1)}else if(e.key==='n'||e.key==='N')$('#notesbtn').click();else if(e.key==='Escape')lb.hidden=true});
 let run=false,el=0,lastT=0;const mmss=s=>{const a=Math.abs(Math.round(s));return(s<0?'+':'')+Math.floor(a/60)+':'+String(a%60).padStart(2,'0')};
 function tick(){const rem=TOTAL-el;$('#tico').setAttribute('href',run?'#i-pause':'#i-play');$('#ttime').textContent=mmss(rem);$('#pbar').style.width=Math.min(100,el/TOTAL*100)+'%';
-  const ahead=el-(starts[cur]+times[cur]);const d=(el===0||slides[cur].dataset.annex)?'':el<starts[cur]?'vas '+Math.round(starts[cur]-el)+' s adelantado':ahead>0?'vas '+Math.round(ahead)+' s atrasado':'a tiempo';$('#tdelta').textContent=d;
+  const ahead=el-(starts[cur]+times[cur]);$('#tdelta').textContent=(el===0||slides[cur].dataset.annex)?'':el<starts[cur]?'vas '+Math.round(starts[cur]-el)+' s adelantado':ahead>0?'vas '+Math.round(ahead)+' s atrasado':'a tiempo';
   $('#ttime').style.color=rem<0?COL.mass:rem<30?COL.sun:''}
-$$('.tabs').forEach(tl=>{const tabs=[...tl.querySelectorAll('[role=tab]')];const sel=t=>tabs.forEach(b=>{const on=b===t;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;document.getElementById(b.getAttribute('aria-controls')).hidden=!on});
-  tabs.forEach((b,k)=>{b.onclick=()=>sel(b);b.onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();e.stopPropagation();const n=tabs[(k+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];sel(n);n.focus()}}});sel(tabs[0])});
 $('#tbtn').onclick=()=>{run=!run;lastT=performance.now();tick()};$('#treset').onclick=()=>{run=false;el=0;tick()};
 setInterval(()=>{if(run){const n=performance.now();el+=(n-lastT)/1000;lastT=n;tick()}},250);
-addEventListener('hashchange',()=>{const m=/^#s(\d+)$/.exec(location.hash);if(m&&+m[1]!==cur)go(+m[1])});
-{const m=/^#s(\d+)$/.exec(location.hash);go(m?+m[1]:0)}
-let lastF=performance.now();function frame(now){const dt=Math.min(.05,(now-lastF)/1000);lastF=now;for(const l of loops)if(l.i===cur&&l.el.offsetWidth)l.fn(dt);requestAnimationFrame(frame)}requestAnimationFrame(frame);
+$$('input[type=range]').forEach(paint);
+{const m=/^#s(\d+)$/.exec(location.hash);const i=m?clamp(+m[1],0,slides.length-1):0;setCur(i);if(i)requestAnimationFrame(()=>slides[i].scrollIntoView({block:'start'}))}
+let lastF=performance.now();function frame(now){const dt=Math.min(.05,(now-lastF)/1000);lastF=now;for(const l of loops)if(vis.has(l.i)&&l.el.offsetWidth)l.fn(dt);requestAnimationFrame(frame)}requestAnimationFrame(frame);
 </script>
 
 </body>
