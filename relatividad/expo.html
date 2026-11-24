@@ -210,6 +210,18 @@ select{background:var(--surface);border:1px solid var(--line);border-radius:var(
 .lightbox img{max-width:100%;max-height:85%;border:1px solid var(--line);background:#fff}
 .lightbox p{color:var(--muted);font-size:.85rem;text-align:center}
 
+/* ---------- tarjetas, pasos y comparación ---------- */
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.card,.vs>div{background:var(--surface);padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card .y,.vs .y{font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--sun)}
+.card p{font-size:.92rem}
+.card ul.pts,.vs ul.pts{font-size:.9rem;gap:7px}
+.vs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.vs>div:last-child .y{color:var(--ray)}
+.steps{margin:0;padding:0;list-style:none;counter-reset:st;display:flex;flex-direction:column;gap:8px;max-width:62ch}
+.steps li{counter-increment:st;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:baseline}
+.steps li::before{content:counter(st);font-family:var(--mono);font-size:.8rem;color:var(--sun-ink);background:var(--sun);width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center}
+
 /* ---------- vistas 3D ---------- */
 .view{position:relative;overflow:hidden;border-radius:2px}
 .view canvas{cursor:grab}
@@ -330,17 +342,14 @@ html.anim .rv.in .w>span{transform:none}
     <div class="eyebrow"><span>Tópico 2</span><span>Teoría de la Relatividad · 1905</span></div>
     <div class="split">
       <div class="stack">
-        <h2>Relatividad Especial: el tiempo no es igual para todos</h2>
-        <p>Einstein partió de dos ideas: las leyes de la física son las mismas para todos los que se mueven a velocidad constante, y <b>la velocidad de la luz es siempre c ≈ 300.000 km/s</b>.</p>
-        <ul class="pts">
-          <li><b>Dilatación del tiempo:</b> un reloj en movimiento marcha más lento.</li>
-          <li><b>Contracción de longitudes:</b> los objetos se acortan en la dirección del movimiento.</li>
-          <li><b>Masa y energía son equivalentes:</b> E = mc².</li>
-        </ul>
-        <div class="formula" style="align-self:flex-start">
-          <div class="fx sm" role="img" aria-label="gamma igual a 1 dividido la raíz de 1 menos v al cuadrado sobre c al cuadrado"><span>γ</span><span class="op">=</span><span class="frac"><span class="num">1</span><span>√(1 − v²/c²)</span></span></div>
-          <p class="hint">Factor de Lorentz: cuánto se estira el tiempo.</p>
+        <h2>¿Qué es la Teoría de la Relatividad?</h2>
+        <p>Fue desarrollada por <b>Albert Einstein</b> y se divide principalmente en dos partes:</p>
+        <div class="two">
+          <div class="card"><span class="y">1905 · Relatividad Especial</span><p>El espacio y el tiempo están relacionados. Las leyes de la física son las mismas para todos los observadores que se mueven a velocidad constante, y la velocidad de la luz en el vacío es constante.</p></div>
+          <div class="card"><span class="y">1915 · Relatividad General</span><p>Explica cómo funciona la gravedad: los cuerpos con masa y energía deforman el espacio-tiempo e influyen en el movimiento de otros cuerpos.</p></div>
         </div>
+        <p>Por ejemplo, el Sol curva el espacio-tiempo a su alrededor y la Tierra se desplaza siguiendo esa curvatura, lo que explica su órbita.</p>
+        <p class="hint">El simulador muestra una consecuencia de la Relatividad Especial: un reloj que se mueve muy rápido marcha más lento.</p>
       </div>
       <div class="inst">
         <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Reloj de luz</h3><div class="inst-a"><button class="btn ib" id="c-play" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><button class="btn ib" id="c-reset" aria-label="Reiniciar contadores"><svg class="ic"><use href="#i-reset"/></svg></button><span class="tag">Simulador 2</span></div></div>
@@ -365,13 +374,18 @@ html.anim .rv.in .w>span{transform:none}
     <div class="eyebrow"><span>Tópico 3</span><span>Relación entre gravedad y Relatividad · 1915</span></div>
     <div class="split">
       <div class="stack">
-        <h2>Relatividad General: la gravedad es curvatura</h2>
-        <p>Para Einstein la gravedad no es una fuerza a distancia. <b>La masa y la energía curvan el espacio-tiempo</b>, y los cuerpos, y también la luz, siguen el camino más recto posible en ese espacio curvo.</p>
-        <ul class="pts">
-          <li>Con campos débiles da los mismos resultados que Newton: Newton es un caso particular.</li>
-          <li>Con campos intensos predice cosas nuevas: la luz se desvía, el tiempo pasa más lento cerca de una masa, existen agujeros negros y ondas gravitacionales.</li>
-        </ul>
-        <p class="hint">La lámina es una analogía en 2D: la curvatura real es del espacio y del tiempo juntos, en 4 dimensiones.</p>
+        <h2>¿Qué relación existe entre la gravedad y la relatividad?</h2>
+        <p>Según la Relatividad General, <b>la gravedad es una consecuencia de la curvatura del espacio-tiempo</b>. Los objetos masivos, como el Sol o la Tierra, modifican la geometría del espacio y del tiempo que los rodea, y otros cuerpos se desplazan siguiendo esa geometría curva.</p>
+        <ol class="steps">
+          <li>El Sol tiene una gran masa y curva el espacio-tiempo a su alrededor.</li>
+          <li>La Tierra se mueve siguiendo esa curvatura.</li>
+          <li>Como resultado, permanece orbitando alrededor del Sol.</li>
+        </ol>
+        <div class="vs">
+          <div><span class="y">Newton</span><ul class="pts"><li>La gravedad es una fuerza de atracción entre masas.</li><li>Describe cómo se atraen los cuerpos.</li><li>Funciona muy bien en situaciones cotidianas.</li></ul></div>
+          <div><span class="y">Einstein</span><ul class="pts"><li>La gravedad es una curvatura del espacio-tiempo.</li><li>Explica cómo la masa y la energía modifican el espacio-tiempo.</li><li>Explica fenómenos extremos que Newton no podía describir.</li></ul></div>
+        </div>
+        <p class="hint">Fuente: Agencia Espacial Europea (ESA), «¿Qué es la gravedad?».</p>
       </div>
       <div class="inst">
         <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>Espacio-tiempo en 3D</h3><div class="inst-a"><button class="btn" id="s-light"><svg class="ic"><use href="#i-bolt"/></svg>Rayo de luz</button><button class="btn ib" id="s-view" aria-label="Restablecer vista"><svg class="ic"><use href="#i-reset"/></svg></button><button class="btn ib" id="s-clear" aria-label="Limpiar"><svg class="ic"><use href="#i-trash"/></svg></button><span class="tag">Simulador 3</span></div></div>
@@ -470,13 +484,20 @@ html.anim .rv.in .w>span{transform:none}
     <div class="eyebrow"><span>Tópico 5</span><span>Incidencia en la sociedad y en la concepción del Universo</span></div>
     <div class="split">
       <div class="stack">
-        <h2>Del laboratorio al celular y al Big Bang</h2>
-        <ul class="pts">
-          <li><b>GPS:</b> sin correcciones relativistas, la ubicación del celular se equivocaría unos 11 km por día.</li>
-          <li><b>Energía:</b> E = mc² explica la energía nuclear (Atucha y Embalse) y la tomografía PET.</li>
-          <li><b>El Universo:</b> la Relatividad General llevó al Universo en expansión, al Big Bang y a los agujeros negros, observados en 2015 y 2019.</li>
-          <li><b>Una nueva visión:</b> el espacio y el tiempo dejaron de ser absolutos.</li>
-        </ul>
+        <h2>¿Cómo cambió la Relatividad a la sociedad y al Universo?</h2>
+        <div class="two">
+          <div class="card"><span class="y">En la sociedad</span>
+            <ul class="pts">
+              <li><b>GPS del celular:</b> los relojes de los satélites se adelantan 38 millonésimas de segundo por día. Sin corregirlo, el GPS se equivocaría unos 11 km por día.</li>
+              <li><b>Energía y medicina:</b> E = mc² explica la energía nuclear (Atucha y Embalse) y estudios como la tomografía PET.</li>
+            </ul></div>
+          <div class="card"><span class="y">En cómo vemos el Universo</span>
+            <ul class="pts">
+              <li><b>Antes:</b> el espacio y el tiempo eran fijos e iguales para todos. <b>Ahora:</b> sabemos que cambian con la velocidad y la gravedad.</li>
+              <li>El Universo se expande: de ahí sale la idea del <b>Big Bang</b>.</li>
+              <li>Predijo los <b>agujeros negros</b> y las <b>ondas gravitacionales</b>, observados en 2015 y 2019.</li>
+            </ul></div>
+        </div>
       </div>
       <div class="inst">
         <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>Relojes de los satélites GPS</h3><div class="inst-a"><span class="tag">Simulador 7</span></div></div>
@@ -585,6 +606,7 @@ html.anim .rv.in .w>span{transform:none}
       <li>Ashby, N. (2003). Relativity in the Global Positioning System. <i>Living Reviews in Relativity</i>, 6, 1.</li>
       <li>Abbott, B. P. et al. (LIGO y Virgo) (2016). Observation of Gravitational Waves from a Binary Black Hole Merger. <i>Physical Review Letters</i>, 116, 061102.</li>
       <li>Hawking, S. (1988). <i>Historia del tiempo: del Big Bang a los agujeros negros</i>. Crítica.</li>
+      <li>Agencia Espacial Europea (ESA). ¿Qué es la gravedad? Disponible en: esa.int/es/articles/about-us/who-we-are/member-states/spain/que-es-la-gravedad</li>
       <li>Geoenciclopedia. Gravedad: Ley de Gravitación Universal.</li>
     </ol>
   </div>
@@ -624,22 +646,32 @@ Newton la explicó con esta ley: la fuerza crece con las masas y baja con el cua
 [Tocar "Tierra – Luna"] Entre la Tierra y la Luna: 2 × 10²⁰ newtons.
 [Tocar "Dos personas a 1 m"] Entre dos personas, casi nada.
 [Arrastrar un cuerpo para alejarlo] El doble de distancia da la cuarta parte de fuerza.`,
-`Habla: Bruno (45 s)
-En 1905 Einstein propuso la Relatividad Especial: la velocidad de la luz es la misma para todos los observadores.
-Miren el reloj de luz: en la nave, la luz hace una diagonal más larga, entonces cada tic tarda más. El tiempo en la nave pasa más lento: miren cómo se atrasa su contador.
-[Tocar "0,99 c"] Al 99 % de la luz, un año en la nave son siete en la Tierra. De esta teoría sale también E = mc².`,
-`Habla: ___ (45 s)
-En 1915, la Relatividad General une gravedad y relatividad: la masa curva el espacio-tiempo, y los cuerpos, y hasta la luz, siguen esa curva.
-[Tocar la malla para agregar una masa. Arrastrar desde un lugar vacío para lanzar una partícula] Es una analogía en dos dimensiones.
-Para campos débiles da lo mismo que Newton, pero predice más: la luz se desvía y el tiempo pasa más lento cerca de una masa.`,
+`Habla: Tito (45 s)
+¿Qué es la Teoría de la Relatividad? La desarrolló Albert Einstein y tiene dos partes.
+La Relatividad Especial, de 1905, dice que el espacio y el tiempo están relacionados, que las leyes de la física son las mismas para todos los que se mueven a velocidad constante y que la velocidad de la luz es siempre la misma.
+[Señalar el reloj de luz] Por eso un reloj que se mueve muy rápido marcha más lento: miren cómo se atrasa el contador de la nave.
+La Relatividad General, de 1915, explica la gravedad: la masa y la energía deforman el espacio-tiempo.`,
+`Habla: Tito (45 s)
+¿Qué relación hay entre la gravedad y la relatividad? Para Einstein, la gravedad es una consecuencia de la curvatura del espacio-tiempo.
+[Señalar la malla] El Sol tiene mucha masa y curva el espacio-tiempo. La Tierra se mueve siguiendo esa curva, y por eso orbita alrededor del Sol.
+La diferencia: para Newton la gravedad es una fuerza entre masas y funciona muy bien en lo cotidiano. Einstein la explica como curvatura y así puede explicar fenómenos extremos que Newton no podía.`,
 `Habla: Bruno (70 s)
 ¿Cómo se comprobó?
 [Pestaña 1887] Michelson y Morley buscaban el éter con un interferómetro. Si existía, las franjas se correrían al girar el aparato. [Tocar "Lo que midieron en 1887"] No se movieron.
 [Pestaña 1915] La órbita de Mercurio gira 43 segundos de arco por siglo más de lo que explicaba Newton. Einstein calculó exactamente 43.
 [Pestaña 1919] Eddington fotografió estrellas durante un eclipse. Einstein predecía 1,75 segundos de arco, el doble que Newton. Se midió 1,98 y 1,61: ganó Einstein.`,
-`Habla: ___ (55 s)
-¿Y en la vida diaria? El GPS. [Tocar "GPS"] Los relojes de los satélites se atrasan 7 microsegundos por día por su velocidad y se adelantan 45 por estar lejos de la gravedad terrestre. Neto: 38 microsegundos por día. Sin corregirlo, el GPS se equivocaría 11 km por día.
-Además, E = mc² explica la energía nuclear, y la Relatividad General nos dio un Universo en expansión, el Big Bang y los agujeros negros.`,
+`Habla: vos (55 s)
+Mi parte es cómo la Relatividad cambió la sociedad y nuestra idea del Universo.
+Primero, la sociedad. El ejemplo más fácil es el GPS del celular. [Tocar "GPS"]
+Los satélites van muy rápido y están lejos de la Tierra. Por ir rápido, sus relojes se atrasan 7 millonésimas de segundo por día. Por estar lejos de la gravedad, se adelantan 45. En total se adelantan 38.
+Parece nada, pero sin corregirlo el GPS se equivocaría 11 kilómetros por día.
+Además, E = mc² explica la energía nuclear, como la de Atucha, y estudios médicos.
+Segundo, el Universo. Antes se pensaba que el espacio y el tiempo eran fijos. Einstein mostró que cambian. Gracias a eso sabemos que el Universo se expande, que hubo un Big Bang y que existen los agujeros negros.
+
+SI TE PREGUNTAN
+¿Por qué se adelantan si van rápido? Porque el efecto de estar lejos de la gravedad (45) es más grande que el de la velocidad (7).
+¿Qué es una millonésima de segundo? Un microsegundo: un segundo dividido en un millón de partes.
+¿Qué es E = mc²? Que la masa se puede convertir en energía, y un poquito de masa da muchísima energía.`,
 `Habla: todos (20 s)
 Newton no estaba equivocado: Einstein lo amplió. La gravedad es la forma del espacio-tiempo, se comprobó una y otra vez, y la usamos cada vez que abrimos el GPS. ¡Gracias! ¿Preguntas?`,
 `Anexo: no se expone. Mostrar solo si hay preguntas o sobra tiempo.
@@ -805,7 +837,7 @@ function no3d(id){const v=document.getElementById(id).closest('.view'),ov=v&&v.q
     const mesh=new THREE.Mesh(pg,new THREE.MeshBasicMaterial({color:C3('mass')})),line=new THREE.Line(tg,new THREE.LineBasicMaterial({color:C3('mass'),transparent:true,opacity:.85}));scene.add(mesh,line);
     Pt.push({x,z,vx,vz,mesh,line,tr:[]});if(Pt.length>10)kill(Pt[0]);sfx.launch()}
   function acc(x,z){let ax=0,az=0;for(const q of M){const dx=x-q.x,dz=z-q.z,d2=dx*dx+dz*dz+S2,k=q.m*K*.5/(d2*Math.sqrt(d2));ax-=k*dx;az-=k*dz}return[ax,az]}
-  addMass(0,0,5,true);
+  addMass(0,0,5,true);M[0].m=5;{const r=.62,d2=r*r+S2,a=5*K*.5*r/(d2*Math.sqrt(d2)),v=Math.sqrt(a*r);launch(r,0,0,v);Pt[0].tr=[]}
   seg($('#s-size'),v=>size=+v)('4');seg($('#s-mode'),v=>mode=v)('m');
   $('#s-light').onclick=()=>launch(-1.15,(Math.random()-.5)*1.2,.9,0);
   $('#s-clear').onclick=()=>{M.forEach(q=>q.mt=0);[...Pt].forEach(kill)};
@@ -1028,7 +1060,7 @@ yo.addEventListener('focus',()=>{if(yo.textContent==='Tu nombre'){const r=docume
 
 /* ---------- animaciones de entrada y salida ---------- */
 function splitWords(el){let j=0;const walk=n=>{[...n.childNodes].forEach(ch=>{if(ch.nodeType===3){const frag=document.createDocumentFragment();ch.textContent.split(/(\s+)/).forEach(t=>{if(!t)return;if(/^\s+$/.test(t)){frag.appendChild(document.createTextNode(t));return}const w=document.createElement('span');w.className='w';const inn=document.createElement('span');inn.textContent=t;inn.style.setProperty('--j',j++);w.appendChild(inn);frag.appendChild(w)});ch.replaceWith(frag)}else if(ch.nodeType===1)walk(ch)})};walk(el)}
-const RV='.eyebrow, h1, h2, .lead, .tl-line, .who, .meta, .cue, .cover-fig, .stack>p, .stack>h3, ul.pts>li, .plate, .formula, .media-row, .inst, .tabs, .concl>div, .biblio li, .adds';
+const RV='.eyebrow, h1, h2, .lead, .tl-line, .who, .meta, .cue, .cover-fig, .stack>p, .stack>h3, ul.pts>li, .plate, .formula, .media-row, .inst, .tabs, .concl>div, .biblio li, .adds, .two, .steps>li, .vs';
 slides.forEach(s=>{let k=0;s.querySelectorAll(RV).forEach(el=>{if(el.parentElement.closest('.rv'))return;el.classList.add('rv');el.style.setProperty('--i',Math.min(k++,8));if(/^H[12]$/.test(el.tagName))splitWords(el)})});
 const rvIO=new IntersectionObserver(es=>es.forEach(e=>{const el=e.target;if(e.isIntersecting){el.classList.add('in');el.classList.remove('up')}else{el.classList.remove('in');el.classList.toggle('up',e.boundingClientRect.top<(e.rootBounds?e.rootBounds.top:0))}}),{root:stage,rootMargin:'0px 0px -6% 0px',threshold:.08});
 $$('.rv').forEach(el=>rvIO.observe(el));
@@ -1038,14 +1070,14 @@ const sizeStage=()=>root.style.setProperty('--sh',stage.clientHeight+'px');new R
 const times=slides.map(s=>+s.dataset.time||0),starts=times.map((_,i)=>times.slice(0,i).reduce((a,b)=>a+b,0)),TOTAL=times.reduce((a,b)=>a+b,0);
 const nMain=slides.filter(x=>!x.dataset.annex).length;
 const dots=$('#dots');slides.forEach((s,i)=>{const b=document.createElement('button');b.className=s.dataset.annex?'ax':'';b.setAttribute('aria-label',s.dataset.title);b.innerHTML=`<span>${s.dataset.title}</span>`;b.onclick=()=>go(i);dots.appendChild(b)});
-const notesEl=$('#notes'),ntext=$('#ntext');const noteFor=i=>store.get('rel3-note-'+i)??NOTES[i];
+const notesEl=$('#notes'),ntext=$('#ntext');const noteFor=i=>store.get('rel4-note-'+i)??NOTES[i];
 function go(i){i=clamp(i,0,slides.length-1);slides[i].scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})}
 function setCur(i){if(i!==cur)sfx.whoosh();cur=i;const s=slides[i];$('#count').textContent=s.dataset.annex?'Anexo '+(i-nMain+1)+' / '+(slides.length-nMain):(i+1)+' / '+nMain;$('#stitle').textContent=s.dataset.title;
   [...dots.children].forEach((b,k)=>b.classList.toggle('on',k===i));ntext.textContent=noteFor(i);$('#nhead').textContent='Guion · '+s.dataset.title+(times[i]?' · '+times[i]+' s':'');
   $('#pmark').style.left=(Math.min(starts[i],TOTAL)/TOTAL*100)+'%';try{history.replaceState(null,'','#s'+i)}catch(e){}tick()}
 let pend=false;function detect(){const mid=stage.scrollTop+stage.clientHeight*.4;let k=0;slides.forEach((s,i)=>{if(s.offsetTop<=mid)k=i});if(k!==cur)setCur(k)}
 stage.addEventListener('scroll',()=>{if(!pend){pend=true;requestAnimationFrame(()=>{pend=false;detect()})}},{passive:true});
-ntext.addEventListener('input',()=>store.set('rel3-note-'+cur,ntext.innerText));
+ntext.addEventListener('input',()=>store.set('rel4-note-'+cur,ntext.innerText));
 $('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);$('#cue').onclick=()=>go(1);
 const mq=matchMedia('(prefers-color-scheme: dark)'),isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
 function themeUI(){$('#thico').setAttribute('href',isDark()?'#i-sun':'#i-moon');refreshCol()}
