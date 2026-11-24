@@ -150,6 +150,14 @@ figcaption{font-size:.78rem;color:var(--muted)}
 .concl{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .concl div{background:var(--surface);padding:18px;display:flex;flex-direction:column;gap:8px}
 .concl b{font-family:var(--display);font-weight:500;font-size:1.3rem;color:var(--sun)}
+.tabs{display:flex;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.tabs button{background:none;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;padding:10px 16px 10px 0;margin-right:16px;cursor:pointer;display:flex;gap:8px;align-items:baseline;color:var(--muted);white-space:nowrap;font-size:.95rem}
+.tabs button .y{font-family:var(--mono);font-size:.8rem}
+.tabs button:hover{color:var(--text)}
+.tabs button[aria-selected=true]{color:var(--text);border-bottom-color:var(--sun)}
+.tabs button[aria-selected=true] .y{color:var(--sun)}
+h3.ph{font-family:var(--display);font-weight:500;font-size:1.45rem}
+.tl-line{font-family:var(--mono);font-size:.8rem;color:var(--muted)}
 @media (prefers-reduced-motion:reduce){.slide{transition:none}}
 </style>
 
@@ -173,13 +181,12 @@ figcaption{font-size:.78rem;color:var(--muted)}
 </svg>
 <div class="deck">
 <main class="stage" id="stage">
-
-<!-- 0 PORTADA -->
-<section class="slide" data-time="15" data-title="Portada">
+<section class="slide" data-time="20" data-title="Portada">
   <div class="cover"><div class="cover-text">
     <div class="eyebrow"><span>Unidad N°7</span><span>Universo, su estructura y teorías</span></div>
     <h1>De la manzana al <em>espacio-tiempo</em></h1>
     <p class="lead">Gravedad, Teoría de la Relatividad y los experimentos que la comprobaron.</p>
+    <p class="dim tl-line">1687 Newton · 1887 Michelson y Morley · 1905 y 1915 Einstein · 1919 el eclipse · hoy, el GPS</p>
     <div class="who"><span>Bruno</span><span>Titi</span><span>Titonte</span><span contenteditable="true" spellcheck="false" id="yo" title="Tocá para escribir tu nombre">Tu nombre</span></div>
     <div class="meta"><span>Física · Trabajo de investigación y exposición</span><span>Prof. Aldana Salinero Spitale</span><span>Noviembre 2026</span></div>
     </div>
@@ -187,27 +194,7 @@ figcaption{font-size:.78rem;color:var(--muted)}
   </div>
 </section>
 
-<!-- 1 INTRODUCCIÓN -->
-<section class="slide" data-time="20" data-title="Introducción">
-  <div class="wrap">
-    <div class="eyebrow"><span>Introducción</span><span>Recorrido de la exposición</span></div>
-    <h2>Trescientos años para entender por qué las cosas caen</h2>
-    <p class="lead">Newton describió la gravedad como una fuerza. Einstein mostró que es la forma del espacio y del tiempo. En el medio, experimentos que pusieron a prueba cada idea.</p>
-    <ol class="tl">
-      <li><span class="y">1687</span><span class="t">Newton publica la Ley de Gravitación Universal</span><span class="k">Gravedad</span></li>
-      <li><span class="y">1887</span><span class="t">Michelson y Morley no encuentran el éter</span><span class="k">Experimento</span></li>
-      <li><span class="y">1905</span><span class="t">Relatividad Especial y E = mc²</span><span class="k">Teoría</span></li>
-      <li><span class="y">1915</span><span class="t">Relatividad General: gravedad = curvatura</span><span class="k">Teoría</span></li>
-      <li><span class="y">1919</span><span class="t">Eddington mide la desviación de la luz en un eclipse</span><span class="k">Experimento</span></li>
-      <li><span class="y">1971</span><span class="t">Hafele y Keating: relojes atómicos en aviones</span><span class="k">Experimento</span></li>
-      <li><span class="y">2015</span><span class="t">LIGO detecta ondas gravitacionales</span><span class="k">Experimento</span></li>
-      <li><span class="y">2019</span><span class="t">Primera imagen de un agujero negro (EHT)</span><span class="k">Universo</span></li>
-    </ol>
-  </div>
-</section>
-
-<!-- 2 GRAVEDAD -->
-<section class="slide" data-time="40" data-title="Gravedad">
+<section class="slide" data-time="45" data-title="Gravedad">
   <div class="wrap">
     <div class="eyebrow"><span>Tópico 1</span><span>Gravedad</span></div>
     <div class="split">
@@ -245,39 +232,7 @@ figcaption{font-size:.78rem;color:var(--muted)}
   </div>
 </section>
 
-<!-- 3 ÓRBITAS -->
-<section class="slide" data-time="20" data-title="Gravedad en acción: órbitas">
-  <div class="wrap">
-    <div class="eyebrow"><span>Tópico 1</span><span>Gravedad en acción</span></div>
-    <div class="split">
-      <div class="stack">
-        <h2>La misma ley arma el Sistema Solar</h2>
-        <p>Con poca velocidad un planeta cae hacia la estrella; con la justa queda en órbita; con demasiada, escapa. Las órbitas son elipses, como describió Kepler.</p>
-        <ul class="pts">
-          <li>Arrastrá sobre el simulador para <b>agregar un planeta</b>: el largo de la flecha es su velocidad.</li>
-          <li>Velocidad circular: v = √(GM / r). Velocidad de escape: √2 veces más.</li>
-          <li>Newton explicaba <i>cómo</i> se mueven, pero no <i>por qué</i> la masa atrae a distancia. Esa pregunta la respondió Einstein.</li>
-        </ul>
-      </div>
-      <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Simulador de órbitas</h3><span class="tag">Simulador 2 · arrastrá para agregar</span></div>
-        <canvas id="orbit" class="ar-16-10" aria-label="Simulador de órbitas: arrastrá para lanzar planetas"></canvas>
-        <div class="ctrls">
-          <div class="ctl"><label for="o-M">Masa de la estrella <output id="o-Mv"></output></label><input type="range" id="o-M" min="0.4" max="2.5" step="0.05" value="1"></div>
-        </div>
-        <div class="btns">
-          <button class="btn" id="o-circ"><svg class="ic"><use href="#i-orbit"/></svg>Planeta en órbita circular</button>
-          <button class="btn" id="o-esc"><svg class="ic"><use href="#i-plus"/></svg>Planeta con velocidad de escape</button>
-          <button class="btn" id="o-clear"><svg class="ic"><use href="#i-trash"/></svg>Limpiar</button>
-        </div>
-        <div class="reads"><div class="read"><small>Planetas en órbita</small><b id="o-n">0</b></div><div class="read"><small>Chocaron con la estrella</small><b id="o-hit">0</b></div><div class="read"><small>Escaparon</small><b id="o-out">0</b></div></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 4 RELATIVIDAD ESPECIAL -->
-<section class="slide" data-time="40" data-title="Relatividad Especial">
+<section class="slide" data-time="45" data-title="Relatividad Especial">
   <div class="wrap">
     <div class="eyebrow"><span>Tópico 2</span><span>Teoría de la Relatividad · 1905</span></div>
     <div class="split">
@@ -293,7 +248,7 @@ figcaption{font-size:.78rem;color:var(--muted)}
         <p class="hint">En el reloj de luz, el fotón de la nave recorre una diagonal más larga. Como c no cambia, cada tic tarda más.</p>
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Reloj de luz</h3><span class="tag">Simulador 3</span></div>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Reloj de luz</h3><span class="tag">Simulador 2</span></div>
         <canvas id="clock" class="ar-16-10" aria-label="Dos relojes de luz, uno quieto y otro en una nave en movimiento"></canvas>
         <div class="ctrls"><div class="ctl"><label for="c-b">Velocidad de la nave <output id="c-bv"></output></label><input type="range" id="c-b" min="0" max="0.99" step="0.01" value="0.8"></div></div>
         <div class="reads">
@@ -306,8 +261,7 @@ figcaption{font-size:.78rem;color:var(--muted)}
   </div>
 </section>
 
-<!-- 5 RELATIVIDAD GENERAL -->
-<section class="slide" data-time="35" data-title="Gravedad y Relatividad">
+<section class="slide" data-time="45" data-title="Gravedad y Relatividad">
   <div class="wrap">
     <div class="eyebrow"><span>Tópico 3</span><span>Relación entre gravedad y Relatividad · 1915</span></div>
     <div class="split">
@@ -318,24 +272,10 @@ figcaption{font-size:.78rem;color:var(--muted)}
           <li>Con campos débiles, la Relatividad General da los mismos resultados que Newton: Newton es un caso particular.</li>
           <li>Con campos intensos predice cosas nuevas: la luz se desvía, el tiempo pasa más lento cerca de una masa, existen agujeros negros y ondas gravitacionales.</li>
         </ul>
-        <div class="inst">
-          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Tiempo cerca de una masa</h3><span class="tag">Simulador 5</span></div>
-          <select id="td-sel" aria-label="Elegí un cuerpo">
-            <option value="earth">Superficie de la Tierra</option>
-            <option value="sun">Superficie del Sol</option>
-            <option value="wd">Enana blanca (Sirio B)</option>
-            <option value="ns" selected>Estrella de neutrones</option>
-            <option value="bh">Cerca de un agujero negro (1,5 × horizonte)</option>
-          </select>
-          <div class="reads">
-            <div class="read hi"><small>Si lejos pasa 1 año, ahí pasan</small><b id="td-a"></b></div>
-            <div class="read ray"><small>Diferencia por año</small><b id="td-d"></b></div>
-          </div>
-          <p class="hint">√(1 − 2GM / rc²): dilatación gravitacional del tiempo (solución de Schwarzschild).</p>
-        </div>
+        
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Lámina del espacio-tiempo</h3><span class="tag">Simulador 4 · tocá para agregar</span></div>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Lámina del espacio-tiempo</h3><span class="tag">Simulador 3 · tocá para agregar</span></div>
         <canvas id="sheet" class="ar-16-10" aria-label="Malla del espacio-tiempo deformada por masas"></canvas>
         <div class="btns">
           <button class="btn" id="s-mode-m" aria-pressed="true"><svg class="ic"><use href="#i-plus"/></svg>Tocar agrega masa</button>
@@ -349,23 +289,19 @@ figcaption{font-size:.78rem;color:var(--muted)}
   </div>
 </section>
 
-<!-- 6 MICHELSON MORLEY -->
-<section class="slide" data-time="30" data-title="Michelson y Morley (1887)">
+<section class="slide" data-time="70" data-title="Experimentos">
   <div class="wrap">
-    <div class="eyebrow"><span>Tópico 4</span><span>Experimentos históricos · 1</span></div>
-    <div class="split">
-      <div class="stack">
-        <h2>Michelson y Morley, 1887</h2>
-        <p>Buscaron comprobar la existencia del <b>éter</b>, un supuesto medio por el que se creía que viajaba la luz. Usaron un <b>interferómetro</b> para comparar dos haces de luz que viajan en direcciones perpendiculares.</p>
-        <ul class="pts">
-          <li>Si la Tierra se moviera a 30 km/s a través del éter, al girar el aparato las franjas debían correrse unas 0,4 franjas.</li>
-          <li><b>No encontraron las diferencias esperadas</b> (menos de 0,02 franjas).</li>
-          <li>Fue un antecedente clave de la Relatividad Especial: la luz va a la misma velocidad en todas las direcciones.</li>
-        </ul>
-        <figure><img src="img/michelson.jpg" alt="Esquema del interferómetro de Michelson-Morley: fuente de luz, espejo semiplateado, dos espejos y detector" style="max-width:360px"><figcaption>Equipo de Michelson-Morley: la luz se divide, recorre dos brazos y se recombina.</figcaption></figure>
-      </div>
+    <div class="eyebrow"><span>Tópico 4</span><span>Experimentos históricos para comprobar la Relatividad</span></div>
+    <h2>Tres pruebas que confirmaron a Einstein</h2>
+    <div class="tabs" role="tablist" aria-label="Experimentos">
+      <button role="tab" id="tab-mm" aria-controls="pan-mm" aria-selected="true"><span class="y">1887</span>Michelson y Morley</button>
+      <button role="tab" id="tab-me" aria-controls="pan-me" aria-selected="false"><span class="y">1915</span>Órbita de Mercurio</button>
+      <button role="tab" id="tab-ed" aria-controls="pan-ed" aria-selected="false"><span class="y">1919</span>Eclipse de Eddington</button>
+    </div>
+    <div class="tabpanel" id="pan-mm" role="tabpanel" aria-labelledby="tab-mm">
+      <div class="split"><div class="stack"><h3 class="ph">Buscando el éter</h3><p>Buscaban el <b>éter</b>, el supuesto medio por el que viajaba la luz, con un <b>interferómetro</b>. Si existía, al girar el aparato las franjas se correrían 0,4. <b>No se movieron.</b> Fue la base de la Relatividad Especial.</p><figure><img src="img/michelson.jpg" alt="Esquema del interferómetro de Michelson-Morley: fuente de luz, espejo semiplateado, dos espejos y detector" style="max-width:300px"><figcaption>Equipo de Michelson-Morley: la luz se divide, recorre dos brazos y se recombina.</figcaption></figure></div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Interferómetro</h3><span class="tag">Simulador 6</span></div>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Interferómetro</h3><span class="tag">Simulador 4</span></div>
         <canvas id="mm" class="ar-16-10" aria-label="Interferómetro girando, franjas de interferencia y gráfico del corrimiento"></canvas>
         <div class="btns">
           <button class="btn" id="mm-e" aria-pressed="true">Predicción con éter</button>
@@ -379,52 +315,11 @@ figcaption{font-size:.78rem;color:var(--muted)}
         </div>
         <p class="hint">ΔN = 2Lv² / (λc²) con brazos de L = 11 m (luz reflejada varias veces) y λ = 500 nm.</p>
       </div>
-    </div>
-  </div>
-</section>
-
-<!-- 7 EDDINGTON -->
-<section class="slide" data-time="30" data-title="Eclipse de 1919">
-  <div class="wrap">
-    <div class="eyebrow"><span>Tópico 4</span><span>Experimentos históricos · 2</span></div>
-    <div class="split">
-      <div class="stack">
-        <h2>El eclipse de 1919</h2>
-        <p>Einstein había predicho que la gravedad del Sol desviaría la luz de las estrellas. <b>Arthur Eddington</b> organizó observaciones durante el eclipse total del 29 de mayo de 1919, en Sobral (Brasil) y en la isla de Príncipe (África).</p>
-        <p>Compararon fotografías de las estrellas con y sin el Sol delante. Los resultados fueron compatibles con Einstein y no con Newton, que predecía la mitad.</p>
-        <figure><img src="img/sobral.jpg" alt="Telescopios de la expedición de Sobral, Brasil, 1919, bajo un cobertizo de madera"><figcaption>Telescopios de la expedición a Sobral, Brasil, 1919.</figcaption></figure>
-      </div>
+      </div></div>
+    <div class="tabpanel" id="pan-me" role="tabpanel" aria-labelledby="tab-me" hidden>
+      <div class="split"><div class="stack"><h3 class="ph">43″ que Newton no explicaba</h3><p>La órbita de Mercurio gira lentamente. Los otros planetas explicaban casi todo ese giro, pero <b>sobraban 43″ por siglo</b>. En 1915 la Relatividad General dio exactamente ese valor.</p><p class="hint">Pruebas posteriores: Pound y Rebka (1959), relojes atómicos en aviones de Hafele y Keating (1971), ondas gravitacionales de LIGO (2015).</p></div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Desviación de la luz por el Sol</h3><span class="tag">Simulador 7</span></div>
-        <canvas id="edd" class="ar-16-9" aria-label="Rayo de luz de una estrella que se curva al pasar cerca del Sol"></canvas>
-        <div class="ctrls"><div class="ctl"><label for="e-b">Distancia del rayo al centro del Sol <output id="e-bv"></output></label><input type="range" id="e-b" min="1" max="10" step="0.1" value="1"></div></div>
-        <div class="reads">
-          <div class="read hi"><small>Einstein (4GM / c²b)</small><b id="e-gr"></b></div>
-          <div class="read"><small>Newton (la mitad)</small><b id="e-nw"></b></div>
-        </div>
-        <canvas id="eddc" class="ar-wide" aria-label="Gráfico de desviación según la distancia, con las mediciones de 1919"></canvas>
-        <p class="hint">Ángulo dibujado exagerado 12.000 veces. ″ = segundo de arco (1/3600 de grado).</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 8 MERCURIO Y MÁS -->
-<section class="slide" data-time="25" data-title="Mercurio y otras pruebas">
-  <div class="wrap">
-    <div class="eyebrow"><span>Tópico 4</span><span>Experimentos históricos · 3</span></div>
-    <div class="split">
-      <div class="stack">
-        <h2>La órbita de Mercurio y otras pruebas</h2>
-        <p>El punto más cercano de la órbita de Mercurio (perihelio) gira lentamente. Newton explicaba casi todo ese giro por la atracción de los otros planetas, pero <b>sobraban 43″ por siglo</b>. En 1915 Einstein calculó exactamente ese valor.</p>
-        <ol class="tl">
-          <li><span class="y">1959</span><span class="t">Pound y Rebka: la luz pierde energía al subir una torre de 22,5 m</span><span class="k">Corrimiento al rojo</span></li>
-          <li><span class="y">1971</span><span class="t">Hafele y Keating: relojes atómicos en aviones se desfasan lo previsto</span><span class="k">Dilatación del tiempo</span></li>
-          <li><span class="y">2015</span><span class="t">LIGO detecta ondas gravitacionales de dos agujeros negros</span><span class="k">Ondas gravitacionales</span></li>
-        </ol>
-      </div>
-      <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Precesión del perihelio de Mercurio</h3><span class="tag">Simulador 8</span></div>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Precesión del perihelio de Mercurio</h3><span class="tag">Simulador 5</span></div>
         <canvas id="merc" class="ar-16-10" aria-label="Órbita de Mercurio que gira lentamente formando una roseta"></canvas>
         <div class="ctrls"><div class="ctl"><label for="m-x">Exageración del efecto <output id="m-xv"></output></label><input type="range" id="m-x" min="3" max="6" step="0.1" value="5"></div></div>
         <div class="reads">
@@ -434,12 +329,25 @@ figcaption{font-size:.78rem;color:var(--muted)}
         </div>
         <p class="hint">Δφ = 6πGM / (c²a(1 − e²)) por órbita, con a = 57,9 millones de km y e = 0,2056.</p>
       </div>
-    </div>
+      </div></div>
+    <div class="tabpanel" id="pan-ed" role="tabpanel" aria-labelledby="tab-ed" hidden>
+      <div class="split"><div class="stack"><h3 class="ph">La luz se curva cerca del Sol</h3><p>Einstein predijo que el Sol desviaría la luz de las estrellas. <b>Eddington</b> lo midió en el eclipse del 29 de mayo de 1919, en Sobral (Brasil) y Príncipe (África). El resultado fue <b>compatible con Einstein</b>: el doble de lo que daba Newton.</p><figure><img src="img/sobral.jpg" alt="Telescopios de la expedición de Sobral, Brasil, 1919, bajo un cobertizo de madera"><figcaption>Telescopios de la expedición a Sobral, Brasil, 1919.</figcaption></figure></div>
+      <div class="inst">
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Desviación de la luz por el Sol</h3><span class="tag">Simulador 6</span></div>
+        <canvas id="edd" class="ar-16-9" aria-label="Rayo de luz de una estrella que se curva al pasar cerca del Sol"></canvas>
+        <div class="ctrls"><div class="ctl"><label for="e-b">Distancia del rayo al centro del Sol <output id="e-bv"></output></label><input type="range" id="e-b" min="1" max="10" step="0.1" value="1"></div></div>
+        <div class="reads">
+          <div class="read hi"><small>Einstein (4GM / c²b)</small><b id="e-gr"></b></div>
+          <div class="read"><small>Newton (la mitad)</small><b id="e-nw"></b></div>
+        </div>
+        <canvas id="eddc" class="ar-wide" aria-label="Gráfico de desviación según la distancia, con las mediciones de 1919"></canvas>
+        <p class="hint">Ángulo dibujado exagerado 12.000 veces. ″ = segundo de arco (1/3600 de grado).</p>
+      </div>
+      </div></div>
   </div>
 </section>
 
-<!-- 9 SOCIEDAD -->
-<section class="slide" data-time="35" data-title="Sociedad y Universo">
+<section class="slide" data-time="55" data-title="Sociedad y Universo">
   <div class="wrap">
     <div class="eyebrow"><span>Tópico 5</span><span>Incidencia en la sociedad y en la concepción del Universo</span></div>
     <h2>Del laboratorio al celular y al Big Bang</h2>
@@ -447,23 +355,14 @@ figcaption{font-size:.78rem;color:var(--muted)}
       <div class="stack">
         <ul class="pts">
           <li><b>GPS:</b> sin correcciones relativistas, la ubicación del celular se equivocaría unos 11 km por día.</li>
-          <li><b>Energía nuclear y medicina:</b> E = mc² explica la energía de las centrales (como Atucha y Embalse) y la tomografía PET.</li>
-          <li><b>Un Universo que cambia:</b> la Relatividad General llevó a la idea de un Universo en expansión y al Big Bang.</li>
-          <li><b>Agujeros negros y ondas gravitacionales:</b> predichos por la teoría y observados en 2015 y 2019.</li>
-          <li><b>Una nueva visión:</b> el espacio y el tiempo dejaron de ser absolutos. Cambió la física, la filosofía y hasta la cultura popular.</li>
+          <li><b>Energía:</b> E = mc² explica la energía nuclear (Atucha y Embalse) y la tomografía PET.</li>
+          <li><b>El Universo:</b> la Relatividad General llevó al Universo en expansión, al Big Bang y a los agujeros negros, observados en 2015 y 2019.</li>
+          <li><b>Una nueva visión:</b> el espacio y el tiempo dejaron de ser absolutos.</li>
         </ul>
-        <div class="inst">
-          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>E = mc²</h3><span class="tag">Simulador 10</span></div>
-          <div class="ctrls"><div class="ctl"><label for="E-m">Masa convertida en energía <output id="E-mv"></output></label><input type="range" id="E-m" min="-3" max="6" step="0.05" value="0"></div></div>
-          <div class="reads">
-            <div class="read hi"><small>Energía</small><b id="E-J"></b></div>
-            <div class="read"><small>Equivale a TNT</small><b id="E-t"></b></div>
-            <div class="read ray"><small>Bombas de Hiroshima (≈15 kt)</small><b id="E-h"></b></div>
-          </div>
-        </div>
+        
       </div>
       <div class="inst">
-        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Relojes de los satélites GPS</h3><span class="tag">Simulador 9</span></div>
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Relojes de los satélites GPS</h3><span class="tag">Simulador 7</span></div>
         <canvas id="gps" class="ar-16-10" aria-label="Tierra y satélite en órbita a la altura elegida"></canvas>
         <div class="ctrls"><div class="ctl"><label for="gps-h">Altura de la órbita <output id="gps-hv"></output></label><input type="range" id="gps-h" min="400" max="36000" step="100" value="20200"></div></div>
         <div class="reads">
@@ -478,8 +377,7 @@ figcaption{font-size:.78rem;color:var(--muted)}
   </div>
 </section>
 
-<!-- 10 CONCLUSIÓN -->
-<section class="slide" data-time="10" data-title="Conclusión">
+<section class="slide" data-time="20" data-title="Conclusión">
   <div class="wrap">
     <div class="eyebrow"><span>Conclusión</span></div>
     <h2>Newton no estaba equivocado: Einstein lo amplió</h2>
@@ -493,8 +391,67 @@ figcaption{font-size:.78rem;color:var(--muted)}
   </div>
 </section>
 
-<!-- 11 BIBLIOGRAFÍA -->
-<section class="slide" data-time="0" data-title="Bibliografía">
+<section class="slide" data-annex="1" data-time="0" data-title="Anexo · Órbitas">
+  <div class="wrap">
+    <div class="eyebrow"><span>Anexo</span><span>Para profundizar · Gravedad</span></div>
+    <div class="split">
+      <div class="stack">
+        <h2>La misma ley arma el Sistema Solar</h2>
+        <p>Con poca velocidad un planeta cae hacia la estrella; con la justa queda en órbita; con demasiada, escapa. Las órbitas son elipses, como describió Kepler.</p>
+        <ul class="pts">
+          <li>Arrastrá sobre el simulador para <b>agregar un planeta</b>: el largo de la flecha es su velocidad.</li>
+          <li>Velocidad circular: v = √(GM / r). Velocidad de escape: √2 veces más.</li>
+          <li>Newton explicaba <i>cómo</i> se mueven, pero no <i>por qué</i> la masa atrae a distancia. Esa pregunta la respondió Einstein.</li>
+        </ul>
+      </div>
+      <div class="inst">
+        <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Simulador de órbitas</h3><span class="tag">Simulador 8 · arrastrá para agregar</span></div>
+        <canvas id="orbit" class="ar-16-10" aria-label="Simulador de órbitas: arrastrá para lanzar planetas"></canvas>
+        <div class="ctrls">
+          <div class="ctl"><label for="o-M">Masa de la estrella <output id="o-Mv"></output></label><input type="range" id="o-M" min="0.4" max="2.5" step="0.05" value="1"></div>
+        </div>
+        <div class="btns">
+          <button class="btn" id="o-circ"><svg class="ic"><use href="#i-orbit"/></svg>Planeta en órbita circular</button>
+          <button class="btn" id="o-esc"><svg class="ic"><use href="#i-plus"/></svg>Planeta con velocidad de escape</button>
+          <button class="btn" id="o-clear"><svg class="ic"><use href="#i-trash"/></svg>Limpiar</button>
+        </div>
+        <div class="reads"><div class="read"><small>Planetas en órbita</small><b id="o-n">0</b></div><div class="read"><small>Chocaron con la estrella</small><b id="o-hit">0</b></div><div class="read"><small>Escaparon</small><b id="o-out">0</b></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-annex="1" data-time="0" data-title="Anexo · Tiempo y energía">
+  <div class="wrap">
+    <div class="eyebrow"><span>Anexo</span><span>Para profundizar · Relatividad</span></div>
+    <h2>Tiempo cerca de una masa y E = mc²</h2>
+    <div class="split"><div class="stack"><div class="inst">
+          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>Tiempo cerca de una masa</h3><span class="tag">Simulador 9</span></div>
+          <select id="td-sel" aria-label="Elegí un cuerpo">
+            <option value="earth">Superficie de la Tierra</option>
+            <option value="sun">Superficie del Sol</option>
+            <option value="wd">Enana blanca (Sirio B)</option>
+            <option value="ns" selected>Estrella de neutrones</option>
+            <option value="bh">Cerca de un agujero negro (1,5 × horizonte)</option>
+          </select>
+          <div class="reads">
+            <div class="read hi"><small>Si lejos pasa 1 año, ahí pasan</small><b id="td-a"></b></div>
+            <div class="read ray"><small>Diferencia por año</small><b id="td-d"></b></div>
+          </div>
+          <p class="hint">√(1 − 2GM / rc²): dilatación gravitacional del tiempo (solución de Schwarzschild).</p>
+        </div></div><div class="inst">
+          <div class="inst-h"><h3><svg class="ic"><use href="#i-sim"/></svg>E = mc²</h3><span class="tag">Simulador 10</span></div>
+          <div class="ctrls"><div class="ctl"><label for="E-m">Masa convertida en energía <output id="E-mv"></output></label><input type="range" id="E-m" min="-3" max="6" step="0.05" value="0"></div></div>
+          <div class="reads">
+            <div class="read hi"><small>Energía</small><b id="E-J"></b></div>
+            <div class="read"><small>Equivale a TNT</small><b id="E-t"></b></div>
+            <div class="read ray"><small>Bombas de Hiroshima (≈15 kt)</small><b id="E-h"></b></div>
+          </div>
+        </div></div>
+  </div>
+</section>
+
+<section class="slide" data-annex="1" data-time="0" data-title="Anexo · Bibliografía">
   <div class="wrap">
     <div class="eyebrow"><span>Fuentes y bibliografía consultada</span></div>
     <h2>Bibliografía</h2>
@@ -513,7 +470,6 @@ figcaption{font-size:.78rem;color:var(--muted)}
     </ol>
   </div>
 </section>
-
 </main>
 <div class="prog" aria-hidden="true"><i id="pbar"></i><b id="pmark"></b></div>
 <nav class="bar" aria-label="Controles de la exposición">
@@ -537,45 +493,37 @@ figcaption{font-size:.78rem;color:var(--muted)}
 <script>
 /* ---------- Guion (≈ 5 minutos) ---------- */
 const NOTES=[
-`Habla: todos (15 s)
-Buenas, somos Bruno, Titi, Titonte y ___. Hoy les vamos a contar cómo pasamos de la manzana de Newton al espacio-tiempo curvo de Einstein, y con qué experimentos se comprobó.
-(El fondo es una simulación de lente gravitacional: la luz de las estrellas se curva alrededor de una masa.)`,
-`Habla: ___ (20 s)
-Durante más de 200 años la gravedad se explicó con la ley de Newton. En 1905 y 1915 Einstein cambió la forma de entender el espacio, el tiempo y la gravedad, y desde entonces muchos experimentos confirmaron sus predicciones. Esta línea de tiempo es el recorrido que vamos a hacer.`,
-`Habla: Titi (40 s)
-La gravedad es el fenómeno por el cual los cuerpos con masa se atraen entre sí, con más fuerza cuanto más masivos son. Es una de las cuatro interacciones fundamentales.
-Newton la explicó con esta fórmula: F = G·m1·m2/r².
-[Tocar "Tierra – Luna"] Entre la Tierra y la Luna hay unos 2 × 10²⁰ newtons.
-[Tocar "Dos personas a 1 m"] Entre dos personas, apenas 0,0000003 N: por eso no lo notamos.
-[Mover la distancia] Si duplicamos la distancia, la fuerza baja a la cuarta parte.`,
-`Habla: Titi (20 s)
-Esa misma fuerza mantiene a los planetas en órbita. [Arrastrar para agregar un planeta] Si lo lanzo lento, cae; con la velocidad justa, orbita; muy rápido, escapa.
-Newton explicaba cómo se mueven, pero no por qué la masa atrae a distancia.`,
-`Habla: Bruno (40 s)
-En 1905 Einstein presentó la Relatividad Especial. Dice que la velocidad de la luz es la misma para todos los observadores.
-Miren el reloj de luz: en la nave, la luz recorre una diagonal más larga. Como la velocidad de la luz no cambia, cada tic tarda más: el tiempo en la nave pasa más lento.
-[Subir la velocidad a 0,99c] Al 99 % de la luz, γ vale 7: un año en la nave son 7 años en la Tierra. También las longitudes se acortan, y masa y energía son equivalentes: E = mc².`,
-`Habla: ___ (35 s)
-En 1915 llegó la Relatividad General, que relaciona gravedad y relatividad. La gravedad no es una fuerza a distancia: la masa curva el espacio-tiempo y los cuerpos siguen el camino más recto posible en ese espacio curvo.
-[Tocar para agregar masas y lanzar una partícula] Esto es una analogía en dos dimensiones.
-Para campos débiles da lo mismo que Newton, pero predice cosas nuevas: por ejemplo, el tiempo pasa más lento cerca de una masa. [Elegir estrella de neutrones] Ahí, un año de afuera son unos 9,7 meses.`,
-`Habla: Bruno (30 s)
-Primer experimento: Michelson y Morley, 1887. Buscaban el éter, el medio por el que se creía que viajaba la luz. Con un interferómetro compararon dos haces de luz perpendiculares.
-[Predicción con éter] Si el éter existiera, al girar el aparato las franjas se tenían que correr así.
-[Resultado real] Pero no se movieron. Fue un antecedente clave de la Relatividad Especial.`,
-`Habla: Bruno (30 s)
-Segundo: el eclipse de 1919. Einstein predijo que la gravedad del Sol desviaría la luz de las estrellas. Eddington organizó observaciones en Sobral y en Príncipe y comparó fotos de las estrellas con y sin el Sol delante.
-Einstein predecía 1,75 segundos de arco en el borde del Sol, el doble que Newton. Las mediciones dieron 1,98 y 1,61: compatibles con Einstein. Esto lo hizo famoso en todo el mundo.`,
-`Habla: ___ (25 s)
-Tercero: la órbita de Mercurio gira lentamente. Con Newton sobraban 43 segundos de arco por siglo que nadie podía explicar; la Relatividad General da exactamente 43.
-Después vinieron más pruebas: Pound y Rebka en 1959, relojes atómicos en aviones en 1971 y las ondas gravitacionales detectadas por LIGO en 2015.`,
-`Habla: ___ (35 s)
-¿Y en la sociedad? El ejemplo más cotidiano es el GPS. Los relojes de los satélites se atrasan 7 microsegundos por día por su velocidad y se adelantan 45 por estar más lejos de la gravedad terrestre. En total, 38 microsegundos por día: sin corregirlo, el GPS se equivocaría unos 11 km por día.
-E = mc² explica la energía nuclear: [1 g] un solo gramo de masa equivale a más de 20.000 toneladas de TNT.
-Y cambió nuestra idea del Universo: un Universo en expansión, el Big Bang, los agujeros negros.`,
-`Habla: todos (10 s)
-Para cerrar: Newton no estaba equivocado, Einstein lo amplió. La gravedad es la forma del espacio-tiempo, y hoy la usamos cada vez que abrimos el GPS. ¡Gracias!`,
-`Bibliografía (no se expone; queda para consulta).`
+`Habla: todos (20 s)
+Buenas, somos Bruno, Titi, Titonte y ___. En cinco minutos vamos a ir de la manzana de Newton al espacio-tiempo curvo de Einstein, ver cómo se comprobó y para qué nos sirve hoy.`,
+`Habla: Titi (45 s)
+La gravedad es la atracción entre cuerpos con masa. Es una de las cuatro interacciones fundamentales de la materia.
+Newton la explicó con esta ley: la fuerza crece con las masas y baja con el cuadrado de la distancia.
+[Tocar "Tierra – Luna"] Entre la Tierra y la Luna: 2 × 10²⁰ newtons.
+[Tocar "Dos personas a 1 m"] Entre dos personas, casi nada.
+[Mover la distancia] El doble de distancia da la cuarta parte de fuerza.`,
+`Habla: Bruno (45 s)
+En 1905 Einstein propuso la Relatividad Especial: la velocidad de la luz es la misma para todos los observadores.
+Miren el reloj de luz: en la nave, la luz hace una diagonal más larga, entonces cada tic tarda más. El tiempo en la nave pasa más lento.
+[Subir a 0,99c] Al 99 % de la luz, un año en la nave son siete en la Tierra. De esta teoría sale también E = mc².`,
+`Habla: ___ (45 s)
+En 1915, la Relatividad General une gravedad y relatividad: la masa curva el espacio-tiempo, y los cuerpos, y hasta la luz, siguen esa curva.
+[Tocar para agregar una masa; cambiar a "lanza una partícula" y tocar] Es una analogía en dos dimensiones.
+Para campos débiles da lo mismo que Newton, pero predice más: la luz se desvía y el tiempo pasa más lento cerca de una masa.`,
+`Habla: Bruno (70 s)
+¿Cómo se comprobó?
+[Pestaña 1887] Michelson y Morley buscaban el éter con un interferómetro. Si existía, las franjas se correrían al girar el aparato. [Tocar "Resultado real"] No se movieron.
+[Pestaña 1915] La órbita de Mercurio gira 43 segundos de arco por siglo más de lo que explicaba Newton. Einstein calculó exactamente 43.
+[Pestaña 1919] Eddington fotografió estrellas durante un eclipse. Einstein predecía 1,75 segundos de arco, el doble que Newton. Se midió 1,98 y 1,61: ganó Einstein.`,
+`Habla: ___ (55 s)
+¿Y en la vida diaria? El GPS. Los relojes de los satélites se atrasan 7 microsegundos por día por su velocidad y se adelantan 45 por estar lejos de la gravedad terrestre. Neto: 38 microsegundos por día. Sin corregirlo, el GPS se equivocaría 11 km por día.
+Además, E = mc² explica la energía nuclear, y la Relatividad General nos dio un Universo en expansión, el Big Bang y los agujeros negros.`,
+`Habla: todos (20 s)
+Newton no estaba equivocado: Einstein lo amplió. La gravedad es la forma del espacio-tiempo, se comprobó una y otra vez, y la usamos cada vez que abrimos el GPS. ¡Gracias! ¿Preguntas?`,
+`Anexo: no se expone. Mostrar solo si hay preguntas o sobra tiempo.
+Arrastrar para agregar planetas: con poca velocidad caen, con la justa orbitan y con mucha escapan.`,
+`Anexo: no se expone. Mostrar solo si hay preguntas o sobra tiempo.
+En una estrella de neutrones, mientras afuera pasa un año, ahí pasan unos 9,7 meses. Un gramo de masa equivale a 21,5 kilotones de TNT.`,
+`Anexo: bibliografía para el informe.`
 ];
 
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
@@ -592,7 +540,7 @@ const G=6.674e-11,c=299792458;
 function cv(id){const el=document.getElementById(id),ctx=el.getContext('2d'),o={el,ctx,w:300,h:150};
   const fit=()=>{const r=el.getBoundingClientRect();if(r.width<2||r.height<2)return;const d=Math.min(2,window.devicePixelRatio||1);el.width=Math.round(r.width*d);el.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0);o.w=r.width;o.h=r.height;if(o.onfit)o.onfit()};
   new ResizeObserver(fit).observe(el);fit();return o}
-const loops=[];function onFrame(id,fn){loops.push({i:slides.indexOf(document.getElementById(id).closest('.slide')),fn})}
+const loops=[];function onFrame(id,fn){const el=document.getElementById(id);loops.push({el,i:slides.indexOf(el.closest('.slide')),fn})}
 function pos(o,e){const r=o.el.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]}
 function arrow(ctx,x1,y1,x2,y2,col,w=2){ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();const a=Math.atan2(y2-y1,x2-x1),s=7+w;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-s*Math.cos(a-.45),y2-s*Math.sin(a-.45));ctx.lineTo(x2-s*Math.cos(a+.45),y2-s*Math.sin(a+.45));ctx.fill()}
 function glow(ctx,x,y,r,col){ctx.fillStyle=rgba(col,.18);ctx.beginPath();ctx.arc(x,y,r*2,0,7);ctx.fill();ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
@@ -820,7 +768,7 @@ function label(ctx,t,x,y,col=COL.muted,align='left',size=12){ctx.fillStyle=col;c
 const lb=$('#lb'),lbimg=$('#lbimg');document.addEventListener('click',e=>{const im=e.target.closest('figure img, .um img');if(im){lbimg.src=im.src;lbimg.alt=im.alt;lb.hidden=false}});lb.onclick=()=>lb.hidden=true;
 slides.forEach((s,i)=>{if(i===0)return;const host=s.querySelector('.wrap');const box=document.createElement('div');box.className='adds';
   box.innerHTML=`<div class="user-media"></div><label class="addbtn"><svg class="ic"><use href="#i-image"/></svg>Agregar imagen<input type="file" accept="image/*" multiple id="add-${i}"></label>`;host.appendChild(box);
-  const list=box.querySelector('.user-media'),key='rel-img-'+i;let imgs=[];try{imgs=JSON.parse(store.get(key)||'[]')}catch(e){}
+  const list=box.querySelector('.user-media'),key='rel2-img-'+i;let imgs=[];try{imgs=JSON.parse(store.get(key)||'[]')}catch(e){}
   const render=()=>{list.innerHTML='';imgs.forEach((src,j)=>{const d=document.createElement('div');d.className='um';d.innerHTML=`<img alt="Imagen agregada ${j+1}"><button aria-label="Quitar imagen"><svg class="ic"><use href="#i-x"/></svg></button>`;d.querySelector('img').src=src;d.querySelector('button').onclick=()=>{imgs.splice(j,1);save();render()};list.appendChild(d)})};
   const save=()=>{if(!store.set(key,JSON.stringify(imgs)))console.warn('Sin espacio para guardar imágenes; quedan solo en esta sesión.')};
   box.querySelector('input').onchange=e=>{[...e.target.files].forEach(f=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1200/Math.max(im.width,im.height));const cvs=document.createElement('canvas');cvs.width=im.width*k;cvs.height=im.height*k;cvs.getContext('2d').drawImage(im,0,0,cvs.width,cvs.height);imgs.push(cvs.toDataURL('image/jpeg',.85));save();render()};im.src=r.result};r.readAsDataURL(f)});e.target.value=''};
@@ -833,12 +781,12 @@ yo.addEventListener('focus',()=>{if(yo.textContent==='Tu nombre'){const r=docume
 /* ---------- Navegación, guion y cronómetro ---------- */
 const times=slides.map(s=>+s.dataset.time||0),starts=times.map((_,i)=>times.slice(0,i).reduce((a,b)=>a+b,0)),TOTAL=times.reduce((a,b)=>a+b,0);
 const notesEl=$('#notes'),ntext=$('#ntext');
-function noteFor(i){return store.get('rel-note-'+i)??NOTES[i]}
+function noteFor(i){return store.get('rel2-note-'+i)??NOTES[i]}
 function go(i){cur=Math.max(0,Math.min(slides.length-1,i));slides.forEach((s,j)=>{s.classList.toggle('active',j===cur);s.setAttribute('aria-hidden',j!==cur)});
-  $('#count').textContent=(cur+1)+' / '+slides.length;$('#stitle').textContent=slides[cur].dataset.title;
+  const nMain=slides.filter(x=>!x.dataset.annex).length;$('#count').textContent=slides[cur].dataset.annex?'Anexo '+(cur-nMain+1)+' / '+(slides.length-nMain):(cur+1)+' / '+nMain;$('#stitle').textContent=slides[cur].dataset.title;
   ntext.textContent=noteFor(cur);$('#nhead').textContent='Guion · '+slides[cur].dataset.title+(times[cur]?' · '+times[cur]+' s':'');
   $('#pmark').style.left=(starts[cur]/TOTAL*100)+'%';try{if(location.hash!=='#s'+cur)history.replaceState(null,'','#s'+cur)}catch(e){}tick()}
-ntext.addEventListener('input',()=>store.set('rel-note-'+cur,ntext.innerText));
+ntext.addEventListener('input',()=>store.set('rel2-note-'+cur,ntext.innerText));
 $('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);
 const root=document.documentElement,mq=matchMedia('(prefers-color-scheme: dark)');
 const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
@@ -852,11 +800,13 @@ document.addEventListener('keydown',e=>{if(e.target.isContentEditable||/INPUT|SE
   if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();go(cur+1)}else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(cur-1)}else if(e.key==='n'||e.key==='N')$('#notesbtn').click();else if(e.key==='Escape')lb.hidden=true});
 let run=false,el=0,lastT=0;const mmss=s=>{const a=Math.abs(Math.round(s));return(s<0?'+':'')+Math.floor(a/60)+':'+String(a%60).padStart(2,'0')};
 function tick(){const rem=TOTAL-el;$('#tico').setAttribute('href',run?'#i-pause':'#i-play');$('#ttime').textContent=mmss(rem);$('#pbar').style.width=Math.min(100,el/TOTAL*100)+'%';
-  const ahead=el-(starts[cur]+times[cur]);const d=el===0?'':el<starts[cur]?'vas '+Math.round(starts[cur]-el)+' s adelantado':ahead>0?'vas '+Math.round(ahead)+' s atrasado':'a tiempo';$('#tdelta').textContent=d;
+  const ahead=el-(starts[cur]+times[cur]);const d=(el===0||slides[cur].dataset.annex)?'':el<starts[cur]?'vas '+Math.round(starts[cur]-el)+' s adelantado':ahead>0?'vas '+Math.round(ahead)+' s atrasado':'a tiempo';$('#tdelta').textContent=d;
   $('#ttime').style.color=rem<0?COL.mass:rem<30?COL.sun:''}
+$$('.tabs').forEach(tl=>{const tabs=[...tl.querySelectorAll('[role=tab]')];const sel=t=>tabs.forEach(b=>{const on=b===t;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1;document.getElementById(b.getAttribute('aria-controls')).hidden=!on});
+  tabs.forEach((b,k)=>{b.onclick=()=>sel(b);b.onkeydown=e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();e.stopPropagation();const n=tabs[(k+(e.key==='ArrowRight'?1:tabs.length-1))%tabs.length];sel(n);n.focus()}}});sel(tabs[0])});
 $('#tbtn').onclick=()=>{run=!run;lastT=performance.now();tick()};$('#treset').onclick=()=>{run=false;el=0;tick()};
 setInterval(()=>{if(run){const n=performance.now();el+=(n-lastT)/1000;lastT=n;tick()}},250);
 addEventListener('hashchange',()=>{const m=/^#s(\d+)$/.exec(location.hash);if(m&&+m[1]!==cur)go(+m[1])});
 {const m=/^#s(\d+)$/.exec(location.hash);go(m?+m[1]:0)}
-let lastF=performance.now();function frame(now){const dt=Math.min(.05,(now-lastF)/1000);lastF=now;for(const l of loops)if(l.i===cur)l.fn(dt);requestAnimationFrame(frame)}requestAnimationFrame(frame);
+let lastF=performance.now();function frame(now){const dt=Math.min(.05,(now-lastF)/1000);lastF=now;for(const l of loops)if(l.i===cur&&l.el.offsetWidth)l.fn(dt);requestAnimationFrame(frame)}requestAnimationFrame(frame);
 </script>
