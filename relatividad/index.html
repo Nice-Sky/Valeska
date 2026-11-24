@@ -242,6 +242,27 @@ details.more[open] summary::before{content:"−"}
 .steps li{counter-increment:st;display:grid;grid-template-columns:28px minmax(0,1fr);gap:10px;align-items:baseline}
 .steps li::before{content:counter(st);font-family:var(--mono);font-size:.8rem;color:var(--sun-ink);background:var(--sun);width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center}
 
+/* ---------- recorrido de experimentos ---------- */
+.xtl{position:relative;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding-top:14px}
+.xtl .rail{position:absolute;left:0;right:0;top:4px;height:2px;background:var(--line)}
+.xtl .fill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--sun);transition:width 1.4s var(--ez) .3s}
+.xtl.in .fill,html:not(.anim) .xtl .fill{width:var(--w)}
+.xn{position:relative;background:none;border:0;padding:8px 8px 0 0;text-align:left;cursor:pointer;display:flex;flex-direction:column;gap:2px;color:var(--muted);font-size:.9rem;min-width:0}
+.xn::before{content:"";position:absolute;left:0;top:-14px;width:10px;height:10px;background:var(--surface);border:2px solid var(--line);transition:background .4s,border-color .4s}
+.xn .y{font-family:var(--mono);font-size:.78rem}
+.xn.done::before{background:var(--sun);border-color:var(--sun)}
+.xn.on{color:var(--text);font-weight:500}
+.xn.on::before{background:var(--sun);border-color:var(--sun);box-shadow:0 0 0 4px var(--soft)}
+.xn.on .y{color:var(--sun)}
+.xn:hover{color:var(--text)}
+.nextx{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;background:none;border:0;border-top:1px solid var(--line);padding:12px 0 0;cursor:pointer;color:var(--muted);font-size:.9rem}
+.nextx:hover{color:var(--sun)}
+.nextx .ic{color:var(--sun);animation:bob 1.8s ease-in-out infinite}
+.saytext{font-size:clamp(1.12rem,1.65vw,1.38rem);line-height:1.55;max-width:46ch}
+.saytext b{color:var(--sun);font-weight:600}
+.src{font-size:.76rem;color:var(--muted);border-top:1px solid var(--line);padding-top:10px;max-width:60ch}
+.src b{color:var(--text);font-weight:500}
+
 /* ---------- vistas 3D ---------- */
 .view{position:relative;overflow:hidden;border-radius:2px}
 .view canvas{cursor:grab}
@@ -302,7 +323,7 @@ html.anim .rv.in .w>span{transform:none}
       <h1>De la manzana al <em>espacio-tiempo</em></h1>
       <p class="lead">Gravedad, Teoría de la Relatividad y los experimentos que la comprobaron.</p>
       <p class="tl-line">1687 Newton · 1887 Michelson y Morley · 1905 y 1915 Einstein · 1919 el eclipse · hoy, el GPS</p>
-      <div class="who"><span>Bruno</span><span>Titi</span><span>Titonte</span><span contenteditable="true" spellcheck="false" id="yo" title="Tocá para escribir tu nombre">Tu nombre</span></div>
+      <div class="who"><span>Bruno Rinaldi</span><span>Valentino Scarponi</span><span>Valentín Carbajal</span><span>Nicandro González</span></div>
       <div class="meta"><span>Física · Trabajo de investigación y exposición</span><span>Prof. Aldana Salinero Spitale</span><span>Noviembre 2026</span></div>
       <button class="cue" id="cue"><svg class="ic"><use href="#i-down"/></svg>Deslizá para empezar</button>
     </div>
@@ -316,7 +337,7 @@ html.anim .rv.in .w>span{transform:none}
 <!-- GRAVEDAD -->
 <section class="slide" data-time="45" data-title="Gravedad">
   <div class="wrap">
-    <div class="eyebrow"><span>Tópico 1</span><span>Gravedad</span></div>
+    <div class="eyebrow"><span>Tópico 1 · Gravedad</span><span>Expone: <b class="me">Valentino Scarponi</b></span></div>
     <div class="split">
       <div class="stack">
         <h2>¿Qué es la gravedad?</h2>
@@ -359,7 +380,7 @@ html.anim .rv.in .w>span{transform:none}
 <!-- RELATIVIDAD ESPECIAL -->
 <section class="slide" data-time="45" data-title="Relatividad Especial">
   <div class="wrap">
-    <div class="eyebrow"><span>Tópico 2</span><span>Teoría de la Relatividad · 1905</span></div>
+    <div class="eyebrow"><span>Tópico 2 · Teoría de la Relatividad</span><span>Expone: <b class="me">Valentín Carbajal</b></span></div>
     <div class="split">
       <div class="stack">
         <h2>¿Qué es la Teoría de la Relatividad?</h2>
@@ -391,7 +412,7 @@ html.anim .rv.in .w>span{transform:none}
 <!-- RELATIVIDAD GENERAL -->
 <section class="slide" data-time="45" data-title="Gravedad y Relatividad">
   <div class="wrap">
-    <div class="eyebrow"><span>Tópico 3</span><span>Relación entre gravedad y Relatividad · 1915</span></div>
+    <div class="eyebrow"><span>Tópico 3 · Gravedad y Relatividad</span><span>Expone: <b class="me">Valentín Carbajal</b></span></div>
     <div class="split">
       <div class="stack">
         <h2>¿Qué relación existe entre la gravedad y la relatividad?</h2>
@@ -419,19 +440,13 @@ html.anim .rv.in .w>span{transform:none}
   </div>
 </section>
 
-<!-- EXPERIMENTOS -->
-<section class="slide" data-time="70" data-title="Experimentos">
+<!-- EXPERIMENTO 1 -->
+<section class="slide" data-time="25" data-title="Experimento 1 · Michelson y Morley" data-x="0">
   <div class="wrap">
-    <div class="eyebrow"><span>Tópico 4</span><span>Experimentos históricos para comprobar la Relatividad</span></div>
+    <div class="eyebrow"><span>Tópico 4 · Experimento 1 de 3</span><span>Expone: <b class="me">Bruno Rinaldi</b></span></div>
     <h2>Tres pruebas que confirmaron a Einstein</h2>
-    <div class="tabs" role="tablist" aria-label="Experimentos">
-      <button role="tab" id="tab-mm" aria-controls="pan-mm" aria-selected="true"><span class="y">1887</span>Michelson y Morley</button>
-      <button role="tab" id="tab-me" aria-controls="pan-me" aria-selected="false"><span class="y">1915</span>Órbita de Mercurio</button>
-      <button role="tab" id="tab-ed" aria-controls="pan-ed" aria-selected="false"><span class="y">1919</span>Eclipse de Eddington</button>
-    </div>
-
-    <div class="tabpanel" id="pan-mm" role="tabpanel" aria-labelledby="tab-mm">
-      <div class="split">
+    <div class="xtl" style="--w:0%"><span class="rail"><i class="fill"></i></span><button class="xn on" data-go="0"><span class="y">1887</span><span>Michelson y Morley</span></button><button class="xn" data-go="1"><span class="y">1915</span><span>Órbita de Mercurio</span></button><button class="xn" data-go="2"><span class="y">1919</span><span>Eclipse de Eddington</span></button></div>
+    <div class="split">
         <div class="stack">
           <h3 class="ph">Buscando el éter</h3>
           <p>Buscaban el <b>éter</b>, el supuesto medio por el que viajaba la luz, con un <b>interferómetro</b>. Si existía, al girar el aparato las franjas se correrían 0,4. <b>No se movieron.</b> Fue la base de la Relatividad Especial.</p>
@@ -450,10 +465,16 @@ html.anim .rv.in .w>span{transform:none}
           <p class="hint">ΔN = 2Lv² / (λc²), con brazos de L = 11 m (luz reflejada varias veces) y λ = 500 nm.</p>
         </div>
       </div>
-    </div>
+    <button class="nextx"><span>Siguiente prueba: 1915 · Órbita de Mercurio</span><svg class="ic"><use href="#i-down"/></svg></button>
+  </div>
+</section>
 
-    <div class="tabpanel" id="pan-me" role="tabpanel" aria-labelledby="tab-me" hidden>
-      <div class="split">
+<!-- EXPERIMENTO 2 -->
+<section class="slide" data-time="20" data-title="Experimento 2 · Órbita de Mercurio" data-x="1">
+  <div class="wrap">
+    <div class="eyebrow"><span>Tópico 4 · Experimento 2 de 3</span><span>Expone: <b class="me">Bruno Rinaldi</b></span></div>
+    <div class="xtl" style="--w:50%"><span class="rail"><i class="fill"></i></span><button class="xn done" data-go="0"><span class="y">1887</span><span>Michelson y Morley</span></button><button class="xn on" data-go="1"><span class="y">1915</span><span>Órbita de Mercurio</span></button><button class="xn" data-go="2"><span class="y">1919</span><span>Eclipse de Eddington</span></button></div>
+    <div class="split">
         <div class="stack">
           <h3 class="ph">43″ que Newton no explicaba</h3>
           <p>La órbita de Mercurio gira lentamente. Los otros planetas explicaban casi todo ese giro, pero <b>sobraban 43″ por siglo</b>. En 1915 la Relatividad General dio exactamente ese valor.</p>
@@ -473,10 +494,16 @@ html.anim .rv.in .w>span{transform:none}
           <p class="hint">Δφ = 6πGM / (c²a(1 − e²)) por vuelta, con a = 57,9 millones de km y e = 0,2056.</p>
         </div>
       </div>
-    </div>
+    <button class="nextx"><span>Siguiente prueba: 1919 · Eclipse de Eddington</span><svg class="ic"><use href="#i-down"/></svg></button>
+  </div>
+</section>
 
-    <div class="tabpanel" id="pan-ed" role="tabpanel" aria-labelledby="tab-ed" hidden>
-      <div class="split">
+<!-- EXPERIMENTO 3 -->
+<section class="slide" data-time="25" data-title="Experimento 3 · Eclipse de Eddington" data-x="2">
+  <div class="wrap">
+    <div class="eyebrow"><span>Tópico 4 · Experimento 3 de 3</span><span>Expone: <b class="me">Bruno Rinaldi</b></span></div>
+    <div class="xtl" style="--w:100%"><span class="rail"><i class="fill"></i></span><button class="xn done" data-go="0"><span class="y">1887</span><span>Michelson y Morley</span></button><button class="xn done" data-go="1"><span class="y">1915</span><span>Órbita de Mercurio</span></button><button class="xn on" data-go="2"><span class="y">1919</span><span>Eclipse de Eddington</span></button></div>
+    <div class="split">
         <div class="stack">
           <h3 class="ph">La luz se curva cerca del Sol</h3>
           <p>Einstein predijo que el Sol desviaría la luz de las estrellas. <b>Eddington</b> lo midió en el eclipse del 29 de mayo de 1919, en Sobral (Brasil) y Príncipe (África). El resultado fue <b>compatible con Einstein</b>: el doble de lo que daba Newton.</p>
@@ -494,24 +521,19 @@ html.anim .rv.in .w>span{transform:none}
           <p class="hint">Ángulo dibujado 12.000 veces más grande. ″ = segundo de arco (1/3600 de grado).</p>
         </div>
       </div>
-    </div>
+    <button class="nextx"><span>Siguiente: la Relatividad en la sociedad</span><svg class="ic"><use href="#i-down"/></svg></button>
   </div>
 </section>
 
 <!-- SOCIEDAD -->
 <section class="slide" data-time="30" data-title="Incidencia en la sociedad">
   <div class="wrap">
-    <div class="eyebrow"><span>Tópico 5 · Parte 1</span><span>Expone: <b class="me">vos</b></span></div>
+    <div class="eyebrow"><span>Tópico 5 · Parte 1</span><span>Expone: <b class="me">Nicandro González</b></span></div>
     <div class="split">
       <div class="stack">
         <h2>La Relatividad en la sociedad</h2>
-        <ol class="say">
-          <li>La Relatividad se usa todos los días.</li>
-          <li>El GPS del celular funciona gracias a Einstein.</li>
-          <li>Los relojes de los satélites van un poquito más rápido que los nuestros.</li>
-          <li>Sin corregirlo, el GPS se equivocaría 11 km por día.</li>
-          <li>Además, E = mc² explica la energía nuclear.</li>
-        </ol>
+        <p class="saytext">La Teoría de la Relatividad no quedó en los libros: la usamos todos los días. El <b>GPS del celular</b> funciona porque se corrigen los relojes de los satélites, que marchan un poquito más rápido que los de la Tierra; sin esa corrección se equivocaría <b>unos 11 km por día</b>. Y con <b>E = mc²</b> se explica la energía de centrales argentinas como <b>Atucha y Embalse</b>. Pero Einstein no solo cambió la tecnología: también cambió cómo vemos el Universo.</p>
+        <p class="src"><b>Fuentes:</b> Revista de Enseñanza de la Física, Universidad Nacional de Córdoba (2008), sobre las correcciones relativistas del GPS · Comisión Nacional de Energía Atómica (CNEA), «Sector nuclear».</p>
       </div>
       <div class="inst">
         <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>Satélites GPS alrededor de la Tierra</h3><div class="inst-a"><span class="tag">Simulador 7</span></div></div>
@@ -537,16 +559,12 @@ html.anim .rv.in .w>span{transform:none}
 <!-- UNIVERSO -->
 <section class="slide" data-time="25" data-title="Incidencia en el Universo">
   <div class="wrap">
-    <div class="eyebrow"><span>Tópico 5 · Parte 2</span><span>Expone: <b class="me">vos</b></span></div>
+    <div class="eyebrow"><span>Tópico 5 · Parte 2</span><span>Expone: <b class="me">Nicandro González</b></span></div>
     <div class="split">
       <div class="stack">
         <h2>La Relatividad y el Universo</h2>
-        <ol class="say">
-          <li>Antes se creía que el Universo era fijo y eterno.</li>
-          <li>Gracias a Einstein, sabemos que se expande.</li>
-          <li>Empezó con el Big Bang, hace 13.800 millones de años.</li>
-          <li>Y también predijo los agujeros negros.</li>
-        </ol>
+        <p class="saytext">Antes se creía que el Universo era fijo y eterno. La Relatividad General mostró que <b>se expande</b>, y eso llevó a la idea del <b>Big Bang</b>: un comienzo hace unos <b>13.800 millones de años</b>. También predijo los <b>agujeros negros</b>. Así, Einstein cambió tanto nuestra vida diaria como nuestra idea del Universo.</p>
+        <p class="src"><b>Fuentes:</b> Planetario de la Ciudad de Buenos Aires Galileo Galilei, revista <i>Si Muove</i>: «Cinco pasos hacia el Big Bang», de Juan Carlos Forte (CONICET) · CONICET, divulgación de Gustavo E. Romero sobre Relatividad General y agujeros negros.</p>
       </div>
       <div class="inst">
         <div class="inst-h"><h3><svg class="ic"><use href="#i-cube"/></svg>El Universo se expande</h3><div class="inst-a"><button class="btn" id="u-bang"><svg class="ic"><use href="#i-reset"/></svg>Volver al Big Bang</button><button class="btn ib" id="u-play" aria-label="Pausar"><svg class="ic"><use href="#i-pause"/></svg></button><span class="tag">Simulador 8</span></div></div>
@@ -653,6 +671,10 @@ html.anim .rv.in .w>span{transform:none}
       <li>Ashby, N. (2003). Relativity in the Global Positioning System. <i>Living Reviews in Relativity</i>, 6, 1.</li>
       <li>Abbott, B. P. et al. (LIGO y Virgo) (2016). Observation of Gravitational Waves from a Binary Black Hole Merger. <i>Physical Review Letters</i>, 116, 061102.</li>
       <li>Hawking, S. (1988). <i>Historia del tiempo: del Big Bang a los agujeros negros</i>. Crítica.</li>
+      <li><b>Fuentes argentinas (Tópico 5):</b> Comisión Nacional de Energía Atómica (CNEA). «Sector nuclear». argentina.gob.ar/cnea/sector-nuclear</li>
+      <li>Revista de Enseñanza de la Física (2008). Universidad Nacional de Córdoba. Artículo sobre las correcciones relativistas en los satélites GPS. revistas.unc.edu.ar/index.php/revistaEF</li>
+      <li>Forte, J. C. «Cinco pasos hacia el Big Bang». <i>Si Muove</i>, revista del Planetario de la Ciudad de Buenos Aires Galileo Galilei. planetario.buenosaires.gob.ar</li>
+      <li>CONICET. Notas de divulgación con Gustavo E. Romero (Instituto Argentino de Radioastronomía) sobre Relatividad General. conicet.gov.ar</li>
       <li>Agencia Espacial Europea (ESA). ¿Qué es la gravedad? Disponible en: esa.int/es/articles/about-us/who-we-are/member-states/spain/que-es-la-gravedad</li>
       <li>Geoenciclopedia. Gravedad: Ley de Gravitación Universal.</li>
     </ol>
@@ -668,7 +690,6 @@ html.anim .rv.in .w>span{transform:none}
   <div class="timer"><span id="tdelta"></span><button class="btn" id="tbtn" aria-label="Iniciar o pausar el cronómetro"><svg class="ic"><use id="tico" href="#i-play"/></svg><span id="ttime">5:00</span></button><button class="btn ib" id="treset" aria-label="Reiniciar cronómetro"><svg class="ic"><use href="#i-reset"/></svg></button></div>
   <span class="sep"></span>
   <button class="btn" id="notesbtn" aria-pressed="false"><svg class="ic"><use href="#i-notes"/></svg><span>Guion</span></button>
-  <button class="btn ib" id="sndbtn" aria-pressed="false" aria-label="Activar sonido"><svg class="ic"><use id="sndico" href="#i-mute"/></svg></button>
   <button class="btn ib" id="themebtn" aria-label="Cambiar tema claro u oscuro"><svg class="ic"><use id="thico" href="#i-moon"/></svg></button>
   <button class="btn ib" id="fsbtn" aria-label="Pantalla completa"><svg class="ic"><use href="#i-max"/></svg></button>
 </nav>
@@ -686,41 +707,38 @@ html.anim .rv.in .w>span{transform:none}
 /* ---------- Guion (≈ 5 minutos) ---------- */
 const NOTES=[
 `Habla: todos (20 s)
-Buenas, somos Bruno, Titi, Titonte y ___. En cinco minutos vamos a ir de la manzana de Newton al espacio-tiempo curvo de Einstein, ver cómo se comprobó y para qué nos sirve hoy.`,
-`Habla: Titi (45 s)
+Buenas, somos Bruno Rinaldi, Valentino Scarponi, Valentín Carbajal y Nicandro González. En cinco minutos vamos a ir de la manzana de Newton al espacio-tiempo curvo de Einstein, ver cómo se comprobó y para qué nos sirve hoy.`,
+`Habla: Valentino Scarponi (45 s)
 La gravedad es la atracción entre cuerpos con masa. Es una de las cuatro interacciones fundamentales de la materia.
 Newton la explicó con esta ley: la fuerza crece con las masas y baja con el cuadrado de la distancia.
 [Tocar "Tierra – Luna"] Entre la Tierra y la Luna: 2 × 10²⁰ newtons.
 [Tocar "Dos personas a 1 m"] Entre dos personas, casi nada.
 [Arrastrar un cuerpo para alejarlo] El doble de distancia da la cuarta parte de fuerza.`,
-`Habla: Tito (45 s)
+`Habla: Valentín Carbajal (45 s)
 ¿Qué es la Teoría de la Relatividad? La desarrolló Albert Einstein y tiene dos partes.
 La Relatividad Especial, de 1905, dice que el espacio y el tiempo están relacionados, que las leyes de la física son las mismas para todos los que se mueven a velocidad constante y que la velocidad de la luz es siempre la misma.
 [Señalar el reloj de luz] Por eso un reloj que se mueve muy rápido marcha más lento: miren cómo se atrasa el contador de la nave.
 La Relatividad General, de 1915, explica la gravedad: la masa y la energía deforman el espacio-tiempo.`,
-`Habla: Tito (45 s)
+`Habla: Valentín Carbajal (45 s)
 ¿Qué relación hay entre la gravedad y la relatividad? Para Einstein, la gravedad es una consecuencia de la curvatura del espacio-tiempo.
 [Señalar la malla] El Sol tiene mucha masa y curva el espacio-tiempo. La Tierra se mueve siguiendo esa curva, y por eso orbita alrededor del Sol.
 La diferencia: para Newton la gravedad es una fuerza entre masas y funciona muy bien en lo cotidiano. Einstein la explica como curvatura y así puede explicar fenómenos extremos que Newton no podía.`,
-`Habla: Bruno (70 s)
-¿Cómo se comprobó?
-[Pestaña 1887] Michelson y Morley buscaban el éter con un interferómetro. Si existía, las franjas se correrían al girar el aparato. [Tocar "Lo que midieron en 1887"] No se movieron.
-[Pestaña 1915] La órbita de Mercurio gira 43 segundos de arco por siglo más de lo que explicaba Newton. Einstein calculó exactamente 43.
-[Pestaña 1919] Eddington fotografió estrellas durante un eclipse. Einstein predecía 1,75 segundos de arco, el doble que Newton. Se midió 1,98 y 1,61: ganó Einstein.`,
-`Habla: vos (30 s) — leé los puntos de la pantalla en orden
-1. La Relatividad se usa todos los días.
-2. El GPS del celular funciona gracias a Einstein.
-3. Los relojes de los satélites van un poquito más rápido que los nuestros.
-4. Sin corregirlo, el GPS se equivocaría 11 km por día. [Señalar el número naranja]
-5. Además, E = mc² explica la energía nuclear.
+`Habla: Bruno Rinaldi (25 s)
+¿Cómo se comprobó la Relatividad? Les muestro tres pruebas.
+La primera: Michelson y Morley, en 1887. Buscaban el éter con un interferómetro. Si existía, al girar el aparato las franjas se tenían que correr. [Tocar "Lo que midieron en 1887"] No se movieron.
+[Tocar "Siguiente prueba"]`,
+`Habla: Bruno Rinaldi (20 s)
+La segunda: la órbita de Mercurio gira 43 segundos de arco por siglo más de lo que explicaba Newton. En 1915 Einstein calculó exactamente 43.
+[Tocar "Siguiente prueba"]`,
+`Habla: Bruno Rinaldi (25 s)
+La tercera: el eclipse de 1919. Eddington fotografió estrellas cerca del Sol. Einstein predecía 1,75 segundos de arco, el doble que Newton. Se midió 1,98 y 1,61: ganó Einstein.`,
+`Habla: Nicandro González (30 s) — leé el texto de la pantalla
+La Teoría de la Relatividad no quedó en los libros: la usamos todos los días. El GPS del celular funciona porque se corrigen los relojes de los satélites, que marchan un poquito más rápido que los de la Tierra; sin esa corrección se equivocaría unos 11 km por día. Y con E = mc² se explica la energía de centrales argentinas como Atucha y Embalse. Pero Einstein no solo cambió la tecnología: también cambió cómo vemos el Universo.
 
 SI TE PREGUNTAN
 ¿Por qué van más rápido? Porque allá arriba la gravedad es más débil, y con menos gravedad el tiempo pasa un poquito más rápido.`,
-`Habla: vos (25 s) — leé los puntos de la pantalla en orden
-1. Antes se creía que el Universo era fijo y eterno.
-2. Gracias a Einstein, sabemos que se expande. [Tocar "Volver al Big Bang"]
-3. Empezó con el Big Bang, hace 13.800 millones de años.
-4. Y también predijo los agujeros negros.
+`Habla: Nicandro González (25 s) — leé el texto de la pantalla
+[Tocar "Volver al Big Bang"] Antes se creía que el Universo era fijo y eterno. La Relatividad General mostró que se expande, y eso llevó a la idea del Big Bang: un comienzo hace unos 13.800 millones de años. También predijo los agujeros negros. Así, Einstein cambió tanto nuestra vida diaria como nuestra idea del Universo.
 
 SI TE PREGUNTAN
 ¿Qué es el Big Bang? El comienzo del Universo: todo estaba junto y desde ahí se fue expandiendo.`,
@@ -772,11 +790,7 @@ function arrow(ctx,x1,y1,x2,y2,col,w=2){ctx.strokeStyle=col;ctx.fillStyle=col;ct
 function disc(ctx,x,y,r,col,halo=.16){if(halo>0){ctx.fillStyle=rgba(col,halo);ctx.beginPath();ctx.arc(x,y,r+Math.max(4,r*.45),0,7);ctx.fill()}ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
 function trail(ctx,pts,col,w=1.5,maxA=.8,map){const n=pts.length;if(n<2)return;ctx.lineWidth=w;ctx.lineCap='round';const chunk=Math.max(2,Math.ceil(n/14));for(let i=0;i<n-1;i+=chunk){ctx.strokeStyle=rgba(col,maxA*((i+chunk)/n));ctx.beginPath();for(let j=i;j<=Math.min(n-1,i+chunk);j++){const p=map?map(pts[j]):pts[j];j===i?ctx.moveTo(p[0],p[1]):ctx.lineTo(p[0],p[1])}ctx.stroke()}}
 
-/* ---------- sonido (sintetizado, sin archivos) ---------- */
-const SND={on:false,ctx:null};
-function ac(){if(!SND.ctx){const A=window.AudioContext||window.webkitAudioContext;if(!A)return null;try{SND.ctx=new A()}catch(e){return null}}return SND.ctx}
-function tone(f,dur=.08,type='sine',vol=.12,slide=0,delay=0){if(!SND.on)return;const a=ac();if(!a)return;const t=a.currentTime+delay,os=a.createOscillator(),g=a.createGain();os.type=type;os.frequency.setValueAtTime(f,t);if(slide)os.frequency.exponentialRampToValueAtTime(Math.max(30,f*slide),t+dur);g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);os.connect(g);g.connect(a.destination);os.start(t);os.stop(t+dur+.05)}
-const sfx={tickE:()=>tone(1760,.06,'sine',.07),tickS:()=>tone(1175,.06,'sine',.07),drop:()=>{tone(150,.5,'sine',.22,.45);tone(300,.12,'triangle',.05)},launch:()=>tone(420,.22,'triangle',.07,2.4),hit:()=>tone(110,.32,'sine',.18,.5),ping:()=>{tone(1318,.35,'sine',.05);tone(1976,.25,'sine',.025,0,.05)},ui:()=>tone(990,.035,'sine',.035),turn:()=>tone(660,.05,'triangle',.04),whoosh:()=>tone(240,.35,'triangle',.025,1.8)};
+const sfx=new Proxy({},{get:()=>()=>{}});
 
 /* ---------- 3D: cámara orbital, etiquetas y gestos ---------- */
 const HAS3=!!window.THREE&&(()=>{try{const t=document.createElement('canvas');return!!(t.getContext('webgl')||t.getContext('experimental-webgl'))}catch(e){return false}})();
@@ -1135,12 +1149,10 @@ slides.forEach((s,i)=>{if(i===0)return;const host=s.querySelector('.wrap');const
   const save=()=>{if(!store.set(key,JSON.stringify(imgs)))console.warn('Sin espacio para guardar imágenes; quedan solo en esta sesión.')};
   box.querySelector('input').onchange=e=>{[...e.target.files].forEach(f=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1200/Math.max(im.width,im.height)),cvs=document.createElement('canvas');cvs.width=im.width*k;cvs.height=im.height*k;cvs.getContext('2d').drawImage(im,0,0,cvs.width,cvs.height);imgs.push(cvs.toDataURL('image/jpeg',.85));save();render()};im.src=r.result};r.readAsDataURL(f)});e.target.value=''};
   render()});
-const yo=$('#yo');const yv=store.get('rel-yo');if(yv)yo.textContent=yv;const meName=()=>{const n=yo.textContent.trim();$$('.me').forEach(e=>e.textContent=n&&n!=='Tu nombre'?n:'vos')};meName();yo.addEventListener('input',()=>{store.set('rel-yo',yo.textContent);meName()});
-yo.addEventListener('focus',()=>{if(yo.textContent==='Tu nombre'){const r=document.createRange();r.selectNodeContents(yo);const s=getSelection();s.removeAllRanges();s.addRange(r)}});
 
 /* ---------- animaciones de entrada y salida ---------- */
 function splitWords(el){let j=0;const walk=n=>{[...n.childNodes].forEach(ch=>{if(ch.nodeType===3){const frag=document.createDocumentFragment();ch.textContent.split(/(\s+)/).forEach(t=>{if(!t)return;if(/^\s+$/.test(t)){frag.appendChild(document.createTextNode(t));return}const w=document.createElement('span');w.className='w';const inn=document.createElement('span');inn.textContent=t;inn.style.setProperty('--j',j++);w.appendChild(inn);frag.appendChild(w)});ch.replaceWith(frag)}else if(ch.nodeType===1)walk(ch)})};walk(el)}
-const RV='.eyebrow, h1, h2, .lead, .tl-line, .who, .meta, .cue, .cover-fig, .stack>p, .stack>h3, ul.pts>li, .plate, .formula, .media-row, .inst, .tabs, .concl>div, .biblio li, .adds, .two, .steps>li, .vs, .say>li, .big-read';
+const RV='.eyebrow, h1, h2, .lead, .tl-line, .who, .meta, .cue, .cover-fig, .stack>p, .stack>h3, ul.pts>li, .plate, .formula, .media-row, .inst, .tabs, .concl>div, .biblio li, .adds, .two, .steps>li, .vs, .say>li, .big-read, .xtl, .nextx, .saytext, .src';
 slides.forEach(s=>{let k=0;s.querySelectorAll(RV).forEach(el=>{if(el.parentElement.closest('.rv'))return;el.classList.add('rv');el.style.setProperty('--i',Math.min(k++,8));if(/^H[12]$/.test(el.tagName))splitWords(el)})});
 const rvIO=new IntersectionObserver(es=>es.forEach(e=>{const el=e.target;if(e.isIntersecting){el.classList.add('in');el.classList.remove('up')}else{el.classList.remove('in');el.classList.toggle('up',e.boundingClientRect.top<(e.rootBounds?e.rootBounds.top:0))}}),{root:stage,rootMargin:'0px 0px -6% 0px',threshold:.08});
 $$('.rv').forEach(el=>rvIO.observe(el));
@@ -1150,21 +1162,21 @@ const sizeStage=()=>root.style.setProperty('--sh',stage.clientHeight+'px');new R
 const times=slides.map(s=>+s.dataset.time||0),starts=times.map((_,i)=>times.slice(0,i).reduce((a,b)=>a+b,0)),TOTAL=times.reduce((a,b)=>a+b,0);
 const nMain=slides.filter(x=>!x.dataset.annex).length;
 const dots=$('#dots');slides.forEach((s,i)=>{const b=document.createElement('button');b.className=s.dataset.annex?'ax':'';b.setAttribute('aria-label',s.dataset.title);b.innerHTML=`<span>${s.dataset.title}</span>`;b.onclick=()=>go(i);dots.appendChild(b)});
-const notesEl=$('#notes'),ntext=$('#ntext');const noteFor=i=>store.get('rel6-note-'+i)??NOTES[i];
+const notesEl=$('#notes'),ntext=$('#ntext');const noteFor=i=>store.get('rel7-note-'+i)??NOTES[i];
 function go(i){i=clamp(i,0,slides.length-1);slides[i].scrollIntoView({behavior:RM?'auto':'smooth',block:'start'})}
 function setCur(i){if(i!==cur)sfx.whoosh();cur=i;const s=slides[i];$('#count').textContent=s.dataset.annex?'Anexo '+(i-nMain+1)+' / '+(slides.length-nMain):(i+1)+' / '+nMain;$('#stitle').textContent=s.dataset.title;
   [...dots.children].forEach((b,k)=>b.classList.toggle('on',k===i));ntext.textContent=noteFor(i);$('#nhead').textContent='Guion · '+s.dataset.title+(times[i]?' · '+times[i]+' s':'');
   $('#pmark').style.left=(Math.min(starts[i],TOTAL)/TOTAL*100)+'%';try{history.replaceState(null,'','#s'+i)}catch(e){}tick()}
 let pend=false;function detect(){const mid=stage.scrollTop+stage.clientHeight*.4;let k=0;slides.forEach((s,i)=>{if(s.offsetTop<=mid)k=i});if(k!==cur)setCur(k)}
 stage.addEventListener('scroll',()=>{if(!pend){pend=true;requestAnimationFrame(()=>{pend=false;detect()})}},{passive:true});
-ntext.addEventListener('input',()=>store.set('rel6-note-'+cur,ntext.innerText));
+ntext.addEventListener('input',()=>store.set('rel7-note-'+cur,ntext.innerText));
+$$('.xn').forEach(b=>b.onclick=()=>go(slides.findIndex(x=>x.dataset.x===b.dataset.go)));$$('.nextx').forEach(b=>b.onclick=()=>go(slides.indexOf(b.closest('.slide'))+1));
 $('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);$('#cue').onclick=()=>go(1);
 const mq=matchMedia('(prefers-color-scheme: dark)'),isDark=()=>root.dataset.theme?root.dataset.theme==='dark':mq.matches;
 function themeUI(){$('#thico').setAttribute('href',isDark()?'#i-sun':'#i-moon');refreshCol()}
 {const t=store.get('rel-theme');if(t)root.dataset.theme=t}themeUI();mq.addEventListener('change',themeUI);
 new MutationObserver(themeUI).observe(root,{attributes:true,attributeFilter:['data-theme']});
 $('#themebtn').onclick=()=>{const t=isDark()?'light':'dark';root.dataset.theme=t;store.set('rel-theme',t)};
-$('#sndbtn').onclick=e=>{SND.on=!SND.on;const b=e.currentTarget;b.setAttribute('aria-pressed',SND.on);b.setAttribute('aria-label',SND.on?'Silenciar':'Activar sonido');$('#sndico').setAttribute('href',SND.on?'#i-vol':'#i-mute');if(SND.on){const a=ac();if(a&&a.resume)a.resume();sfx.ping()}};
 $('#notesbtn').onclick=e=>{notesEl.hidden=!notesEl.hidden;e.currentTarget.setAttribute('aria-pressed',!notesEl.hidden)};
 $('#fsbtn').onclick=()=>{const d=document;try{(d.fullscreenElement?d.exitFullscreen():d.documentElement.requestFullscreen?.())?.catch?.(()=>{})}catch(e){}};
 document.addEventListener('keydown',e=>{if(e.target.isContentEditable||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName)||e.target.getAttribute('role')==='tab')return;
