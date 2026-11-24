@@ -1,0 +1,818 @@
+<title>Gravedad y Relatividad</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: mazo de diapositivas a pantalla completa; columna de texto + panel-instrumento; barra de control fija abajo. Tema oscuro deliberado (presentación proyectada). */
+:root{
+  --ink:#0c1020; --deep:#080b17; --panel:#141a2c; --panel2:#1c2340; --line:#2c3655;
+  --text:#ece8dd; --muted:#9ba4be; --sun:#f3a944; --ray:#82c9ff; --mass:#ef7090; --ok:#8fdcaa;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+html,body{height:100%}
+body{background:var(--ink);color:var(--text);font-family:var(--body);font-size:16px;line-height:1.5;overflow:hidden}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--sun);outline-offset:2px}
+
+.deck{position:fixed;inset:0;display:flex;flex-direction:column}
+.stage{position:relative;flex:1;min-height:0}
+.slide{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;opacity:0;visibility:hidden;transition:opacity .35s ease,visibility .35s;
+  padding-top:calc(env(safe-area-inset-top,0px) + 28px);padding-bottom:28px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.slide.active{opacity:1;visibility:visible}
+.wrap{max-width:1220px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+.split{display:grid;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr);gap:32px;align-items:start}
+.split>*{min-width:0}
+@media (max-width:880px){.split{grid-template-columns:minmax(0,1fr);gap:20px}}
+
+.eyebrow{font-family:var(--mono);font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--sun);display:flex;gap:10px;flex-wrap:wrap}
+.eyebrow span+span{color:var(--muted)}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.08}
+h2{font-size:clamp(1.7rem,3.4vw,2.8rem);font-weight:700;letter-spacing:-.01em}
+h3{font-size:1.1rem;font-weight:600}
+p{margin:0;max-width:62ch}
+.lead{font-size:clamp(1rem,1.5vw,1.18rem);color:var(--text)}
+.dim{color:var(--muted)}
+.stack{display:flex;flex-direction:column;gap:14px}
+ul.pts{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:9px;max-width:62ch}
+ul.pts li{padding-left:20px;position:relative}
+ul.pts li::before{content:"";position:absolute;left:2px;top:.62em;width:8px;height:8px;border-radius:50%;background:var(--sun)}
+.eq{font-family:var(--mono);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;display:inline-block;color:var(--sun);font-size:1.05rem}
+sup{font-size:.7em;line-height:0}
+
+.inst{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.inst-h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.inst-h h3{color:var(--text)}
+.tag{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ray)}
+canvas{display:block;width:100%;max-width:100%;background:var(--deep);border-radius:8px;touch-action:none}
+.ar-16-10{aspect-ratio:16/10}.ar-16-9{aspect-ratio:16/9}.ar-4-3{aspect-ratio:4/3}.ar-wide{aspect-ratio:2.4/1}
+@media (max-width:560px){.ar-16-10,.ar-16-9{aspect-ratio:4/3.4}.ar-wide{aspect-ratio:16/10}}
+.ctrls{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px 18px}
+.ctl{display:flex;flex-direction:column;gap:2px;min-width:0}
+.ctl label{display:flex;justify-content:space-between;gap:8px;font-size:.85rem;color:var(--muted)}
+.ctl label output{font-family:var(--mono);color:var(--text);font-variant-numeric:tabular-nums;text-align:right}
+input[type=range]{width:100%;accent-color:var(--sun)}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+.btn{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:.88rem}
+.btn:hover{border-color:var(--sun)}
+.btn[aria-pressed=true]{background:var(--sun);color:#1a1205;border-color:var(--sun)}
+select{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;max-width:100%}
+.reads{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.read{background:var(--deep);border-radius:8px;padding:8px 10px;min-width:0}
+.read b{display:block;font-family:var(--mono);font-weight:500;font-size:1.05rem;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.read small{color:var(--muted);font-size:.76rem}
+.read.hi b{color:var(--sun)}
+.read.ray b{color:var(--ray)}
+.read.neg b{color:var(--mass)}
+.hint{font-size:.82rem;color:var(--muted)}
+
+figure{margin:0;display:flex;flex-direction:column;gap:6px}
+figure img{border-radius:8px;display:block;width:100%;height:auto;cursor:zoom-in;background:#fff}
+figcaption{font-size:.8rem;color:var(--muted)}
+.figs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+
+/* línea de tiempo */
+.tl{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tl li{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.tl .y{font-family:var(--mono);color:var(--sun);font-size:.95rem}
+.tl .t{font-size:.9rem}
+.tl .k{font-size:.72rem;color:var(--ray);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
+
+/* portada */
+.cover{position:absolute;inset:0;overflow:hidden}
+.cover canvas{position:absolute;inset:0;width:100%;height:100%;border-radius:0;background:transparent}
+.cover-text{position:relative;z-index:1;max-width:1220px;margin:0 auto;min-height:100%;display:flex;flex-direction:column;justify-content:flex-end;gap:16px;padding-bottom:10px}
+.cover-text h1{font-size:clamp(2.6rem,8vw,6.2rem);font-weight:800;letter-spacing:-.03em;max-width:11ch}
+.cover-text h1 em{font-style:normal;color:var(--sun)}
+.who{display:flex;flex-wrap:wrap;gap:8px}
+.who span{background:rgba(20,26,44,.8);border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-size:.9rem}
+.who [contenteditable]{border-style:dashed;min-width:6ch}
+.meta{font-family:var(--mono);font-size:.82rem;color:var(--muted);display:flex;flex-wrap:wrap;gap:6px 18px}
+
+/* imágenes agregadas por el grupo */
+.adds{display:flex;flex-wrap:wrap;gap:10px;align-items:center;border-top:1px dashed var(--line);padding-top:12px}
+.user-media{display:flex;flex-wrap:wrap;gap:10px}
+.um{position:relative;width:120px}
+.um img{width:120px;height:90px;object-fit:cover;border-radius:6px;cursor:zoom-in;background:var(--panel)}
+.um button{position:absolute;top:4px;right:4px;width:24px;height:24px;border-radius:50%;border:0;background:rgba(0,0,0,.7);cursor:pointer;line-height:1}
+.addbtn{cursor:pointer;border:1px dashed var(--line);border-radius:8px;padding:6px 12px;font-size:.85rem;color:var(--muted)}
+.addbtn:hover{color:var(--text);border-color:var(--sun)}
+.addbtn input{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+
+/* barra */
+.prog{height:3px;background:var(--line);position:relative}
+.prog i{position:absolute;left:0;top:0;bottom:0;background:var(--ray)}
+.prog b{position:absolute;top:-3px;width:2px;height:9px;background:var(--sun)}
+.bar{display:flex;align-items:center;gap:8px;background:var(--panel);border-top:1px solid var(--line);
+  padding-top:8px;padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+.bar .btn{padding:6px 10px}
+.where{flex:1;min-width:0;display:flex;gap:10px;align-items:baseline;overflow:hidden}
+.where #count{font-family:var(--mono);color:var(--sun);font-variant-numeric:tabular-nums;white-space:nowrap}
+.where #stitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:.9rem}
+.timer{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-variant-numeric:tabular-nums}
+#tdelta{font-size:.78rem;color:var(--muted);white-space:nowrap}
+@media (max-width:560px){#tdelta,#fsbtn{display:none}.where #stitle{display:none}}
+
+.notes{position:fixed;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));bottom:calc(62px + env(safe-area-inset-bottom,0px));
+  max-width:760px;margin:0 auto;background:var(--panel2);border:1px solid var(--sun);border-radius:12px;padding:12px 14px;z-index:20;max-height:45vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.notes .nh{font-family:var(--mono);font-size:.75rem;color:var(--sun);text-transform:uppercase;letter-spacing:.08em;display:flex;justify-content:space-between;gap:8px}
+#ntext{margin-top:6px;outline:none;font-size:1rem;line-height:1.55;white-space:pre-wrap}
+.lightbox{position:fixed;inset:0;background:rgba(5,7,15,.92);z-index:30;display:flex;align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
+.lightbox img{max-width:100%;max-height:100%;border-radius:8px;background:#fff}
+
+.biblio{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:8px;max-width:80ch;font-size:.95rem}
+.biblio i{color:var(--text)}
+.concl{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.concl div{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.concl b{font-family:var(--display);font-size:1.15rem;color:var(--sun)}
+@media (prefers-reduced-motion:reduce){.slide{transition:none}}
+</style>
+
+<div class="deck">
+<main class="stage" id="stage">
+
+<!-- 0 PORTADA -->
+<section class="slide" data-time="15" data-title="Portada">
+  <div class="cover"><canvas id="hero" aria-label="Simulación de lente gravitacional: las estrellas del fondo se desvían alrededor de una masa"></canvas></div>
+  <div class="cover-text">
+    <div class="eyebrow"><span>Unidad N°7</span><span>Universo, su estructura y teorías</span></div>
+    <h1>De la manzana al <em>espacio-tiempo</em></h1>
+    <p class="lead">Gravedad, Teoría de la Relatividad y los experimentos que la comprobaron.</p>
+    <div class="who"><span>Bruno</span><span>Titi</span><span>Titonte</span><span contenteditable="true" spellcheck="false" id="yo" title="Tocá para escribir tu nombre">Tu nombre</span></div>
+    <div class="meta"><span>Física · Trabajo de investigación y exposición</span><span>Prof. Aldana Salinero Spitale</span><span>Noviembre 2026</span></div>
+    <p class="hint">Fondo: lente gravitacional real (ecuación de lente puntual). La luz de las estrellas se curva alrededor de la masa central y forma el anillo de Einstein.</p>
+  </div>
+</section>
+
+<!-- 1 INTRODUCCIÓN -->
+<section class="slide" data-time="20" data-title="Introducción">
+  <div class="wrap">
+    <div class="eyebrow"><span>Introducción</span><span>Recorrido de la exposición</span></div>
+    <h2>Trescientos años para entender por qué las cosas caen</h2>
+    <p class="lead">Newton describió la gravedad como una fuerza. Einstein mostró que es la forma del espacio y del tiempo. En el medio, experimentos que pusieron a prueba cada idea.</p>
+    <ol class="tl">
+      <li><span class="y">1687</span><span class="t">Newton publica la Ley de Gravitación Universal</span><span class="k">Gravedad</span></li>
+      <li><span class="y">1887</span><span class="t">Michelson y Morley no encuentran el éter</span><span class="k">Experimento</span></li>
+      <li><span class="y">1905</span><span class="t">Relatividad Especial y E = mc²</span><span class="k">Teoría</span></li>
+      <li><span class="y">1915</span><span class="t">Relatividad General: gravedad = curvatura</span><span class="k">Teoría</span></li>
+      <li><span class="y">1919</span><span class="t">Eddington mide la desviación de la luz en un eclipse</span><span class="k">Experimento</span></li>
+      <li><span class="y">1971</span><span class="t">Hafele y Keating: relojes atómicos en aviones</span><span class="k">Experimento</span></li>
+      <li><span class="y">2015</span><span class="t">LIGO detecta ondas gravitacionales</span><span class="k">Experimento</span></li>
+      <li><span class="y">2019</span><span class="t">Primera imagen de un agujero negro (EHT)</span><span class="k">Universo</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 2 GRAVEDAD -->
+<section class="slide" data-time="40" data-title="Gravedad">
+  <div class="wrap">
+    <div class="eyebrow"><span>Tópico 1</span><span>Gravedad</span></div>
+    <div class="split">
+      <div class="stack">
+        <h2>¿Qué es la gravedad?</h2>
+        <p>Es el fenómeno por el cual los cuerpos con masa se atraen entre sí, con más intensidad cuanto más masivos son. Es una de las <b>cuatro interacciones fundamentales</b> de la materia, también llamada gravitación o interacción gravitatoria.</p>
+        <p>Newton la explicó con la <b>Ley de Gravitación Universal</b>: todos los cuerpos con masa se atraen.</p>
+        <div class="figs">
+          <figure><img src="img/manzana.jpg" alt="Ilustración de Newton bajo el manzano viendo caer una manzana"><figcaption>La misma fuerza que hace caer la manzana mantiene a la Luna en órbita.</figcaption></figure>
+          <figure><img src="img/formula.jpg" alt="Fórmula F = G m1 m2 / r² con sus partes señaladas"><figcaption>G = 6,674 × 10⁻¹¹ N·m²/kg²</figcaption></figure>
+        </div>
+      </div>
+      <div class="inst" id="gcalc">
+        <div class="inst-h"><h3>Calculadora de Newton</h3><span class="tag">Simulador 1</span></div>
+        <div class="btns" id="g-presets">
+          <button class="btn" data-p="tl">Tierra – Luna</button>
+          <button class="btn" data-p="ts">Tierra – Sol</button>
+          <button class="btn" data-p="pt">Persona – Tierra</button>
+          <button class="btn" data-p="pp">Dos personas a 1 m</button>
+        </div>
+        <div class="ctrls">
+          <div class="ctl"><label for="g-m1">Masa 1 (m₁) <output id="o-m1"></output></label><input type="range" id="g-m1" min="0" max="31" step="0.01"></div>
+          <div class="ctl"><label for="g-m2">Masa 2 (m₂) <output id="o-m2"></output></label><input type="range" id="g-m2" min="0" max="31" step="0.01"></div>
+          <div class="ctl"><label for="g-r">Distancia (r) <output id="o-r"></output></label><input type="range" id="g-r" min="-1" max="12" step="0.01"></div>
+        </div>
+        <canvas id="gviz" class="ar-wide" aria-label="Dos cuerpos con flechas de fuerza proporcionales"></canvas>
+        <div class="reads">
+          <div class="read hi"><small>Fuerza de atracción</small><b id="g-F"></b></div>
+          <div class="read"><small>Equivale al peso de</small><b id="g-W"></b></div>
+          <div class="read ray"><small>Si duplicás r, la fuerza pasa a</small><b id="g-F2"></b></div>
+        </div>
+        <p class="hint">Ley de la inversa del cuadrado: el doble de distancia da la cuarta parte de fuerza.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 ÓRBITAS -->
+<section class="slide" data-time="20" data-title="Gravedad en acción: órbitas">
+  <div class="wrap">
+    <div class="eyebrow"><span>Tópico 1</span><span>Gravedad en acción</span></div>
+    <div class="split">
+      <div class="stack">
+        <h2>La misma ley arma el Sistema Solar</h2>
+        <p>Con poca velocidad un planeta cae hacia la estrella; con la justa queda en órbita; con demasiada, escapa. Las órbitas son elipses, como describió Kepler.</p>
+        <ul class="pts">
+          <li>Arrastrá sobre el simulador para <b>agregar un planeta</b>: el largo de la flecha es su velocidad.</li>
+          <li>Velocidad circular: v = √(GM / r). Velocidad de escape: √2 veces más.</li>
+          <li>Newton explicaba <i>cómo</i> se mueven, pero no <i>por qué</i> la masa atrae a distancia. Esa pregunta la respondió Einstein.</li>
+        </ul>
+      </div>
+      <div class="inst">
+        <div class="inst-h"><h3>Simulador de órbitas</h3><span class="tag">Simulador 2 · arrastrá para agregar</span></div>
+        <canvas id="orbit" class="ar-16-10" aria-label="Simulador de órbitas: arrastrá para lanzar planetas"></canvas>
+        <div class="ctrls">
+          <div class="ctl"><label for="o-M">Masa de la estrella <output id="o-Mv"></output></label><input type="range" id="o-M" min="0.4" max="2.5" step="0.05" value="1"></div>
+        </div>
+        <div class="btns">
+          <button class="btn" id="o-circ">＋ Planeta en órbita circular</button>
+          <button class="btn" id="o-esc">＋ Planeta con velocidad de escape</button>
+          <button class="btn" id="o-clear">Limpiar</button>
+        </div>
+        <div class="reads"><div class="read"><small>Planetas en órbita</small><b id="o-n">0</b></div><div class="read"><small>Chocaron con la estrella</small><b id="o-hit">0</b></div><div class="read"><small>Escaparon</small><b id="o-out">0</b></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 RELATIVIDAD ESPECIAL -->
+<section class="slide" data-time="40" data-title="Relatividad Especial">
+  <div class="wrap">
+    <div class="eyebrow"><span>Tópico 2</span><span>Teoría de la Relatividad · 1905</span></div>
+    <div class="split">
+      <div class="stack">
+        <h2>Relatividad Especial: el tiempo no es igual para todos</h2>
+        <p>Einstein partió de dos ideas: las leyes de la física son las mismas para todos los observadores que se mueven a velocidad constante, y <b>la velocidad de la luz es siempre c ≈ 300.000 km/s</b>.</p>
+        <ul class="pts">
+          <li><b>Dilatación del tiempo:</b> un reloj en movimiento marcha más lento.</li>
+          <li><b>Contracción de longitudes:</b> los objetos se acortan en la dirección del movimiento.</li>
+          <li><b>Masa y energía son equivalentes:</b> E = mc².</li>
+        </ul>
+        <div class="eq">γ = 1 / √(1 − v²/c²)</div>
+        <p class="hint">En el reloj de luz, el fotón de la nave recorre una diagonal más larga. Como c no cambia, cada tic tarda más.</p>
+      </div>
+      <div class="inst">
+        <div class="inst-h"><h3>Reloj de luz</h3><span class="tag">Simulador 3</span></div>
+        <canvas id="clock" class="ar-16-10" aria-label="Dos relojes de luz, uno quieto y otro en una nave en movimiento"></canvas>
+        <div class="ctrls"><div class="ctl"><label for="c-b">Velocidad de la nave <output id="c-bv"></output></label><input type="range" id="c-b" min="0" max="0.99" step="0.01" value="0.8"></div></div>
+        <div class="reads">
+          <div class="read hi"><small>Factor de Lorentz γ</small><b id="c-g"></b></div>
+          <div class="read"><small>1 año en la nave =</small><b id="c-y"></b></div>
+          <div class="read ray"><small>Nave de 100 m se ve de</small><b id="c-l"></b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 RELATIVIDAD GENERAL -->
+<section class="slide" data-time="35" data-title="Gravedad y Relatividad">
+  <div class="wrap">
+    <div class="eyebrow"><span>Tópico 3</span><span>Relación entre gravedad y Relatividad · 1915</span></div>
+    <div class="split">
+      <div class="stack">
+        <h2>Relatividad General: la gravedad es curvatura</h2>
+        <p>Para Einstein la gravedad no es una fuerza a distancia. <b>La masa y la energía curvan el espacio-tiempo</b>, y los cuerpos (y la luz) siguen el camino más recto posible en ese espacio curvo.</p>
+        <ul class="pts">
+          <li>Con campos débiles, la Relatividad General da los mismos resultados que Newton: Newton es un caso particular.</li>
+          <li>Con campos intensos predice cosas nuevas: la luz se desvía, el tiempo pasa más lento cerca de una masa, existen agujeros negros y ondas gravitacionales.</li>
+        </ul>
+        <div class="inst">
+          <div class="inst-h"><h3>Tiempo cerca de una masa</h3><span class="tag">Simulador 5</span></div>
+          <select id="td-sel" aria-label="Elegí un cuerpo">
+            <option value="earth">Superficie de la Tierra</option>
+            <option value="sun">Superficie del Sol</option>
+            <option value="wd">Enana blanca (Sirio B)</option>
+            <option value="ns" selected>Estrella de neutrones</option>
+            <option value="bh">Cerca de un agujero negro (1,5 × horizonte)</option>
+          </select>
+          <div class="reads">
+            <div class="read hi"><small>Si lejos pasa 1 año, ahí pasan</small><b id="td-a"></b></div>
+            <div class="read ray"><small>Diferencia por año</small><b id="td-d"></b></div>
+          </div>
+          <p class="hint">√(1 − 2GM / rc²): dilatación gravitacional del tiempo (solución de Schwarzschild).</p>
+        </div>
+      </div>
+      <div class="inst">
+        <div class="inst-h"><h3>Lámina del espacio-tiempo</h3><span class="tag">Simulador 4 · tocá para agregar</span></div>
+        <canvas id="sheet" class="ar-16-10" aria-label="Malla del espacio-tiempo deformada por masas"></canvas>
+        <div class="btns">
+          <button class="btn" id="s-mode-m" aria-pressed="true">Tocar agrega masa</button>
+          <button class="btn" id="s-mode-p" aria-pressed="false">Tocar lanza una partícula</button>
+          <button class="btn" id="s-clear">Limpiar</button>
+        </div>
+        <div class="ctrls"><div class="ctl"><label for="s-m">Masa a agregar <output id="s-mv"></output></label><input type="range" id="s-m" min="1" max="10" step="0.5" value="4"></div></div>
+        <p class="hint">Es una analogía en 2D: la curvatura real es del espacio y del tiempo juntos, en 4 dimensiones.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 MICHELSON MORLEY -->
+<section class="slide" data-time="30" data-title="Michelson y Morley (1887)">
+  <div class="wrap">
+    <div class="eyebrow"><span>Tópico 4</span><span>Experimentos históricos · 1</span></div>
+    <div class="split">
+      <div class="stack">
+        <h2>Michelson y Morley, 1887</h2>
+        <p>Buscaron comprobar la existencia del <b>éter</b>, un supuesto medio por el que se creía que viajaba la luz. Usaron un <b>interferómetro</b> para comparar dos haces de luz que viajan en direcciones perpendiculares.</p>
+        <ul class="pts">
+          <li>Si la Tierra se moviera a 30 km/s a través del éter, al girar el aparato las franjas debían correrse unas 0,4 franjas.</li>
+          <li><b>No encontraron las diferencias esperadas</b> (menos de 0,02 franjas).</li>
+          <li>Fue un antecedente clave de la Relatividad Especial: la luz va a la misma velocidad en todas las direcciones.</li>
+        </ul>
+        <figure><img src="img/michelson.jpg" alt="Esquema del interferómetro de Michelson-Morley: fuente de luz, espejo semiplateado, dos espejos y detector" style="max-width:360px"><figcaption>Equipo de Michelson-Morley: la luz se divide, recorre dos brazos y se recombina.</figcaption></figure>
+      </div>
+      <div class="inst">
+        <div class="inst-h"><h3>Interferómetro</h3><span class="tag">Simulador 6</span></div>
+        <canvas id="mm" class="ar-16-10" aria-label="Interferómetro girando, franjas de interferencia y gráfico del corrimiento"></canvas>
+        <div class="btns">
+          <button class="btn" id="mm-e" aria-pressed="true">Predicción con éter</button>
+          <button class="btn" id="mm-r" aria-pressed="false">Resultado real (1887)</button>
+          <button class="btn" id="mm-play" aria-pressed="true">Girar aparato</button>
+        </div>
+        <div class="ctrls"><div class="ctl"><label for="mm-v">Velocidad de la Tierra respecto del éter <output id="mm-vv"></output></label><input type="range" id="mm-v" min="0" max="60" step="1" value="30"></div></div>
+        <div class="reads">
+          <div class="read hi"><small>Corrimiento esperado (pico a pico)</small><b id="mm-exp"></b></div>
+          <div class="read ray"><small>Corrimiento medido</small><b>&lt; 0,02 franjas</b></div>
+        </div>
+        <p class="hint">ΔN = 2Lv² / (λc²) con brazos de L = 11 m (luz reflejada varias veces) y λ = 500 nm.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 EDDINGTON -->
+<section class="slide" data-time="30" data-title="Eclipse de 1919">
+  <div class="wrap">
+    <div class="eyebrow"><span>Tópico 4</span><span>Experimentos históricos · 2</span></div>
+    <div class="split">
+      <div class="stack">
+        <h2>El eclipse de 1919</h2>
+        <p>Einstein había predicho que la gravedad del Sol desviaría la luz de las estrellas. <b>Arthur Eddington</b> organizó observaciones durante el eclipse total del 29 de mayo de 1919, en Sobral (Brasil) y en la isla de Príncipe (África).</p>
+        <p>Compararon fotografías de las estrellas con y sin el Sol delante. Los resultados fueron compatibles con Einstein y no con Newton, que predecía la mitad.</p>
+        <figure><img src="img/sobral.jpg" alt="Telescopios de la expedición de Sobral, Brasil, 1919, bajo un cobertizo de madera"><figcaption>Telescopios de la expedición a Sobral, Brasil, 1919.</figcaption></figure>
+      </div>
+      <div class="inst">
+        <div class="inst-h"><h3>Desviación de la luz por el Sol</h3><span class="tag">Simulador 7</span></div>
+        <canvas id="edd" class="ar-16-9" aria-label="Rayo de luz de una estrella que se curva al pasar cerca del Sol"></canvas>
+        <div class="ctrls"><div class="ctl"><label for="e-b">Distancia del rayo al centro del Sol <output id="e-bv"></output></label><input type="range" id="e-b" min="1" max="10" step="0.1" value="1"></div></div>
+        <div class="reads">
+          <div class="read hi"><small>Einstein (4GM / c²b)</small><b id="e-gr"></b></div>
+          <div class="read"><small>Newton (la mitad)</small><b id="e-nw"></b></div>
+        </div>
+        <canvas id="eddc" class="ar-wide" aria-label="Gráfico de desviación según la distancia, con las mediciones de 1919"></canvas>
+        <p class="hint">Ángulo dibujado exagerado 12.000 veces. ″ = segundo de arco (1/3600 de grado).</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 8 MERCURIO Y MÁS -->
+<section class="slide" data-time="25" data-title="Mercurio y otras pruebas">
+  <div class="wrap">
+    <div class="eyebrow"><span>Tópico 4</span><span>Experimentos históricos · 3</span></div>
+    <div class="split">
+      <div class="stack">
+        <h2>La órbita de Mercurio y otras pruebas</h2>
+        <p>El punto más cercano de la órbita de Mercurio (perihelio) gira lentamente. Newton explicaba casi todo ese giro por la atracción de los otros planetas, pero <b>sobraban 43″ por siglo</b>. En 1915 Einstein calculó exactamente ese valor.</p>
+        <ol class="tl">
+          <li><span class="y">1959</span><span class="t">Pound y Rebka: la luz pierde energía al subir una torre de 22,5 m</span><span class="k">Corrimiento al rojo</span></li>
+          <li><span class="y">1971</span><span class="t">Hafele y Keating: relojes atómicos en aviones se desfasan lo previsto</span><span class="k">Dilatación del tiempo</span></li>
+          <li><span class="y">2015</span><span class="t">LIGO detecta ondas gravitacionales de dos agujeros negros</span><span class="k">Ondas gravitacionales</span></li>
+        </ol>
+      </div>
+      <div class="inst">
+        <div class="inst-h"><h3>Precesión del perihelio de Mercurio</h3><span class="tag">Simulador 8</span></div>
+        <canvas id="merc" class="ar-16-10" aria-label="Órbita de Mercurio que gira lentamente formando una roseta"></canvas>
+        <div class="ctrls"><div class="ctl"><label for="m-x">Exageración del efecto <output id="m-xv"></output></label><input type="range" id="m-x" min="3" max="6" step="0.1" value="5"></div></div>
+        <div class="reads">
+          <div class="read hi"><small>Calculado con Relatividad</small><b id="m-gr"></b></div>
+          <div class="read"><small>Por los otros planetas (Newton)</small><b>≈ 532″ / siglo</b></div>
+          <div class="read ray"><small>Siglos simulados</small><b id="m-c">0</b></div>
+        </div>
+        <p class="hint">Δφ = 6πGM / (c²a(1 − e²)) por órbita, con a = 57,9 millones de km y e = 0,2056.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 SOCIEDAD -->
+<section class="slide" data-time="35" data-title="Sociedad y Universo">
+  <div class="wrap">
+    <div class="eyebrow"><span>Tópico 5</span><span>Incidencia en la sociedad y en la concepción del Universo</span></div>
+    <h2>Del laboratorio al celular y al Big Bang</h2>
+    <div class="split">
+      <div class="stack">
+        <ul class="pts">
+          <li><b>GPS:</b> sin correcciones relativistas, la ubicación del celular se equivocaría unos 11 km por día.</li>
+          <li><b>Energía nuclear y medicina:</b> E = mc² explica la energía de las centrales (como Atucha y Embalse) y la tomografía PET.</li>
+          <li><b>Un Universo que cambia:</b> la Relatividad General llevó a la idea de un Universo en expansión y al Big Bang.</li>
+          <li><b>Agujeros negros y ondas gravitacionales:</b> predichos por la teoría y observados en 2015 y 2019.</li>
+          <li><b>Una nueva visión:</b> el espacio y el tiempo dejaron de ser absolutos. Cambió la física, la filosofía y hasta la cultura popular.</li>
+        </ul>
+        <div class="inst">
+          <div class="inst-h"><h3>E = mc²</h3><span class="tag">Simulador 10</span></div>
+          <div class="ctrls"><div class="ctl"><label for="E-m">Masa convertida en energía <output id="E-mv"></output></label><input type="range" id="E-m" min="-3" max="6" step="0.05" value="0"></div></div>
+          <div class="reads">
+            <div class="read hi"><small>Energía</small><b id="E-J"></b></div>
+            <div class="read"><small>Equivale a TNT</small><b id="E-t"></b></div>
+            <div class="read ray"><small>Bombas de Hiroshima (≈15 kt)</small><b id="E-h"></b></div>
+          </div>
+        </div>
+      </div>
+      <div class="inst">
+        <div class="inst-h"><h3>Relojes de los satélites GPS</h3><span class="tag">Simulador 9</span></div>
+        <canvas id="gps" class="ar-16-10" aria-label="Tierra y satélite en órbita a la altura elegida"></canvas>
+        <div class="ctrls"><div class="ctl"><label for="gps-h">Altura de la órbita <output id="gps-hv"></output></label><input type="range" id="gps-h" min="400" max="36000" step="100" value="20200"></div></div>
+        <div class="reads">
+          <div class="read neg"><small>Por velocidad (Especial)</small><b id="gps-sr"></b></div>
+          <div class="read ray"><small>Por menor gravedad (General)</small><b id="gps-gr"></b></div>
+          <div class="read hi"><small>Adelanto neto por día</small><b id="gps-net"></b></div>
+          <div class="read hi"><small>Error de posición por día</small><b id="gps-err"></b></div>
+        </div>
+        <p class="hint">Los satélites GPS orbitan a 20.200 km. Sus relojes se fabrican atrasados a propósito para compensar este efecto.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 CONCLUSIÓN -->
+<section class="slide" data-time="10" data-title="Conclusión">
+  <div class="wrap">
+    <div class="eyebrow"><span>Conclusión</span></div>
+    <h2>Newton no estaba equivocado: Einstein lo amplió</h2>
+    <div class="concl">
+      <div><b>Gravedad</b><p>Para Newton, una fuerza entre masas. Para Einstein, la curvatura del espacio-tiempo.</p></div>
+      <div><b>Relatividad</b><p>El tiempo y el espacio dependen del movimiento y de la gravedad. La luz es el límite.</p></div>
+      <div><b>Comprobación</b><p>Michelson-Morley, el eclipse de 1919, Mercurio, relojes atómicos y LIGO la confirmaron.</p></div>
+      <div><b>Sociedad</b><p>Hoy la usamos sin darnos cuenta: cada vez que abrimos el GPS del celular.</p></div>
+    </div>
+    <p class="lead">¡Gracias! ¿Preguntas?</p>
+  </div>
+</section>
+
+<!-- 11 BIBLIOGRAFÍA -->
+<section class="slide" data-time="0" data-title="Bibliografía">
+  <div class="wrap">
+    <div class="eyebrow"><span>Fuentes y bibliografía consultada</span></div>
+    <h2>Bibliografía</h2>
+    <ol class="biblio">
+      <li>Newton, I. (1687). <i>Philosophiæ Naturalis Principia Mathematica</i>. Londres.</li>
+      <li>Michelson, A. A. y Morley, E. W. (1887). On the Relative Motion of the Earth and the Luminiferous Ether. <i>American Journal of Science</i>, 34, 333–345.</li>
+      <li>Einstein, A. (1905). Zur Elektrodynamik bewegter Körper. <i>Annalen der Physik</i>, 17, 891–921.</li>
+      <li>Einstein, A. (1916). Die Grundlage der allgemeinen Relativitätstheorie. <i>Annalen der Physik</i>, 49, 769–822.</li>
+      <li>Dyson, F. W., Eddington, A. S. y Davidson, C. (1920). A Determination of the Deflection of Light by the Sun's Gravitational Field. <i>Philosophical Transactions of the Royal Society A</i>, 220, 291–333.</li>
+      <li>Pound, R. V. y Rebka, G. A. (1960). Apparent Weight of Photons. <i>Physical Review Letters</i>, 4, 337.</li>
+      <li>Hafele, J. C. y Keating, R. E. (1972). Around-the-World Atomic Clocks. <i>Science</i>, 177, 166–170.</li>
+      <li>Ashby, N. (2003). Relativity in the Global Positioning System. <i>Living Reviews in Relativity</i>, 6, 1.</li>
+      <li>Abbott, B. P. et al. (LIGO y Virgo) (2016). Observation of Gravitational Waves from a Binary Black Hole Merger. <i>Physical Review Letters</i>, 116, 061102.</li>
+      <li>Hawking, S. (1988). <i>Historia del tiempo: del Big Bang a los agujeros negros</i>. Crítica.</li>
+      <li>Geoenciclopedia. Gravedad: fórmula de la Ley de Gravitación Universal.</li>
+    </ol>
+  </div>
+</section>
+
+</main>
+<div class="prog" aria-hidden="true"><i id="pbar"></i><b id="pmark"></b></div>
+<nav class="bar" aria-label="Controles de la exposición">
+  <button class="btn" id="prev" aria-label="Diapositiva anterior">←</button>
+  <div class="where"><span id="count"></span><span id="stitle"></span></div>
+  <div class="timer"><button class="btn" id="tbtn" aria-label="Iniciar o pausar el cronómetro">▶ 5:00</button><span id="tdelta"></span><button class="btn" id="treset" aria-label="Reiniciar cronómetro">↺</button></div>
+  <button class="btn" id="notesbtn" aria-pressed="false">Guion</button>
+  <button class="btn" id="fsbtn" aria-label="Pantalla completa">⛶</button>
+  <button class="btn" id="next" aria-label="Diapositiva siguiente">→</button>
+</nav>
+</div>
+
+<aside class="notes" id="notes" hidden>
+  <div class="nh"><span id="nhead"></span><span>Editable · se guarda en este navegador</span></div>
+  <div id="ntext" contenteditable="true" spellcheck="false"></div>
+</aside>
+<div class="lightbox" id="lb" hidden><img id="lbimg" alt=""></div>
+
+<script>
+/* ---------- Guion (≈ 5 minutos) ---------- */
+const NOTES=[
+`Habla: todos (15 s)
+Buenas, somos Bruno, Titi, Titonte y ___. Hoy les vamos a contar cómo pasamos de la manzana de Newton al espacio-tiempo curvo de Einstein, y con qué experimentos se comprobó.
+(El fondo es una simulación de lente gravitacional: la luz de las estrellas se curva alrededor de una masa.)`,
+`Habla: ___ (20 s)
+Durante más de 200 años la gravedad se explicó con la ley de Newton. En 1905 y 1915 Einstein cambió la forma de entender el espacio, el tiempo y la gravedad, y desde entonces muchos experimentos confirmaron sus predicciones. Esta línea de tiempo es el recorrido que vamos a hacer.`,
+`Habla: Titi (40 s)
+La gravedad es el fenómeno por el cual los cuerpos con masa se atraen entre sí, con más fuerza cuanto más masivos son. Es una de las cuatro interacciones fundamentales.
+Newton la explicó con esta fórmula: F = G·m1·m2/r².
+[Tocar "Tierra – Luna"] Entre la Tierra y la Luna hay unos 2 × 10²⁰ newtons.
+[Tocar "Dos personas a 1 m"] Entre dos personas, apenas 0,0000003 N: por eso no lo notamos.
+[Mover la distancia] Si duplicamos la distancia, la fuerza baja a la cuarta parte.`,
+`Habla: Titi (20 s)
+Esa misma fuerza mantiene a los planetas en órbita. [Arrastrar para agregar un planeta] Si lo lanzo lento, cae; con la velocidad justa, orbita; muy rápido, escapa.
+Newton explicaba cómo se mueven, pero no por qué la masa atrae a distancia.`,
+`Habla: Bruno (40 s)
+En 1905 Einstein presentó la Relatividad Especial. Dice que la velocidad de la luz es la misma para todos los observadores.
+Miren el reloj de luz: en la nave, la luz recorre una diagonal más larga. Como la velocidad de la luz no cambia, cada tic tarda más: el tiempo en la nave pasa más lento.
+[Subir la velocidad a 0,99c] Al 99 % de la luz, γ vale 7: un año en la nave son 7 años en la Tierra. También las longitudes se acortan, y masa y energía son equivalentes: E = mc².`,
+`Habla: ___ (35 s)
+En 1915 llegó la Relatividad General, que relaciona gravedad y relatividad. La gravedad no es una fuerza a distancia: la masa curva el espacio-tiempo y los cuerpos siguen el camino más recto posible en ese espacio curvo.
+[Tocar para agregar masas y lanzar una partícula] Esto es una analogía en dos dimensiones.
+Para campos débiles da lo mismo que Newton, pero predice cosas nuevas: por ejemplo, el tiempo pasa más lento cerca de una masa. [Elegir estrella de neutrones] Ahí, un año de afuera son unos 9,7 meses.`,
+`Habla: Bruno (30 s)
+Primer experimento: Michelson y Morley, 1887. Buscaban el éter, el medio por el que se creía que viajaba la luz. Con un interferómetro compararon dos haces de luz perpendiculares.
+[Predicción con éter] Si el éter existiera, al girar el aparato las franjas se tenían que correr así.
+[Resultado real] Pero no se movieron. Fue un antecedente clave de la Relatividad Especial.`,
+`Habla: Bruno (30 s)
+Segundo: el eclipse de 1919. Einstein predijo que la gravedad del Sol desviaría la luz de las estrellas. Eddington organizó observaciones en Sobral y en Príncipe y comparó fotos de las estrellas con y sin el Sol delante.
+Einstein predecía 1,75 segundos de arco en el borde del Sol, el doble que Newton. Las mediciones dieron 1,98 y 1,61: compatibles con Einstein. Esto lo hizo famoso en todo el mundo.`,
+`Habla: ___ (25 s)
+Tercero: la órbita de Mercurio gira lentamente. Con Newton sobraban 43 segundos de arco por siglo que nadie podía explicar; la Relatividad General da exactamente 43.
+Después vinieron más pruebas: Pound y Rebka en 1959, relojes atómicos en aviones en 1971 y las ondas gravitacionales detectadas por LIGO en 2015.`,
+`Habla: ___ (35 s)
+¿Y en la sociedad? El ejemplo más cotidiano es el GPS. Los relojes de los satélites se atrasan 7 microsegundos por día por su velocidad y se adelantan 45 por estar más lejos de la gravedad terrestre. En total, 38 microsegundos por día: sin corregirlo, el GPS se equivocaría unos 11 km por día.
+E = mc² explica la energía nuclear: [1 g] un solo gramo de masa equivale a más de 20.000 toneladas de TNT.
+Y cambió nuestra idea del Universo: un Universo en expansión, el Big Bang, los agujeros negros.`,
+`Habla: todos (10 s)
+Para cerrar: Newton no estaba equivocado, Einstein lo amplió. La gravedad es la forma del espacio-tiempo, y hoy la usamos cada vez que abrimos el GPS. ¡Gracias!`,
+`Bibliografía (no se expone; queda para consulta).`
+];
+
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+const slides=$$('.slide');let cur=0;
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const COL={sun:css('--sun'),ray:css('--ray'),mass:css('--mass'),text:css('--text'),muted:css('--muted'),line:css('--line'),deep:css('--deep'),ok:css('--ok'),panel:css('--panel')};
+const store={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}},del(k){try{localStorage.removeItem(k)}catch(e){}}};
+const nf=(x,d=3)=>x.toLocaleString('es-AR',{maximumSignificantDigits:d});
+function sci(x,d=3){if(!isFinite(x))return'∞';if(x===0)return'0';let e=Math.floor(Math.log10(Math.abs(x)));if(e>=-3&&e<6)return nf(x,d);let m=+(x/10**e).toPrecision(d);if(Math.abs(m)>=10){m/=10;e++}return nf(m,d)+' × 10<sup>'+e+'</sup>'}
+const G=6.674e-11,c=299792458;
+
+/* ---------- Canvas helper + bucle ---------- */
+function cv(id){const el=document.getElementById(id),ctx=el.getContext('2d'),o={el,ctx,w:300,h:150};
+  const fit=()=>{const r=el.getBoundingClientRect();if(r.width<2||r.height<2)return;const d=Math.min(2,window.devicePixelRatio||1);el.width=Math.round(r.width*d);el.height=Math.round(r.height*d);ctx.setTransform(d,0,0,d,0,0);o.w=r.width;o.h=r.height;if(o.onfit)o.onfit()};
+  new ResizeObserver(fit).observe(el);fit();return o}
+const loops=[];function onFrame(id,fn){loops.push({i:slides.indexOf(document.getElementById(id).closest('.slide')),fn})}
+function pos(o,e){const r=o.el.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top]}
+function arrow(ctx,x1,y1,x2,y2,col,w=2){ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();const a=Math.atan2(y2-y1,x2-x1),s=7+w;ctx.beginPath();ctx.moveTo(x2,y2);ctx.lineTo(x2-s*Math.cos(a-.45),y2-s*Math.sin(a-.45));ctx.lineTo(x2-s*Math.cos(a+.45),y2-s*Math.sin(a+.45));ctx.fill()}
+function glow(ctx,x,y,r,col){const g=ctx.createRadialGradient(x,y,0,x,y,r*2.4);g.addColorStop(0,col);g.addColorStop(.4,col+'88');g.addColorStop(1,col+'00');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r*2.4,0,7);ctx.fill();ctx.fillStyle=col;ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}
+function label(ctx,t,x,y,col=COL.muted,align='left',size=12){ctx.fillStyle=col;ctx.font=`${size}px "IBM Plex Mono", monospace`;ctx.textAlign=align;ctx.textBaseline='middle';ctx.fillText(t,x,y)}
+
+/* ---------- 0. Lente gravitacional (portada) ---------- */
+(()=>{const o=cv('hero'),ctx=o.ctx;let stars=[];const rm=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function seed(){stars=[];const n=Math.round(o.w*o.h/2600);for(let i=0;i<n;i++)stars.push({x:(Math.random()-.5)*o.w*1.4,y:(Math.random()-.5)*o.h*1.4,b:.3+Math.random()*.7,s:.5+Math.random()*1.1})}
+  o.onfit=seed;seed();
+  onFrame('hero',dt=>{const w=o.w,h=o.h,wide=w>760;const cx=wide?w*.7:w*.5,cy=wide?h*.42:h*.28,tE=Math.min(w,h)*(wide?.13:.11);
+    ctx.clearRect(0,0,w,h);const sp=rm?4:16;
+    for(const s of stars){s.x-=sp*dt*s.s;if(s.x<-w*.7)s.x+=w*1.4;
+      const b=Math.hypot(s.x,s.y)||.01,u=b/tE,ux=s.x/b,uy=s.y/b;
+      const tp=(b+Math.sqrt(b*b+4*tE*tE))/2,tm=(b-Math.sqrt(b*b+4*tE*tE))/2;
+      const base=(u*u+2)/(2*u*Math.sqrt(u*u+4));const mp=base+.5,mm=Math.abs(base-.5);
+      const r1=Math.min(4,.9*Math.sqrt(mp)*s.s);ctx.fillStyle=`rgba(236,232,221,${Math.min(1,s.b*Math.sqrt(mp)*.8)})`;ctx.beginPath();ctx.arc(cx+ux*tp,cy+uy*tp,r1,0,7);ctx.fill();
+      if(mm>.04){ctx.fillStyle=`rgba(130,201,255,${Math.min(.9,s.b*Math.sqrt(mm))})`;ctx.beginPath();ctx.arc(cx+ux*tm,cy+uy*tm,Math.min(3,.9*Math.sqrt(mm)*s.s),0,7);ctx.fill()}}
+    ctx.strokeStyle='rgba(243,169,68,.22)';ctx.lineWidth=1;ctx.setLineDash([3,5]);ctx.beginPath();ctx.arc(cx,cy,tE,0,7);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#000';ctx.beginPath();ctx.arc(cx,cy,tE*.28,0,7);ctx.fill();
+    ctx.strokeStyle='rgba(243,169,68,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx,cy,tE*.28+1,0,7);ctx.stroke();
+    label(ctx,'anillo de Einstein',cx+tE*.74,cy+tE*.74,'rgba(243,169,68,.7)','left',11);
+    const g=ctx.createLinearGradient(0,h*.45,0,h);g.addColorStop(0,'rgba(12,16,32,0)');g.addColorStop(1,'rgba(12,16,32,.92)');ctx.fillStyle=g;ctx.fillRect(0,h*.45,w,h*.55)});
+})();
+
+/* ---------- 1. Calculadora de Newton ---------- */
+(()=>{const m1=$('#g-m1'),m2=$('#g-m2'),r=$('#g-r');const o=cv('gviz'),ctx=o.ctx;
+  const P={tl:[5.972e24,7.342e22,3.844e8],ts:[5.972e24,1.989e30,1.496e11],pt:[70,5.972e24,6.371e6],pp:[70,70,1]};
+  const unit=(x,u)=>sci(x)+' '+u;
+  function dist(x){return x>=1000?sci(x/1000)+' km':sci(x)+' m'}
+  let F=0;
+  function upd(){const a=10**+m1.value,b=10**+m2.value,d=10**+r.value;F=G*a*b/(d*d);
+    $('#o-m1').innerHTML=unit(a,'kg');$('#o-m2').innerHTML=unit(b,'kg');$('#o-r').innerHTML=dist(d);
+    $('#g-F').innerHTML=unit(F,'N');$('#g-W').innerHTML=unit(F/9.81,'kg');$('#g-F2').innerHTML=unit(F/4,'N');draw()}
+  function draw(){const w=o.w,h=o.h;ctx.clearRect(0,0,w,h);const a=+m1.value,b=+m2.value;
+    const ra=6+a*.9,rb=6+b*.9;const x1=w*.22,x2=w*.78,y=h*.5;
+    ctx.strokeStyle=COL.line;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x1,y+h*.36);ctx.lineTo(x2,y+h*.36);ctx.stroke();ctx.setLineDash([]);
+    label(ctx,'r',w/2,y+h*.36-9,COL.muted,'center');
+    glow(ctx,x1,y,Math.min(ra,h*.3),COL.sun);glow(ctx,x2,y,Math.min(rb,h*.3),COL.ray);
+    const L=Math.max(10,Math.min(w*.2,(Math.log10(F)+12)*5));
+    arrow(ctx,x1+Math.min(ra,h*.3)+4,y,x1+Math.min(ra,h*.3)+4+L,y,COL.mass,3);arrow(ctx,x2-Math.min(rb,h*.3)-4,y,x2-Math.min(rb,h*.3)-4-L,y,COL.mass,3);
+    label(ctx,'m₁',x1,y-h*.38,COL.text,'center');label(ctx,'m₂',x2,y-h*.38,COL.text,'center');
+    label(ctx,'misma fuerza, sentidos opuestos (3ª ley)',w/2,h*.1,COL.muted,'center',11)}
+  function set(k){const p=P[k];m1.value=Math.log10(p[0]);m2.value=Math.log10(p[1]);r.value=Math.log10(p[2]);upd()}
+  $$('#g-presets button').forEach(b=>b.onclick=()=>set(b.dataset.p));[m1,m2,r].forEach(i=>i.oninput=upd);o.onfit=draw;set('tl');
+})();
+
+/* ---------- 2. Simulador de órbitas ---------- */
+(()=>{const o=cv('orbit'),ctx=o.ctx;const GM0=.24;let GM=GM0,P=[],drag=null,ci=0,hits=0,outs=0;
+  const cols=[COL.ray,COL.ok,COL.mass,'#c9a7ff','#ffd38a'];
+  const S=()=>Math.min(o.w,o.h)*.46;const toW=(x,y)=>[(x-o.w/2)/S(),(y-o.h/2)/S()];const toS=(x,y)=>[o.w/2+x*S(),o.h/2+y*S()];
+  function add(x,y,vx,vy){P.push({x,y,vx,vy,c:cols[ci++%cols.length],tr:[]});if(P.length>14)P.shift()}
+  function circ(r,a,f=1){const v=Math.sqrt(GM/r)*f;add(r*Math.cos(a),r*Math.sin(a),-v*Math.sin(a),v*Math.cos(a))}
+  function reset(){P=[];hits=0;outs=0;circ(.42,0);circ(.8,Math.PI,.78)}
+  reset();
+  $('#o-circ').onclick=()=>circ(.3+Math.random()*.6,Math.random()*6.28);
+  $('#o-esc').onclick=()=>circ(.5,Math.random()*6.28,Math.SQRT2*1.01);
+  $('#o-clear').onclick=()=>{P=[];hits=0;outs=0};
+  const mi=$('#o-M');mi.oninput=()=>{GM=GM0*+mi.value;$('#o-Mv').textContent=nf(+mi.value,2)+' ×'};mi.oninput();
+  o.el.addEventListener('pointerdown',e=>{o.el.setPointerCapture(e.pointerId);const p=pos(o,e);drag={a:p,b:p}});
+  o.el.addEventListener('pointermove',e=>{if(drag)drag.b=pos(o,e)});
+  o.el.addEventListener('pointerup',()=>{if(!drag)return;const[a,b]=[toW(...drag.a),toW(...drag.b)];const r=Math.hypot(a[0],a[1]);if(r>.07)add(a[0],a[1],(b[0]-a[0])*1.3,(b[1]-a[1])*1.3);drag=null});
+  onFrame('orbit',dt=>{const n=20,h=dt/n;
+    for(const p of P){for(let i=0;i<n;i++){let r2=p.x*p.x+p.y*p.y,r=Math.sqrt(r2),k=-GM/(r2*r);p.vx+=k*p.x*h/2;p.vy+=k*p.y*h/2;p.x+=p.vx*h;p.y+=p.vy*h;r2=p.x*p.x+p.y*p.y;r=Math.sqrt(r2);k=-GM/(r2*r);p.vx+=k*p.x*h/2;p.vy+=k*p.y*h/2}
+      p.tr.push([p.x,p.y]);if(p.tr.length>420)p.tr.shift()}
+    P=P.filter(p=>{const r=Math.hypot(p.x,p.y);if(r<.055){hits++;return false}if(r>3.5){outs++;return false}return true});
+    const w=o.w,hh=o.h;ctx.clearRect(0,0,w,hh);ctx.strokeStyle=COL.line;ctx.lineWidth=1;for(let r=.25;r<1.6;r+=.25){const s=toS(0,0);ctx.beginPath();ctx.arc(s[0],s[1],r*S(),0,7);ctx.stroke()}
+    const s0=toS(0,0);glow(ctx,s0[0],s0[1],6+5*Math.sqrt(GM/GM0),COL.sun);
+    for(const p of P){ctx.strokeStyle=p.c+'99';ctx.lineWidth=1.5;ctx.beginPath();p.tr.forEach((q,i)=>{const s=toS(q[0],q[1]);i?ctx.lineTo(s[0],s[1]):ctx.moveTo(s[0],s[1])});ctx.stroke();const s=toS(p.x,p.y);ctx.fillStyle=p.c;ctx.beginPath();ctx.arc(s[0],s[1],4.5,0,7);ctx.fill()}
+    if(drag){glow(ctx,drag.a[0],drag.a[1],4,COL.ray);arrow(ctx,drag.a[0],drag.a[1],drag.b[0],drag.b[1],COL.sun,2);const[a]=[toW(...drag.a)];const r=Math.hypot(a[0],a[1]);const vc=Math.sqrt(GM/r),v=Math.hypot(drag.b[0]-drag.a[0],drag.b[1]-drag.a[1])/S()*1.3;label(ctx,'v = '+nf(v/vc,2)+' × v circular',drag.b[0]+8,drag.b[1]-10,COL.sun)}
+    else if(!P.length)label(ctx,'Arrastrá para lanzar un planeta',w/2,hh*.12,COL.muted,'center');
+    $('#o-n').textContent=P.length;$('#o-hit').textContent=hits;$('#o-out').textContent=outs});
+})();
+
+/* ---------- 3. Reloj de luz ---------- */
+(()=>{const o=cv('clock'),ctx=o.ctx,bi=$('#c-b');let beta=.8,t=0,trail=[],lastX=0;
+  function upd(){beta=+bi.value;const g=1/Math.sqrt(1-beta*beta);$('#c-bv').textContent=nf(beta,2)+' c ('+Math.round(beta*299792).toLocaleString('es-AR')+' km/s)';
+    $('#c-g').textContent=g.toFixed(3).replace('.',',');$('#c-y').textContent=nf(g,3)+' años en la Tierra';$('#c-l').textContent=nf(100/g,3)+' m';t=0;trail=[]}
+  bi.oninput=upd;upd();
+  function clockAt(x,top,L,frac,col){ctx.strokeStyle=COL.text;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-22,top);ctx.lineTo(x+22,top);ctx.moveTo(x-22,top+L);ctx.lineTo(x+22,top+L);ctx.stroke();glow(ctx,x,top+L-frac*L,3.5,col)}
+  onFrame('clock',dt=>{t+=dt;const w=o.w,h=o.h,lane=h/2,L=Math.max(30,lane-62),cc=L*1.6,g=1/Math.sqrt(1-beta*beta);ctx.clearRect(0,0,w,h);
+    const tri=p=>{p%=2;return p<1?p:2-p};
+    // reposo
+    const t1=24,t2=lane+24;label(ctx,'RELOJ EN LA TIERRA (quieto)',14,12,COL.muted);
+    const ticks1=Math.floor(t*cc/(2*L));clockAt(60,t1,L,tri(t*cc/L),COL.sun);label(ctx,ticks1+' tics',100,t1+L/2,COL.sun,'left',14);
+    // movimiento
+    label(ctx,'RELOJ EN LA NAVE, visto desde la Tierra (v = '+nf(beta,2)+'c)',14,lane+12,COL.muted);
+    const span=Math.max(60,w-120),xm=60+((beta*cc*t)%span);if(xm<lastX)trail=[];lastX=xm;
+    const fy=tri(t*cc/(g*L)),ym=t2+L-fy*L;trail.push([xm,ym]);if(trail.length>600)trail.shift();
+    ctx.strokeStyle=COL.ray+'aa';ctx.lineWidth=1.5;ctx.beginPath();trail.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.stroke();
+    clockAt(xm,t2,L,fy,COL.ray);const ticks2=Math.floor(t*cc/(2*L*g));label(ctx,ticks2+' tics',Math.min(w-60,xm+30),t2+L/2,COL.ray,'left',14);
+    ctx.strokeStyle=COL.line;ctx.beginPath();ctx.moveTo(0,lane);ctx.lineTo(w,lane);ctx.stroke()});
+})();
+
+/* ---------- 4. Lámina del espacio-tiempo ---------- */
+(()=>{const o=cv('sheet'),ctx=o.ctx,mi=$('#s-m');let M=[{x:0,y:0,m:5}],Pt=[],mode='m';const K=.06,S2=.015;
+  mi.oninput=()=>$('#s-mv').textContent=mi.value;mi.oninput();
+  const setMode=m=>{mode=m;$('#s-mode-m').setAttribute('aria-pressed',m==='m');$('#s-mode-p').setAttribute('aria-pressed',m==='p')};
+  $('#s-mode-m').onclick=()=>setMode('m');$('#s-mode-p').onclick=()=>setMode('p');$('#s-clear').onclick=()=>{M=[];Pt=[]};
+  const z=(x,y)=>{let s=0;for(const q of M){const dx=x-q.x,dy=y-q.y;s-=q.m*K/Math.sqrt(dx*dx+dy*dy+S2)}return s};
+  const pr=(x,y)=>{const ax=o.w*.44,ay=o.h*.3,cy=o.h*.36;return[o.w/2+x*ax,cy+y*ay+Math.min(o.h*.55,-z(x,y)*o.h*.11)]};
+  o.el.addEventListener('pointerdown',e=>{const[px,py]=pos(o,e);const x=(px-o.w/2)/(o.w*.44),y=(py-o.h*.36)/(o.h*.3);if(Math.abs(x)>1.05||Math.abs(y)>1.05)return;
+    if(mode==='m'){M.push({x,y,m:+mi.value});if(M.length>6)M.shift()}else{Pt.push({x:-1,y,vx:.55,vy:0,tr:[]});if(Pt.length>8)Pt.shift()}});
+  onFrame('sheet',dt=>{const n=12,h=dt/n;
+    for(const p of Pt){for(let i=0;i<n;i++){let ax=0,ay=0;for(const q of M){const dx=p.x-q.x,dy=p.y-q.y,d2=dx*dx+dy*dy+S2,k=q.m*K*.5/(d2*Math.sqrt(d2));ax-=k*dx;ay-=k*dy}p.vx+=ax*h;p.vy+=ay*h;p.x+=p.vx*h;p.y+=p.vy*h}
+      p.tr.push([p.x,p.y]);if(p.tr.length>260)p.tr.shift()}
+    Pt=Pt.filter(p=>Math.abs(p.x)<1.4&&Math.abs(p.y)<1.4&&!M.some(q=>Math.hypot(p.x-q.x,p.y-q.y)<.035));
+    const w=o.w;ctx.clearRect(0,0,w,o.h);const N=22,R=40;ctx.lineWidth=1;
+    for(let k=0;k<=N;k++){for(const dir of[0,1]){ctx.beginPath();for(let j=0;j<=R;j++){const a=-1+2*k/N,b=-1+2*j/R;const[x,y]=dir?[a,b]:[b,a];const s=pr(x,y);j?ctx.lineTo(s[0],s[1]):ctx.moveTo(s[0],s[1])}ctx.strokeStyle='rgba(130,201,255,.38)';ctx.stroke()}}
+    for(const q of M){const s=pr(q.x,q.y);glow(ctx,s[0],s[1]-4-q.m,4+q.m*1.3,COL.sun)}
+    for(const p of Pt){ctx.strokeStyle=COL.mass;ctx.lineWidth=2;ctx.beginPath();p.tr.forEach((q,i)=>{const s=pr(q[0],q[1]);i?ctx.lineTo(s[0],s[1]):ctx.moveTo(s[0],s[1])});ctx.stroke();const s=pr(p.x,p.y);glow(ctx,s[0],s[1],3,COL.mass)}
+    label(ctx,mode==='m'?'Tocá la malla para agregar una masa':'Tocá para lanzar una partícula desde la izquierda',w/2,14,COL.muted,'center')});
+  // dilatación gravitacional
+  const B={earth:[5.972e24,6.371e6],sun:[1.989e30,6.957e8],wd:[2.02e30,5.84e6],ns:[2.785e30,1.2e4],bh:null};
+  const sel=$('#td-sel');function td(){const k=sel.value;const f=k==='bh'?Math.sqrt(1-1/1.5):Math.sqrt(1-2*G*B[k][0]/(B[k][1]*c*c));const yr=365.25*86400,diff=(1-f)*yr;
+    let a;if(f>.999)a='1 año − '+(diff<1?nf(diff*1000,3)+' ms':nf(diff,3)+' s');else a=nf(f*12,3)+' meses';
+    $('#td-a').textContent=a;$('#td-d').textContent=diff<1?nf(diff*1000,3)+' milisegundos':diff<3600?nf(diff,3)+' segundos':diff<86400*2?nf(diff/3600,3)+' horas':nf(diff/86400,3)+' días'}
+  sel.onchange=td;td();
+})();
+
+/* ---------- 5. Michelson-Morley ---------- */
+(()=>{const o=cv('mm'),ctx=o.ctx;let th=0,play=true,ether=true,v=30;const L=11,lam=5e-7;
+  const amp=()=>L*(v*1e3)**2/(lam*c*c);
+  const real=a=>.004*Math.sin(3*a+1)+.003*Math.sin(5*a+.4);
+  const N=a=>ether?amp()*Math.cos(2*a):real(a);
+  const vi=$('#mm-v');vi.oninput=()=>{v=+vi.value;$('#mm-vv').textContent=v+' km/s';$('#mm-exp').textContent=nf(2*amp(),2)+' franjas'};vi.oninput();
+  const sm=e=>{ether=e;$('#mm-e').setAttribute('aria-pressed',e);$('#mm-r').setAttribute('aria-pressed',!e)};$('#mm-e').onclick=()=>sm(true);$('#mm-r').onclick=()=>sm(false);
+  $('#mm-play').onclick=e=>{play=!play;e.currentTarget.setAttribute('aria-pressed',play)};
+  onFrame('mm',dt=>{if(play)th=(th+dt*.45)%(2*Math.PI);const w=o.w,h=o.h;ctx.clearRect(0,0,w,h);const narrow=w<520;
+    const A=narrow?{x:0,y:0,w:w,h:h*.5}:{x:0,y:0,w:w*.5,h:h},F=narrow?{x:12,y:h*.53,w:w-24,h:h*.16}:{x:w*.54,y:18,w:w*.43,h:h*.3},Gr=narrow?{x:12,y:h*.74,w:w-24,h:h*.24}:{x:w*.54,y:h*.46,w:w*.43,h:h*.48};
+    // viento de éter
+    ctx.globalAlpha=ether?.55:.15;for(let i=0;i<4;i++){const y=A.y+A.h*(.15+.23*i);arrow(ctx,A.x+A.w-10,y,A.x+A.w-60,y,COL.muted,1.2)}ctx.globalAlpha=1;
+    label(ctx,ether?'viento de éter (supuesto)':'no hay viento de éter',A.x+A.w-10,A.y+10,COL.muted,'right',11);
+    const cx=A.x+A.w/2,cy=A.y+A.h/2,R=Math.min(A.w,A.h)*.34;ctx.save();ctx.translate(cx,cy);ctx.rotate(th);
+    ctx.fillStyle='rgba(130,201,255,.07)';ctx.strokeStyle=COL.line;ctx.beginPath();ctx.arc(0,0,R*1.35,0,7);ctx.fill();ctx.stroke();
+    ctx.strokeStyle=COL.sun+'cc';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-R,0);ctx.lineTo(R,0);ctx.moveTo(0,0);ctx.lineTo(0,-R);ctx.moveTo(0,0);ctx.lineTo(0,R);ctx.stroke();
+    ctx.fillStyle=COL.sun;ctx.fillRect(-R-12,-8,14,16);ctx.fillStyle=COL.text;ctx.fillRect(R-2,-14,5,28);ctx.fillRect(-14,-R-2,28,5);ctx.fillStyle=COL.ray;ctx.fillRect(-7,R-4,14,14);
+    ctx.save();ctx.rotate(-Math.PI/4);ctx.fillStyle='rgba(236,232,221,.75)';ctx.fillRect(-14,-2,28,4);ctx.restore();ctx.restore();
+    label(ctx,'θ = '+Math.round(th*180/Math.PI)+'°',A.x+10,A.y+A.h-12,COL.text,'left',12);
+    // franjas
+    const n=N(th),P=F.w/5;for(let x=0;x<F.w;x+=2){const I=Math.cos(Math.PI*((x-F.w/2)/P-n))**2;ctx.fillStyle=`rgba(130,201,255,${I*.95})`;ctx.fillRect(F.x+x,F.y,2,F.h)}
+    ctx.strokeStyle=COL.sun;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(F.x+F.w/2,F.y-4);ctx.lineTo(F.x+F.w/2,F.y+F.h+4);ctx.stroke();ctx.setLineDash([]);
+    label(ctx,'corrimiento: '+(n>=0?'+':'')+n.toFixed(3).replace('.',',')+' franjas',F.x,F.y+F.h+11,COL.text,'left',11);
+    // gráfico
+    const ym=Math.max(.05,amp()*1.25),gx=a=>Gr.x+a/(2*Math.PI)*Gr.w,gy=val=>Gr.y+Gr.h/2-val/ym*Gr.h/2;
+    ctx.strokeStyle=COL.line;ctx.lineWidth=1;ctx.strokeRect(Gr.x,Gr.y,Gr.w,Gr.h);ctx.beginPath();ctx.moveTo(Gr.x,gy(0));ctx.lineTo(Gr.x+Gr.w,gy(0));ctx.stroke();
+    ctx.strokeStyle=COL.sun;ctx.setLineDash([5,4]);ctx.lineWidth=1.5;ctx.beginPath();for(let i=0;i<=120;i++){const a=i/120*2*Math.PI,val=amp()*Math.cos(2*a);i?ctx.lineTo(gx(a),gy(val)):ctx.moveTo(gx(a),gy(val))}ctx.stroke();ctx.setLineDash([]);
+    if(!ether){ctx.strokeStyle=COL.ray;ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<=120;i++){const a=i/120*2*Math.PI;i?ctx.lineTo(gx(a),gy(real(a))):ctx.moveTo(gx(a),gy(real(a)))}ctx.stroke()}
+    glow(ctx,gx(th),gy(n),3.5,ether?COL.sun:COL.ray);
+    label(ctx,'+'+nf(ym,2),Gr.x+4,Gr.y+9,COL.muted,'left',10);label(ctx,'−'+nf(ym,2),Gr.x+4,Gr.y+Gr.h-9,COL.muted,'left',10);
+    label(ctx,'- - predicción con éter',Gr.x+Gr.w-4,Gr.y+9,COL.sun,'right',10);if(!ether)label(ctx,'— medido',Gr.x+Gr.w-4,Gr.y+22,COL.ray,'right',10);
+    label(ctx,'ángulo de giro 0° → 360°',Gr.x+Gr.w/2,Gr.y+Gr.h-9,COL.muted,'center',10)});
+})();
+
+/* ---------- 6. Eddington ---------- */
+(()=>{const o=cv('edd'),ctx=o.ctx,oc=cv('eddc'),cc2=oc.ctx,bi=$('#e-b');let b=1;const A0=4*G*1.989e30/(c*c*6.957e8)*206264.806;// ″ en el borde
+  function upd(){b=+bi.value;$('#e-bv').textContent=nf(b,2)+' radios solares';$('#e-gr').textContent=nf(A0/b,3)+'″';$('#e-nw').textContent=nf(A0/2/b,3)+'″';drawC()}
+  function drawC(){const w=oc.w,h=oc.h,ctx=cc2;ctx.clearRect(0,0,w,h);const L=38,Rt=w-10,T=10,B=h-24,X=x=>L+(x-1)/9*(Rt-L),Y=y=>B-y/2.4*(B-T);
+    ctx.strokeStyle=COL.line;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(L,T);ctx.lineTo(L,B);ctx.lineTo(Rt,B);ctx.stroke();
+    for(const y of[0,1,2]){label(ctx,y+'″',L-6,Y(y),COL.muted,'right',10)}for(const x of[1,4,7,10])label(ctx,x+' R☉',X(x),B+12,COL.muted,'center',10);
+    const curve=(k,col,dash)=>{ctx.strokeStyle=col;ctx.setLineDash(dash);ctx.lineWidth=2;ctx.beginPath();for(let i=0;i<=90;i++){const x=1+9*i/90;i?ctx.lineTo(X(x),Y(k/x)):ctx.moveTo(X(x),Y(k/x))}ctx.stroke();ctx.setLineDash([])};
+    curve(A0,COL.sun,[]);curve(A0/2,COL.muted,[5,4]);
+    const pt=(v,e,col,t,dx)=>{ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(X(1)+dx,Y(v-e));ctx.lineTo(X(1)+dx,Y(v+e));ctx.stroke();ctx.fillStyle=col;ctx.beginPath();ctx.arc(X(1)+dx,Y(v),3.5,0,7);ctx.fill();label(ctx,t,X(1)+dx+8,Y(v),col,'left',10)};
+    pt(1.98,.12,COL.ray,'Sobral 1,98″',6);pt(1.61,.30,COL.ok,'Príncipe 1,61″',30);
+    ctx.strokeStyle=COL.text+'66';ctx.beginPath();ctx.moveTo(X(b),T);ctx.lineTo(X(b),B);ctx.stroke();
+    label(ctx,'Einstein',X(5.2),Y(A0/5.2)-10,COL.sun,'left',10);label(ctx,'Newton',X(7),Y(A0/2/7)+10,COL.muted,'left',10)}
+  bi.oninput=upd;oc.onfit=drawC;upd();
+  let t=0;onFrame('edd',dt=>{t+=dt;const w=o.w,h=o.h;ctx.clearRect(0,0,w,h);const cy=h*.62,cx=w*.5,Rs=h*.05,E=[30,cy];
+    const P=[cx,cy-b*Rs];const alpha=A0/b/206264.806*12000;
+    const d=[P[0]-E[0],P[1]-E[1]],dl=Math.hypot(...d),u=[d[0]/dl,d[1]/dl];
+    const rot=(v,a)=>[v[0]*Math.cos(a)-v[1]*Math.sin(a),v[0]*Math.sin(a)+v[1]*Math.cos(a)];
+    const ur=rot(u,alpha);const k=(w-40-P[0])/ur[0];const S=[P[0]+ur[0]*k,P[1]+ur[1]*k];const k2=(w-40-E[0])/u[0];const Ap=[E[0]+u[0]*k2,E[1]+u[1]*k2];
+    // estrellas fondo
+    ctx.fillStyle='rgba(236,232,221,.35)';for(let i=0;i<40;i++){const x=(i*97.3)%w,y=(i*53.7)%(h*.9);ctx.fillRect(x,y,1.2,1.2)}
+    ctx.fillStyle='#000';ctx.beginPath();ctx.arc(cx,cy,Rs,0,7);ctx.fill();ctx.strokeStyle=COL.sun;ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,Rs,0,7);ctx.stroke();
+    ctx.strokeStyle='rgba(243,169,68,.25)';ctx.lineWidth=6;ctx.beginPath();ctx.arc(cx,cy,Rs+4,0,7);ctx.stroke();label(ctx,'Sol eclipsado',cx,cy+Rs+16,COL.sun,'center',11);
+    ctx.strokeStyle=COL.muted;ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(P[0],P[1]);ctx.lineTo(Ap[0],Ap[1]);ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle=COL.ray;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(S[0],S[1]);ctx.lineTo(P[0],P[1]);ctx.lineTo(E[0],E[1]);ctx.stroke();
+    const f=(t*.35)%1;const ph=f<.5?[S[0]+(P[0]-S[0])*f*2,S[1]+(P[1]-S[1])*f*2]:[P[0]+(E[0]-P[0])*(f-.5)*2,P[1]+(E[1]-P[1])*(f-.5)*2];glow(ctx,ph[0],ph[1],2.5,COL.ray);
+    glow(ctx,S[0],S[1],4,COL.text);label(ctx,'posición real',S[0]-8,S[1]+14,COL.text,'right',11);
+    glow(ctx,Ap[0],Ap[1],4,COL.ray);label(ctx,'posición aparente',Ap[0]-8,Ap[1]-14,COL.ray,'right',11);
+    ctx.fillStyle=COL.ok;ctx.beginPath();ctx.arc(E[0],E[1],6,0,7);ctx.fill();label(ctx,'Tierra',E[0],E[1]+16,COL.ok,'center',11)});
+})();
+
+/* ---------- 7. Mercurio ---------- */
+(()=>{const o=cv('merc'),ctx=o.ctx,xi=$('#m-x');const GMs=1.32712e20,a=5.7909e10,e=.2056,Tday=87.969;
+  const dphi=6*Math.PI*GMs/(c*c*a*(1-e*e)),perCent=dphi*(36525/Tday)*206264.806;$('#m-gr').textContent=nf(perCent,4)+'″ / siglo';
+  let X=1e5,t=0,om=0,orbits=0,tr=[],peris=[];const Tsim=2.2;
+  xi.oninput=()=>{X=10**+xi.value;$('#m-xv').innerHTML='× '+sci(X,2);t=0;om=0;orbits=0;tr=[]};xi.oninput();
+  onFrame('merc',dt=>{t+=dt;const w=o.w,h=o.h;ctx.clearRect(0,0,w,h);const Ap=Math.min(w,h)*.44/(1+e),cx=w*.5,cy=h*.5;
+    const Mn=2*Math.PI*(t/Tsim);const nOrb=Math.floor(t/Tsim);if(nOrb>orbits){orbits=nOrb;}om=dphi*X*(t/Tsim);
+    let E=Mn;for(let i=0;i<8;i++)E-=(E-e*Math.sin(E)-Mn)/(1-e*Math.cos(E));
+    const nu=2*Math.atan2(Math.sqrt(1+e)*Math.sin(E/2),Math.sqrt(1-e)*Math.cos(E/2)),r=Ap*(1-e*Math.cos(E));
+    const px=cx+r*Math.cos(nu+om),py=cy-r*Math.sin(nu+om);tr.push([px,py]);if(tr.length>2500)tr.shift();
+    ctx.strokeStyle='rgba(130,201,255,.35)';ctx.lineWidth=1;ctx.beginPath();tr.forEach((q,i)=>i?ctx.lineTo(q[0],q[1]):ctx.moveTo(q[0],q[1]));ctx.stroke();
+    const rp=Ap*(1-e);const pp=[cx+rp*Math.cos(om),cy-rp*Math.sin(om)];
+    ctx.strokeStyle=COL.mass;ctx.setLineDash([3,4]);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(pp[0],pp[1]);ctx.stroke();ctx.setLineDash([]);
+    ctx.strokeStyle=COL.muted;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+rp*1.15,cy);ctx.stroke();
+    label(ctx,'perihelio',pp[0]+6,pp[1]-10,COL.mass,'left',11);
+    glow(ctx,cx,cy,7,COL.sun);glow(ctx,px,py,3.5,COL.ray);
+    const cent=orbits/(36525/Tday);$('#m-c').textContent=nf(cent,3);
+    label(ctx,'giro acumulado (exagerado): '+nf(om*180/Math.PI,3)+'°',12,14,COL.muted,'left',11)});
+})();
+
+/* ---------- 8. GPS ---------- */
+(()=>{const o=cv('gps'),ctx=o.ctx,hi=$('#gps-h');const GMe=3.986004e14,Re=6.371e6;let hk=20200,t=0;
+  function upd(){hk=+hi.value;const r=Re+hk*1e3,v=Math.sqrt(GMe/r);const sr=-(v*v/(2*c*c))*86400e6,gr=(GMe/(c*c))*(1/Re-1/r)*86400e6,net=sr+gr;
+    $('#gps-hv').textContent=hk.toLocaleString('es-AR')+' km';$('#gps-sr').textContent=(sr>0?'+':'')+nf(sr,3)+' µs';$('#gps-gr').textContent='+'+nf(gr,3)+' µs';
+    $('#gps-net').textContent=(net>0?'+':'')+nf(net,3)+' µs';$('#gps-err').textContent=nf(Math.abs(net)*1e-6*c/1000,3)+' km'}
+  hi.oninput=upd;upd();
+  onFrame('gps',dt=>{const w=o.w,h=o.h;ctx.clearRect(0,0,w,h);const cx=w/2,cy=h/2,maxR=Math.min(w,h)*.45,sc=maxR/(Re+36000e3),re=Re*sc,ro=(Re+hk*1e3)*sc;
+    const r=Re+hk*1e3,T=2*Math.PI*Math.sqrt(r**3/GMe);t+=dt*600/T*2*Math.PI/10;// animación acelerada
+    const g=ctx.createRadialGradient(cx-re*.3,cy-re*.3,re*.1,cx,cy,re);g.addColorStop(0,'#5fa8e0');g.addColorStop(1,'#1d4f7a');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,re,0,7);ctx.fill();
+    ctx.strokeStyle=COL.line;ctx.setLineDash([3,4]);ctx.beginPath();ctx.arc(cx,cy,ro,0,7);ctx.stroke();ctx.setLineDash([]);
+    const sx=cx+ro*Math.cos(t),sy=cy+ro*Math.sin(t);ctx.fillStyle=COL.sun;ctx.fillRect(sx-4,sy-4,8,8);ctx.fillStyle=COL.ray;ctx.fillRect(sx-12,sy-1.5,7,3);ctx.fillRect(sx+5,sy-1.5,7,3);
+    label(ctx,'Tierra',cx,cy,'#e8f3ff','center',11);label(ctx,'T = '+nf(T/3600,3)+' h',12,14,COL.muted,'left',11);
+    label(ctx,'v = '+nf(Math.sqrt(GMe/r)/1000,3)+' km/s',12,30,COL.muted,'left',11)});
+})();
+
+/* ---------- 9. E = mc² ---------- */
+(()=>{const mi=$('#E-m');function upd(){const g=10**+mi.value,kg=g/1000,E=kg*c*c,kt=E/4.184e12;
+  $('#E-mv').innerHTML=g>=1e6?nf(g/1e6,3)+' t':g>=1000?nf(g/1000,3)+' kg':g>=1?nf(g,3)+' g':nf(g*1000,3)+' mg';
+  $('#E-J').innerHTML=sci(E)+' J';$('#E-t').innerHTML=kt>=1000?sci(kt/1000)+' Mt':kt>=1?sci(kt)+' kt':sci(kt*1000)+' t';$('#E-h').innerHTML=sci(kt/15)}
+  mi.oninput=upd;upd()})();
+
+/* ---------- Imágenes agregadas por el grupo ---------- */
+const lb=$('#lb'),lbimg=$('#lbimg');document.addEventListener('click',e=>{const im=e.target.closest('figure img, .um img');if(im){lbimg.src=im.src;lbimg.alt=im.alt;lb.hidden=false}});lb.onclick=()=>lb.hidden=true;
+slides.forEach((s,i)=>{if(i===0)return;const host=s.querySelector('.wrap');const box=document.createElement('div');box.className='adds';
+  box.innerHTML=`<div class="user-media"></div><label class="addbtn">＋ Agregar imagen<input type="file" accept="image/*" multiple id="add-${i}"></label>`;host.appendChild(box);
+  const list=box.querySelector('.user-media'),key='rel-img-'+i;let imgs=[];try{imgs=JSON.parse(store.get(key)||'[]')}catch(e){}
+  const render=()=>{list.innerHTML='';imgs.forEach((src,j)=>{const d=document.createElement('div');d.className='um';d.innerHTML=`<img alt="Imagen agregada ${j+1}"><button aria-label="Quitar imagen">×</button>`;d.querySelector('img').src=src;d.querySelector('button').onclick=()=>{imgs.splice(j,1);save();render()};list.appendChild(d)})};
+  const save=()=>{if(!store.set(key,JSON.stringify(imgs)))console.warn('Sin espacio para guardar imágenes; quedan solo en esta sesión.')};
+  box.querySelector('input').onchange=e=>{[...e.target.files].forEach(f=>{const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{const k=Math.min(1,1200/Math.max(im.width,im.height));const cvs=document.createElement('canvas');cvs.width=im.width*k;cvs.height=im.height*k;cvs.getContext('2d').drawImage(im,0,0,cvs.width,cvs.height);imgs.push(cvs.toDataURL('image/jpeg',.85));save();render()};im.src=r.result};r.readAsDataURL(f)});e.target.value=''};
+  render()});
+
+/* ---------- Nombre en portada ---------- */
+const yo=$('#yo');const yv=store.get('rel-yo');if(yv)yo.textContent=yv;yo.addEventListener('input',()=>store.set('rel-yo',yo.textContent));
+yo.addEventListener('focus',()=>{if(yo.textContent==='Tu nombre'){const r=document.createRange();r.selectNodeContents(yo);const s=getSelection();s.removeAllRanges();s.addRange(r)}});
+
+/* ---------- Navegación, guion y cronómetro ---------- */
+const times=slides.map(s=>+s.dataset.time||0),starts=times.map((_,i)=>times.slice(0,i).reduce((a,b)=>a+b,0)),TOTAL=times.reduce((a,b)=>a+b,0);
+const notesEl=$('#notes'),ntext=$('#ntext');
+function noteFor(i){return store.get('rel-note-'+i)??NOTES[i]}
+function go(i){cur=Math.max(0,Math.min(slides.length-1,i));slides.forEach((s,j)=>{s.classList.toggle('active',j===cur);s.setAttribute('aria-hidden',j!==cur)});
+  $('#count').textContent=(cur+1)+' / '+slides.length;$('#stitle').textContent=slides[cur].dataset.title;
+  ntext.textContent=noteFor(cur);$('#nhead').textContent='Guion · '+slides[cur].dataset.title+(times[cur]?' · '+times[cur]+' s':'');
+  $('#pmark').style.left=(starts[cur]/TOTAL*100)+'%';try{if(location.hash!=='#s'+cur)history.replaceState(null,'','#s'+cur)}catch(e){}tick()}
+ntext.addEventListener('input',()=>store.set('rel-note-'+cur,ntext.innerText));
+$('#prev').onclick=()=>go(cur-1);$('#next').onclick=()=>go(cur+1);
+$('#notesbtn').onclick=e=>{notesEl.hidden=!notesEl.hidden;e.currentTarget.setAttribute('aria-pressed',!notesEl.hidden)};
+$('#fsbtn').onclick=()=>{const d=document;(d.fullscreenElement?d.exitFullscreen():d.documentElement.requestFullscreen?.())?.catch?.(()=>{})};
+document.addEventListener('keydown',e=>{if(e.target.isContentEditable||/INPUT|SELECT|TEXTAREA/.test(e.target.tagName))return;
+  if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();go(cur+1)}else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();go(cur-1)}else if(e.key==='n'||e.key==='N')$('#notesbtn').click();else if(e.key==='Escape')lb.hidden=true});
+let run=false,el=0,lastT=0;const mmss=s=>{const a=Math.abs(Math.round(s));return(s<0?'+':'')+Math.floor(a/60)+':'+String(a%60).padStart(2,'0')};
+function tick(){const rem=TOTAL-el;$('#tbtn').textContent=(run?'❚❚ ':'▶ ')+mmss(rem);$('#pbar').style.width=Math.min(100,el/TOTAL*100)+'%';
+  const ahead=el-(starts[cur]+times[cur]);const d=el===0?'':el<starts[cur]?'vas '+Math.round(starts[cur]-el)+' s adelantado':ahead>0?'vas '+Math.round(ahead)+' s atrasado':'a tiempo';$('#tdelta').textContent=d;
+  $('#tbtn').style.color=rem<0?COL.mass:rem<30?COL.sun:''}
+$('#tbtn').onclick=()=>{run=!run;lastT=performance.now();tick()};$('#treset').onclick=()=>{run=false;el=0;tick()};
+setInterval(()=>{if(run){const n=performance.now();el+=(n-lastT)/1000;lastT=n;tick()}},250);
+addEventListener('hashchange',()=>{const m=/^#s(\d+)$/.exec(location.hash);if(m&&+m[1]!==cur)go(+m[1])});
+{const m=/^#s(\d+)$/.exec(location.hash);go(m?+m[1]:0)}
+let lastF=performance.now();function frame(now){const dt=Math.min(.05,(now-lastF)/1000);lastF=now;for(const l of loops)if(l.i===cur)l.fn(dt);requestAnimationFrame(frame)}requestAnimationFrame(frame);
+</script>
