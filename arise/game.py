@@ -560,6 +560,22 @@ class Game:
         self.emit("changed")
         return xp
 
+    def remove_reps(self, ex: str, n: float, manual: bool = False) -> float:
+        """Corrige repeticiones contadas de más (por ejemplo, una mal hecha que la cámara tomó). Devuelve la XP quitada."""
+        if n <= 0 or not self.registered:
+            return 0.0
+        self.s["totals"][ex] = max(0, self.s["totals"].get(ex, 0) - n)
+        day = self.s["daily"].setdefault(self.today(), {})
+        day[ex] = max(0, day.get(ex, 0) - n)
+        q = self.quest
+        if q and ex in q.get("progress", {}):
+            q["progress"][ex] = max(0, q["progress"][ex] - n)
+        xp = min(self.player["xp"], n * EXERCISES[ex].xp * (0.7 if manual else 1.0))
+        self.player["xp"] -= xp
+        self.save()
+        self.emit("changed")
+        return xp
+
     def finish_set(self, ex: str, good: float, bad: int, xp: float) -> bool:
         """Registra una serie terminada. Devuelve True si fue récord personal."""
         e = EXERCISES[ex]

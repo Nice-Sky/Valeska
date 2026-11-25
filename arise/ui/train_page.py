@@ -429,11 +429,20 @@ class EntrenarPage(QWidget):
         self.h_next.setTextFormat(Qt.TextFormat.RichText)
         sl.addWidget(self.h_next)
         self.manual_row = QWidget()
-        mr = QHBoxLayout(self.manual_row)
-        mr.setContentsMargins(0, 0, 0, 0)
-        mr.addWidget(caption(t("Sin cámara")))
-        for n in (1, 5):
-            mr.addWidget(button(f"+{n}", "", lambda _=False, n=n: self.manual(n)))
+        mv = QVBoxLayout(self.manual_row)
+        mv.setContentsMargins(0, 0, 0, 0)
+        mv.setSpacing(0)
+        mv.addWidget(caption(t("A mano")))
+        mr = QHBoxLayout()
+        mr.setSpacing(0)
+        for n in (-1, 1, 5):
+            b = button(f"{n:+d}", "", lambda _=False, n=n: self.manual(n))
+            b.setMinimumWidth(70)
+            b.setToolTip(t("Corregir: quitar una repetición contada de más") if n < 0 else t("Sumar repeticiones a mano"))
+            mr.addWidget(b, 1)
+        mv.addLayout(mr)
+        self.btn_cam = button(t("Sin cámara"), "", self.toggle_camera, icon="camera-off")
+        mv.addWidget(self.btn_cam)
         sl.addWidget(self.manual_row)
         row = QHBoxLayout()
         self.btn_set = button(t("Serie lista"), "primary", self.end_set, icon="check")
@@ -580,7 +589,8 @@ class EntrenarPage(QWidget):
         self.stack.setCurrentIndex(2)
         if not self.worker and not self.camera_failed:
             self.start_camera()
-        self.manual_row.setVisible(self.camera_failed)
+        self.manual_row.setVisible(True)
+        self._cam_button()
 
     def _begin_exercise(self):
         self.item = self.items[self.idx]
@@ -608,6 +618,7 @@ class EntrenarPage(QWidget):
         self.win.voice.say(t(self.ex.name), True)
 
     def _new_set(self):
+        self.video.diag = ""
         self.counter = RepCounter(self.ex)
         self.good = self.bad = 0
         self.xp = 0.0
@@ -725,18 +736,27 @@ class EntrenarPage(QWidget):
                 self.visible_since = self.visible_since or t_
                 v.center_small = t("Te veo. Quedate en posición…")
                 v.set_feedback(t("Vista: {v}", v=t(VIEW_NAMES.get(m.view, "")).capitalize()), "")
-                if t_ - self.visible_since > 1.0:
-                    self.state = "countdown"
-                    self.countdown_end = time.monotonic() + 3
-                    self.last_center = ""
-                    v.center_small = ""
+                if t_ - self.visible_since > 0.6:
+                    self._go_running()
             else:
                 self.visible_since = None
                 v.center_small = t(m.hint) if m.hint else t("Ubicate para que se vea todo el ejercicio")
             self.checks.set(m.checks, m.view, self.ex.best_view)
         elif st == "running" and self.counter is not None:
             color = self.process(lm, world, aspect, t_)
+            v.diag = self._diag_text()
         v.set_frame(img, lm, color, world)
+
+    PHASES = {"rest": "reposo", "moving": "en movimiento", "active": "punto de esfuerzo", "returning": "volviendo"}
+
+    def _diag_text(self) -> str:
+        """Línea chica con lo que mide la cámara: sirve para entender por qué cuenta (o no) una repetición."""
+        c = self.counter
+        if c is None or c.diag is None or self.ex.timed:
+            return ""
+        v, act, rest = c.diag
+        return t("Medida {v} · cuenta al pasar {a} y volver a {r} · {phase}", v=int(v), a=int(act), r=int(rest),
+                 phase=t(self.PHASES.get(c.phase, c.phase)))
 
     def process(self, lm, world, aspect, t_) -> str:
         r = self.counter.update(lm, world, aspect, t_)
@@ -758,7 +778,7 @@ class EntrenarPage(QWidget):
                     self.win.sounds.play("second")
                 v.progress = min(1.0, secs / max(1, self.item["reps"]))
                 if secs >= self.item["reps"]:
-                    QTimer.singleShot(200, self.end_set)
+                    self._auto_end(200)
             col = {"ok": T.GREEN, "warn": T.GOLD, "unknown": T.MUTED}.get(r.status, T.RED)
             tone = {"ok": "good", "warn": "warn", "unknown": "warn"}.get(r.status, "bad")
             v.set_feedback(t(r.msg) if r.msg else "", tone)
@@ -778,7 +798,7 @@ class EntrenarPage(QWidget):
             self.xp += g.add_reps(ex.id, 1)
             v.set_feedback(t(r.msg), "good" if r.msg == "¡Perfecta!" else "warn")
             if self.good >= self.item["reps"]:
-                QTimer.singleShot(500, self.end_set)
+                self._auto_end(500)
         elif r.event in ("bad", "partial"):
             if r.event == "bad":
                 self.bad += 1
@@ -811,15 +831,78 @@ class EntrenarPage(QWidget):
         self.h_quality.setText(f"<span style='color:{col}'><b>{txt}</b></span>")
 
     def manual(self, n: int):
-        if not self.ex or self.state not in ("running", "position"):
+        """Sumar a mano (modo honor, 70% XP) o corregir con -1 una repetición que la cámara contó de más."""
+        if not self.ex or self.state not in ("running", "position", "countdown"):
             return
-        self.state = "running"
+        if self.state != "running":
+            self._go_running()
+        g = self.win.game
+        if n < 0:
+            if self.good <= 0:
+                return
+            self.good -= 1
+            self.bad += 1
+            if self.counter is not None and self.counter.reps > 0:
+                self.counter.reps -= 1
+                self.counter.bad += 1
+                if self.counter.log:
+                    self.counter.log[-1]["clean"] = False
+            self.xp = max(0.0, self.xp - g.remove_reps(self.ex.id, 1, manual=self.camera_failed))
+            self.video.count = str(self.good)
+            self.video.set_feedback(t("Corregido: esa no cuenta"), "warn")
+            return
         self.good += n
+        if self.counter is not None and not self.ex.timed:
+            self.counter.reps += n
+            self.counter.log += [{"d": 0.0, "clean": True, "verified": False, "fast": False}] * n
         self.video.count = str(self.good)
         self.video.bump()
-        self.xp += self.win.game.add_reps(self.ex.id, n, manual=True)
+        self.xp += g.add_reps(self.ex.id, n, manual=True)
         if self.good >= self.item["reps"]:
-            QTimer.singleShot(300, self.end_set)
+            self._auto_end(300)
+
+    def _auto_end(self, ms: int):
+        """Cierra la serie sola al llegar al objetivo (una sola vez, aunque lleguen más repeticiones mientras tanto)."""
+        if getattr(self, "_ending", False):
+            return
+        self._ending = True
+        token = (self.idx, self.set_no)
+
+        def go():
+            self._ending = False
+            if (self.idx, self.set_no) == token and self.state == "running":
+                self.end_set()
+        QTimer.singleShot(ms, go)
+
+    def toggle_camera(self):
+        """Apagar la cámara y seguir a mano (o volver a prenderla)."""
+        if self.camera_failed:
+            self.camera_failed = False
+            self.start_camera()
+            if self.state == "running" and not (self.good or self.bad):
+                self.state = "position"
+        else:
+            self.camera_failed = True
+            self.stop_camera()
+            if self.state in ("position", "countdown"):
+                self._go_running()
+            self.video.set_feedback(t("Modo sin cámara: usá +1 / +5 y «Serie lista»"), "")
+        self._cam_button()
+
+    def _cam_button(self):
+        self.btn_cam.setText(t("Usar cámara") if self.camera_failed else t("Sin cámara"))
+        self.btn_cam.set_icon_name("camera" if self.camera_failed else "camera-off")
+
+    def _go_running(self):
+        """Empieza a contar ya (sin cuenta regresiva: así no se pierden las primeras repeticiones)."""
+        self.state = "running"
+        self.counter = RepCounter(self.ex)
+        self.counter.last_activity = None
+        self.video.center_small = ""
+        self.win.sounds.play("beep_go")
+        self.video.center = t("¡YA!")
+        QTimer.singleShot(700, lambda: setattr(self.video, "center", "") if self.state == "running" else None)
+        self._buttons()
 
     # ================================================================ reloj: cuentas regresivas, descansos, inactividad
     def _tick(self):
@@ -885,9 +968,8 @@ class EntrenarPage(QWidget):
         if self.state not in ("running", "position", "countdown") or self.counter is None:
             return
         if self.state != "running" and not (self.good or self.bad):
-            # todavía no empezó: "Serie lista" = arrancar ya sin esperar la cuenta
-            self.state = "countdown"
-            self.countdown_end = time.monotonic()
+            # todavía no empezó: "Serie lista" = arrancar ya
+            self._go_running()
             return
         summ = self.counter.summary() if not self.camera_failed else {"good": self.good, "bad": 0, "quality": 1.0,
                                                                         "verified": 0.0, "slowdown": 1.0}

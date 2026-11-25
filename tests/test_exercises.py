@@ -235,3 +235,28 @@ def test_summary_detects_slowdown():
     c, _, _ = run("pushup", vals, S.pushup, 90)
     s = c.summary()
     assert s["good"] == 9 and s["slowdown"] > 1.5 and s["quality"] == 1.0
+
+
+@pytest.mark.parametrize("view", ["front", "diag"])
+def test_pullups_with_hands_out_of_frame(view):
+    """Cámara cerca: la barra y las manos quedan fuera de la imagen; se cuenta por los codos."""
+    c = RepCounter(EXERCISES["pullup"])
+    vals = [175] * 8 + sum((cycle(175, 55, 24) for _ in range(3)), [])
+    for i, v in enumerate(vals):
+        lm, w = S.to_landmarks(S.pullup(v), VIEWS[view], seed=i, cy=0.62, **NOISE)
+        for k in (15, 16):
+            lm[k].visibility = 0.05   # muñecas fuera de cuadro
+        c.update(lm, w, S.ASPECT, i / 30)
+    assert c.reps == 3
+
+
+def test_manual_correction_removes_rep(tmp_path):
+    from datetime import date
+    from arise.game import Game
+    from arise.storage import Store
+    g = Game(Store(tmp_path / "p.json"), today=lambda: date(2026, 11, 18))
+    g.register("Nico", "intermedio")
+    g.add_reps("pushup", 5)
+    xp = g.player["xp"]
+    g.remove_reps("pushup", 1)
+    assert g.quest["progress"]["pushup"] == 4 and g.s["totals"]["pushup"] == 4 and g.player["xp"] < xp

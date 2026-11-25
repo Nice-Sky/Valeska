@@ -27,7 +27,7 @@ EXEMPT = {"Arise Trainer", "ARISE", "T R A I N E R", "Montserrat", "Segoe UI", "
           "Jumping Jacks", "HH:mm", "kg", "ml", "MJPG"}
 TRANSLATORS = {"t", "plural"}
 DATA_TABLES = {"PLANS", "STATS", "ACHIEVEMENTS", "WEEKDAYS", "GROUPS", "EQUIPMENT", "VIEW_NAMES", "RPE", "READINESS",
-               "VIEW_HINT", "LANGS", "SOUNDS", "PAGES", "READINESS_ICON", "VIEWS", "MODES"}
+               "VIEW_HINT", "LANGS", "SOUNDS", "PAGES", "READINESS_ICON", "VIEWS", "MODES", "PHASES"}
 # argumentos que no se muestran (claves internas)
 INTERNAL_CALLS = {"setObjectName", "setProperty", "getattr", "setattr", "hasattr", "get", "setdefault", "pop", "startswith",
                   "endswith", "split", "replace", "join", "format", "strftime", "strptime", "fromisoformat", "fromString",
@@ -177,8 +177,8 @@ def data_keys() -> set[str]:
     keys |= {p[1] for p in PAGES}
     from arise.ui.body_page import VIEWS, PhotoCompare
     keys |= {v[1] for v in VIEWS} | {v[2] for v in VIEWS} | set(PhotoCompare.MODES)
-    from arise.ui.train_page import VIEW_HINT
-    keys |= set(VIEW_HINT.values())
+    from arise.ui.train_page import VIEW_HINT, EntrenarPage
+    keys |= set(VIEW_HINT.values()) | set(EntrenarPage.PHASES.values())
     return keys
 
 

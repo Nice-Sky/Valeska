@@ -561,18 +561,53 @@ def m_climber(lm, w, aspect, ctx):
     return m
 
 
-def _hanging(lm) -> bool:
-    return min_vis(lm, (15, 16)) > VIS * 0.6 and min(lm[15].y, lm[16].y) < lm[0].y + 0.02
+def _hanging(lm, ctx=None) -> bool:
+    """¿Colgado de la barra? Con las manos a la vista: muñecas sobre la cabeza. Si la barra queda fuera de cuadro
+    (pasa mucho con la cámara cerca), alcanza con ver los codos por encima de los hombros. Una vez detectado, se
+    mantiene un par de segundos: arriba de la dominada los codos bajan y eso no significa que te soltaste."""
+    hang = False
+    if min_vis(lm, (15, 16)) > VIS * 0.6 and min(lm[15].y, lm[16].y) > 0.015:
+        hang = min(lm[15].y, lm[16].y) < lm[0].y + 0.02
+    else:
+        els = [(e, s) for e, s in ((13, 11), (14, 12)) if min_vis(lm, (e, s)) > VIS * 0.6]
+        hang = bool(els) and all(lm[e].y < lm[s].y - 0.02 for e, s in els)
+    if ctx is None:
+        return hang
+    if hang:
+        ctx["hang"] = 75  # ~2,5 s a 30 cuadros por segundo
+        return True
+    ctx["hang"] = ctx.get("hang", 0) - 1
+    return ctx["hang"] > 0
+
+
+def _pullup_upper_arms(lm, aspect, ctx, m):
+    """Dominadas con las manos fuera de cuadro: altura de los codos respecto de los hombros."""
+    ups = [(s, e) for s, e in ((11, 13), (12, 14)) if min_vis(lm, (s, e)) > VIS * 0.6]
+    if not ups:
+        return None
+    ua = max(dist2(lm[s], lm[e], aspect) for s, e in ups)
+    ref = ctx["ua"] = max(ua, ctx.get("ua", 0.0) * 0.995)
+    if ref < 0.02:
+        return None
+    r = mean((lm[e].y - lm[s].y) for s, e in ups) / ref   # -1: codos bien arriba (colgado) · +0.4: arriba de la barra
+    m.check("hands", "Manos", "unknown", "No veo tus manos: cuento por los codos")
+    return 175 - 105 * clamp01((r + 0.85) / 0.8)
 
 
 def m_pullup(lm, w, aspect, ctx):
     arms = visible_sets(lm, ARMS, 0.7)
-    if not arms:
+    uppers = [s for s in ((11, 13), (12, 14)) if min_vis(lm, s) > VIS * 0.6]
+    if not arms and not uppers:
         return hidden("brazos")
     view = view_of(lm, w, aspect)
     m = Measure(True, view=view)
-    if not _hanging(lm):
+    if not _hanging(lm, ctx):
         m.hint = "Colgate de la barra con los brazos estirados"
+        return m
+    if not arms or min(lm[c].y for a, b, c in arms) < 0.015:  # manos cortadas por el borde de la imagen
+        m.value = _pullup_upper_arms(lm, aspect, ctx, m)
+        if m.value is None:
+            return hidden("brazos")
         return m
     elbow = mean(angle3(w[a], w[b], w[c]) for a, b, c in arms)
     # altura de los hombros respecto de las manos, relativa al largo del tronco (vertical al estar colgado)
@@ -585,7 +620,7 @@ def m_pullup(lm, w, aspect, ctx):
     # mentón por encima de la barra (≈ altura de las manos) en la parte alta
     bar_y = mean(lm[c].y for a, b, c in arms)
     if _v(lm[0]) > 0.5:  # meta de recorrido: en algún momento de la repetición el mentón pasa la barra
-        m.reach.append(("chin", lm[0].y < bar_y + 0.02, "Pasá el mentón por encima de la barra"))
+        m.reach.append(("chin", lm[0].y < bar_y + 0.04, "Pasá el mentón por encima de la barra"))
     knees = visible_sets(lm, LEGS, 0.6)
     if knees:
         hip = min(angle3(w[s], w[h], w[k]) for s, h, k in ((11, 23, 25), (12, 24, 26)))
@@ -600,7 +635,7 @@ def m_knee_raise(lm, w, aspect, ctx):
     if not sides:
         return hidden("cadera y rodillas")
     m = Measure(True, view=view_of(lm, w, aspect))
-    if not _hanging(lm):
+    if not _hanging(lm, ctx):
         m.hint = "Colgate de la barra con los brazos estirados"
         return m
     m.value = mean(angle3(w[a], w[b], w[c]) for a, b, c in sides)
@@ -914,6 +949,7 @@ class RepCounter:
     timed_bad: float = 0.0
     timed_unknown: float = 0.0
     last_activity: float = 0.0
+    diag: Optional[tuple] = None  # (valor medido, umbral de esfuerzo, umbral de reposo) para mostrar en pantalla
 
     def _smooth_view(self, v: str) -> str:
         if v:
@@ -995,6 +1031,7 @@ class RepCounter:
         is_rest = v > rest_t if lower else v < rest_t
         past_mid = v < mid_t if lower else v > mid_t
         progress = clamp01((rest_t - v) / (rest_t - active_t)) if rest_t != active_t else 0.0
+        self.diag = (v, active_t, rest_t)
 
         event = msg = None
         if self.phase == "rest" and past_mid:

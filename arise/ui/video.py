@@ -37,6 +37,7 @@ class VideoView(QWidget):
         self.flash = 0
         self.rest = None   # (segundos restantes, total, título, detalle) durante el descanso
         self.objects = []  # barra / mancuernas detectadas (se pintan con filtro rojo)
+        self.diag = ""     # línea chica con lo que mide la cámara
 
     def set_frame(self, img: QImage, lm, color: str, world=None):
         self.image, self.landmarks, self.skeleton = img, lm, color
@@ -151,6 +152,16 @@ class VideoView(QWidget):
                          {T.GREEN: "", T.GOLD: "gold", T.RED: "red"}.get(col, "")))
             p.setPen(QColor(col if self.tone else T.CORE))
             p.drawText(r, Qt.AlignmentFlag.AlignCenter, fm.elidedText(self.feedback, Qt.TextElideMode.ElideRight, int(tw - 20)))
+
+        if self.diag:
+            df = QFont(T.FONT, 8)
+            p.setFont(df)
+            fm = p.fontMetrics()
+            r = QRectF(22, 8 + max(36, int(H * 0.16)) * 1.5, W - 80, 16)
+            p.setPen(QColor(0, 0, 0, 170))
+            p.drawText(r.translated(1, 1), Qt.AlignmentFlag.AlignLeft, fm.elidedText(self.diag, Qt.TextElideMode.ElideRight, int(r.width())))
+            p.setPen(QColor(T.MUTED))
+            p.drawText(r, Qt.AlignmentFlag.AlignLeft, fm.elidedText(self.diag, Qt.TextElideMode.ElideRight, int(r.width())))
 
         # texto central (cuenta regresiva / estado)
         if self.center:
